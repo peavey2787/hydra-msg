@@ -659,7 +659,6 @@ impl WasmReceivedHydraMessage {
     }
 }
 
-
 #[wasm_bindgen]
 impl WasmHydraLobbyEnvelope {
     #[wasm_bindgen(js_name = recipient)]
