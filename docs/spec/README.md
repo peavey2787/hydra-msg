@@ -45,7 +45,7 @@ Lower-level protocol crates live beside them and should stay focused on their ow
 ```text
 crates/hydra-group/src/canonical/  canonical encodings, validation helpers, hashes, and confirmation tags by encoding family
 crates/hydra-group/src/state/      live group state, private membership state, sender chains, replay state, snapshots, and roster views
-crates/hydra-group/src/commit.rs   temporary P3 roadmap exception until commit preparation/application/install responsibilities are split
+crates/hydra-group/src/commit/    commit preparation, validation, transition, payload, key-schedule, tree-update, application, and install flow
 ```
 
 New `hydra-group` source files should usually stay under 400 lines. Any file that must exceed that threshold needs a documented exception in `qa/ci/rust-size-allowlist.txt`, including a max line ceiling and a specific ownership reason. This is a drift guard, not a substitute for SRP: remove allow-list entries when a file is split below the threshold.

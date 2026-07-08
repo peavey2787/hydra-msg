@@ -18,7 +18,7 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-Implementation has started and currently covers P0 through P2 plus the out-of-order P4 ownership/doc guardrails requested against the current P2 tree. P3 and P5 are not started.
+Implementation currently covers P0 through P4. P4 landed before P3, then P3 was completed afterward to repair the missing commit-flow split. P5 remains the final validation and review gate.
 
 ## Rules and guidelines
 
@@ -286,13 +286,13 @@ crates/hydra-group/src/canonical/test_support.rs   62 lines
 - No public behavior change was intended in P1.
 - Cargo validation was not run in this environment; P5 remains the full validation gate after P3 and P4.
 - Production-ready status: no. P3 through P5, full validation, security review, and final vector/interoperability confirmation remain.
-- Enterprise-grade status: no. The `commit.rs` ownership split remains.
+- Enterprise-grade status: no. At the time of P1, the state and commit ownership splits still remained; both were completed later.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
 
 
 ### 2026-07-08 — P2 state mechanics split complete
 
-Status: P2 complete; P3 not started.
+Status: P2 complete.
 
 - Replaced `crates/hydra-group/src/state.rs` with a focused `crates/hydra-group/src/state/` module folder.
 - Kept `state/mod.rs` as the stable public module surface.
@@ -324,15 +324,15 @@ crates/hydra-group/src/state/snapshot.rs             82 lines
 - The largest P2 file is exactly at the 400-line target.
 - No public behavior change was intended in P2.
 - Cargo validation was not run in this environment; P5 remains the full validation gate after P3 and P4.
-- Production-ready status: no. P3 through P5, full validation, security review, and final vector/interoperability confirmation remain.
-- Enterprise-grade status: no. The `commit.rs` ownership split remains.
+- Production-ready status: no. At the time of P2, P3 through P5, full validation, security review, and final vector/interoperability confirmation remained.
+- Enterprise-grade status: no. At the time of P2, the `commit.rs` ownership split still remained; it was completed later in P3.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
 
 ### 2026-07-08 — P4 docs and ownership checks complete
 
-Status: P4 complete against the current P2 tree; P3 is still not started.
+Status: P4 complete. This phase landed out of order before P3, and its temporary `commit.rs` exception has now been removed after the P3 split.
 
-- Updated `docs/spec/README.md` with clearer `hydra-group` ownership notes for the canonical split, state split, and temporary unsplit `commit.rs` P3 exception.
+- Updated `docs/spec/README.md` with clearer `hydra-group` ownership notes for the canonical split, state split, and commit split. The temporary unsplit `commit.rs` P3 exception has been removed.
 - Added `qa/ci/check-rust-file-sizes.sh` and `qa/ci/check-rust-file-sizes.ps1` to report `hydra-group` Rust files above the 400-line SRP threshold.
 - Added `qa/ci/rust-size-allowlist.txt` so every file above the threshold needs a documented ownership reason and a max-line ceiling.
 - Added `qa/ci/check-markdown-links.sh` and `qa/ci/check-markdown-links.ps1` to resolve local Markdown links.
@@ -350,7 +350,55 @@ PASS ./qa/ci/check-docs.sh
 NOT RUN ./qa/ci/check-all.sh fully: cargo is not installed in this sandbox, so the Rust gate stopped at qa/ci/check-rust.sh with `cargo: not found`.
 ```
 
-- Production-ready status: no. P3, P5, full Rust/vector/example/WASM validation, security review, and final vector/interoperability confirmation remain.
-- Enterprise-grade status: no. The `commit.rs` ownership split remains, and size exceptions still document unsplit cohesive modules.
+- Production-ready status: no. P5, full Rust/vector/example/WASM validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: no. Size exceptions still document other cohesive modules; final P5 validation and review remain.
 - Mathematically sound status: not yet proven. P4 adds drift guardrails; it does not replace proof review, adversarial review, or external cryptography review.
 
+### 2026-07-08 — P3 commit flow split complete
+
+Status: P3 complete.
+
+- Replaced `crates/hydra-group/src/commit.rs` with a focused `crates/hydra-group/src/commit/` module folder.
+- Kept `commit/mod.rs` as the stable public module surface.
+- Preserved existing public exports from `hydra-group/src/lib.rs`: `prepare_commit`, `apply_prepared_commit`, `install_prepared_commit`, `validate_governance_signatures`, `CommitChange`, `CommitInstallResult`, `CommitPlan`, and `PreparedCommit`.
+- Split commit ownership by responsibility:
+
+```text
+crates/hydra-group/src/commit/mod.rs
+crates/hydra-group/src/commit/types.rs
+crates/hydra-group/src/commit/prepare.rs
+crates/hydra-group/src/commit/apply.rs
+crates/hydra-group/src/commit/install.rs
+crates/hydra-group/src/commit/validation.rs
+crates/hydra-group/src/commit/transition.rs
+crates/hydra-group/src/commit/payload.rs
+crates/hydra-group/src/commit/key_schedule.rs
+crates/hydra-group/src/commit/tree_update.rs
+crates/hydra-group/src/commit/membership.rs
+crates/hydra-group/src/commit/tests.rs
+```
+
+- Current commit split line counts:
+
+```text
+crates/hydra-group/src/commit/apply.rs          71 lines
+crates/hydra-group/src/commit/install.rs        43 lines
+crates/hydra-group/src/commit/key_schedule.rs   52 lines
+crates/hydra-group/src/commit/membership.rs     94 lines
+crates/hydra-group/src/commit/mod.rs            19 lines
+crates/hydra-group/src/commit/payload.rs        75 lines
+crates/hydra-group/src/commit/prepare.rs        75 lines
+crates/hydra-group/src/commit/tests.rs         307 lines
+crates/hydra-group/src/commit/transition.rs    182 lines
+crates/hydra-group/src/commit/tree_update.rs    91 lines
+crates/hydra-group/src/commit/types.rs         101 lines
+crates/hydra-group/src/commit/validation.rs    107 lines
+```
+
+- All P3 files are under the 400-line target.
+- Removed the temporary `crates/hydra-group/src/commit.rs` source-size allow-list exception because the file no longer exists.
+- No public behavior change was intended in P3.
+- Cargo validation was not run in this environment because `cargo` is not installed; P5 remains the full validation gate.
+- Production-ready status: no. P5, full Rust/vector/example/WASM validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: not yet. The active SRP target files are split, but P5 still needs a duplicate/unused-code review and full validation.
+- Mathematically sound status: not yet proven. The split improves auditability, but proof review, adversarial review, and external cryptography review remain separate validation work.

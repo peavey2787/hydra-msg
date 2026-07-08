@@ -7,7 +7,6 @@
 # threshold only up to its documented max. Keep every reason specific and
 # remove entries when the file is split below the threshold.
 
-crates/hydra-group/src/commit.rs|1200|Temporary P3 roadmap exception: commit orchestration remains unsplit until the commit/ module SRP pass moves validation, transition, payload, key-schedule, tree-update, and membership concerns into owned modules.
 crates/hydra-group/src/message.rs|700|Cohesive group-message send/receive envelope flow plus local tests; not part of the active commit/state/canonical SRP split.
 crates/hydra-group/src/distribution.rs|650|Cohesive group distribution and fanout support; not part of the active commit/state/canonical SRP split.
 crates/hydra-group/src/public_tree.rs|650|Cohesive public tree data structure and tree algorithms; splitting requires a dedicated tree-ownership pass.
