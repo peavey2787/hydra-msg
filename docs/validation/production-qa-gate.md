@@ -13,7 +13,7 @@ P13 is intentionally manual. It does not add product features or change the publ
 
 ## Required local checks
 
-Run the full workspace validation from the repository root.
+Run the full workspace validation from the repository root. `check-all` is the top-level gate; it calls `check-tests` first, then `check-examples`.
 
 Windows PowerShell:
 
@@ -24,10 +24,24 @@ Windows PowerShell:
 Unix shell:
 
 ```bash
-qa/ci/check-all.sh
+./qa/ci/check-all.sh
 ```
 
-Run runnable examples and browser package checks separately.
+Run the tests/static gate without examples when isolating test failures.
+
+Windows PowerShell:
+
+```powershell
+.\qa\ci\check-tests.ps1
+```
+
+Unix shell:
+
+```bash
+./qa/ci/check-tests.sh
+```
+
+Run runnable examples and browser package checks directly when isolating example failures.
 
 Windows PowerShell:
 
@@ -38,7 +52,7 @@ Windows PowerShell:
 Unix shell:
 
 ```bash
-qa/ci/check-examples.sh
+./qa/ci/check-examples.sh
 ```
 
 The example script runs the native examples, checks the browser host examples, and builds example-local WASM packages. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.

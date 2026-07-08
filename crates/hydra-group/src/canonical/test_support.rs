@@ -1,7 +1,7 @@
 use super::commit_core::CommitCore;
 use crate::{
     CommitKind, GovernancePolicy, GroupMode, GroupRole, MemberId, MemberStatus,
-    MembershipMechanism, ModePolicy, RosterEntry, StateVersion,
+    MembershipMechanism, RosterEntry, StateVersion,
 };
 use hydra_core::types::{Epoch, GroupId, IdentityFingerprint};
 

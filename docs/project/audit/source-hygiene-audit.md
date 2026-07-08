@@ -14,7 +14,7 @@ This pass checked the repository against the project-specific rules in `docs/roa
 - Runtime data and identity material stay out of git.
 - Public API scope stays trimmed: no config/profile/builder layer, no protocol-info surface, no session import/export surface, no public chunk surface, no checkpoint surface, no predicate surface, and no lobby-state import/export surface.
 - Source files should stay organized by concern, with large mixed-concern files split as soon as they start hiding separate responsibilities.
-- Validation is still owned by `qa/ci/check-all.*` and `qa/ci/check-examples.*`.
+- Validation is owned by the tiered `qa/ci/check-all.*` runner, with `qa/ci/check-tests.*` and `qa/ci/check-examples.*` as the two lower-level gates.
 
 ## Findings and changes made
 
@@ -66,8 +66,7 @@ The repository is not ready for a release tag until P13 is clean on a real devel
 
 Still required:
 
-- `qa/ci/check-all.*` must pass;
-- `qa/ci/check-examples.*` must pass;
+- `qa/ci/check-all.*` must pass, including the lower-level tests and examples gates;
 - browser/mobile WASM packages must build;
 - the WebRTC manual carrier host needs a browser smoke test;
 - benchmark notes should be updated if current results materially differ;

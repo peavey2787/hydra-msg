@@ -31,7 +31,7 @@ Implementation currently covers P0 through P4. P4 landed before P3, then P3 was 
 7. **Keep public behavior stable unless a bug is proven.** The SRP work should preserve the public exports from `crates/hydra-group/src/lib.rs` unless a later phase explicitly records a safe API adjustment.
 8. **Keep tests close to the concern they prove.** Unit tests should move with the module they validate when a large file is split.
 9. **Keep docs organized by purpose.** Only `docs/roadmap.md` belongs directly under `docs/`. Product docs belong under `docs/spec/`, `docs/impl/`, or `docs/validation/`. Assistant working notes and audits belong under `docs/project/`.
-10. **Use one master validation path.** `qa/ci/check-all.*` remains the full correctness gate; example checks remain separate.
+10. **Use one master validation path.** `qa/ci/check-all.*` remains the full correctness gate by calling the tests gate and the examples gate in order.
 11. **Target smaller files without hiding complexity.** A split is successful only if each new file has a clear reason to exist.
 12. **Before marking complete, ask:** Is this production-ready? Is it enterprise-grade? Is it mathematically sound? If not, record what remains.
 
@@ -200,8 +200,7 @@ Goal: prove the SRP split preserved behavior.
 
 Steps:
 
-- Run `qa/ci/check-all.sh` or `qa/ci/check-all.ps1`.
-- Run `qa/ci/check-examples.sh` or `qa/ci/check-examples.ps1`.
+- Run `qa/ci/check-all.sh` or `qa/ci/check-all.ps1`; this calls both `check-tests.*` and `check-examples.*`.
 - Run `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`.
 - Compare public exports from before and after the split.
 - Confirm no duplicated or unused code remains from moved helpers.
@@ -217,11 +216,10 @@ This roadmap succeeds when:
 3. Every new file has one clear responsibility.
 4. Existing `hydra-group` public exports remain stable unless a safe change is explicitly documented.
 5. Tests move with the concerns they validate.
-6. `qa/ci/check-all.*` passes.
-7. `qa/ci/check-examples.*` passes.
-8. `qa/ci/build-wasm-web.*` passes.
-9. Markdown links and README navigation pass.
-10. The codebase is closer to production-ready and enterprise-grade, with remaining mathematical/security review gaps clearly recorded.
+6. `qa/ci/check-all.*` passes, including the lower-level tests and examples gates.
+7. `qa/ci/build-wasm-web.*` passes.
+8. Markdown links and README navigation pass.
+9. The codebase is closer to production-ready and enterprise-grade, with remaining mathematical/security review gaps clearly recorded.
 
 ## Progress report
 
@@ -336,7 +334,7 @@ Status: P4 complete. This phase landed out of order before P3, and its temporary
 - Added `qa/ci/check-rust-file-sizes.sh` and `qa/ci/check-rust-file-sizes.ps1` to report `hydra-group` Rust files above the 400-line SRP threshold.
 - Added `qa/ci/rust-size-allowlist.txt` so every file above the threshold needs a documented ownership reason and a max-line ceiling.
 - Added `qa/ci/check-markdown-links.sh` and `qa/ci/check-markdown-links.ps1` to resolve local Markdown links.
-- Wired the new source-size check into `qa/ci/check-all.sh` and `qa/ci/check-all.ps1`.
+- Wired the new source-size check into the `qa/ci/check-tests.*` gate, which `qa/ci/check-all.*` now calls.
 - Wired the Markdown link check into `qa/ci/check-docs.sh` and the PowerShell docs gate.
 - Updated `qa/ci/README.md` so the new QA checks are discoverable.
 - Confirmed README navigation remains enforced by the existing docs gate.

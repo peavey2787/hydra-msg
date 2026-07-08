@@ -30,6 +30,7 @@ EOF_FIND
 printf '\nUpdated %s shell script(s).\n' "$count"
 printf 'Next commands:\n'
 printf '  ./qa/ci/check-all.sh\n'
-printf '  ./qa/ci/check-examples.sh\n'
+printf '  ./qa/ci/check-tests.sh     # tests/static checks only\n'
+printf '  ./qa/ci/check-examples.sh  # examples only\n'
 printf '  ./qa/ci/build-wasm-web.sh\n'
 printf '\nDo not run these scripts with sudo unless your Rust toolchain is installed for root.\n'

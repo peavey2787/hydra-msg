@@ -11,7 +11,8 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 
 | Script | Purpose |
 |---|---|
-| `check-all.ps1` / `check-all.sh` | Full local check gate. |
+| `check-all.ps1` / `check-all.sh` | Full local gate: tests/static checks plus runnable examples/browser package checks. |
+| `check-tests.ps1` / `check-tests.sh` | Tests/static checks only: workspace Rust checks, docs, source-size ownership, locks, and vectors. |
 | `check-examples.ps1` / `check-examples.sh` | Runnable examples and browser package checks. |
 | `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable web package builder. |
 | `linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
@@ -24,6 +25,8 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 
 ## Full local check
 
+`check-all` is the thin top-level runner. It calls `check-tests` first, then `check-examples`.
+
 Unix:
 
 ```bash
@@ -35,6 +38,23 @@ PowerShell:
 
 ```powershell
 .\qa\ci\check-all.ps1
+```
+
+
+## Tests-only check
+
+Use this when you want the full non-example gate without running examples or browser package builds.
+
+Unix:
+
+```bash
+./qa/ci/check-tests.sh
+```
+
+PowerShell:
+
+```powershell
+.\qa\ci\check-tests.ps1
 ```
 
 ## Example checks

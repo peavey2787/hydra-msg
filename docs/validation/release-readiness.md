@@ -35,7 +35,7 @@ Accurate status wording:
 
 ## Static cleanup checks performed in this environment
 
-The assistant environment does not have Cargo/Rust installed, so P12 used static source checks only. P13 owns actual validation through `qa/ci/check-all.*` and `qa/ci/check-examples.*`.
+The assistant environment does not have Cargo/Rust installed, so P12 used static source checks only. P13 owns actual validation through `qa/ci/check-all.*`, with `qa/ci/check-tests.*` and `qa/ci/check-examples.*` available for isolated runs.
 
 Static checks performed:
 
@@ -48,4 +48,4 @@ Expected P12 result: no matches for removed out-of-scope naming/phase markers, n
 
 ## P13 handoff
 
-P13 is manual validation. The maintainer should run `qa/ci/check-all.ps1` plus `qa/ci/check-examples.ps1` on Windows, or `qa/ci/check-all.sh` plus `qa/ci/check-examples.sh` on Unix, then record exact commands and results.
+P13 is manual validation. The maintainer should run `qa/ci/check-all.ps1` on Windows or `qa/ci/check-all.sh` on Unix, then record exact commands and results. Use `qa/ci/check-tests.*` or `qa/ci/check-examples.*` separately only when isolating failures.
