@@ -2,8 +2,8 @@ use hydra_core::types::{Epoch, Secret32};
 
 use crate::{
     roster_hash, validate_governance_for_roster, validate_mode_mechanism, validate_roster_for_mode,
-    CommitKind, GroupError, GroupResult, GroupState, MemberStatus,
-    MembershipMechanism, StateVersion,
+    CommitKind, GroupError, GroupResult, GroupState, MemberStatus, MembershipMechanism,
+    StateVersion,
 };
 
 use super::{

@@ -1,7 +1,7 @@
 use crate::{
-    change_payload_hash, commit_hash, commit_sig_digest, encode_change_payload,
-    encode_commit_core, encode_governance_policy, governance_policy_hash, mode_policy_hash,
-    CommitCore, CommitKind, GroupResult, GroupState,
+    change_payload_hash, commit_hash, commit_sig_digest, encode_change_payload, encode_commit_core,
+    encode_governance_policy, governance_policy_hash, mode_policy_hash, CommitCore, CommitKind,
+    GroupResult, GroupState,
 };
 
 use super::{

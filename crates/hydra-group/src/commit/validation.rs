@@ -1,7 +1,7 @@
 use crate::{
     commit_hash, commit_sig_digest, encode_commit_core, encode_signature_set,
-    validate_governance_policy, validate_signature_set, CommitSignature,
-    GovernancePolicy, GroupError, GroupResult, GroupState, MemberId, MemberStatus, RosterEntry,
+    validate_governance_policy, validate_signature_set, CommitSignature, GovernancePolicy,
+    GroupError, GroupResult, GroupState, MemberId, MemberStatus, RosterEntry,
 };
 
 use super::types::{CommitChange, PreparedCommit};

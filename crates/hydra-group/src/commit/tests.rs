@@ -261,7 +261,8 @@ fn sibling_commit_marks_group_forked_and_wipes_private_material() {
 #[test]
 fn closed_or_forked_groups_reject_commit_installation() {
     let mut closed = lite_state();
-    let prepared_for_closed = prepare_commit(&closed, role_change_plan(GroupRole::Moderator)).unwrap();
+    let prepared_for_closed =
+        prepare_commit(&closed, role_change_plan(GroupRole::Moderator)).unwrap();
     closed.close();
     assert_eq!(
         install_prepared_commit(&mut closed, prepared_for_closed),
@@ -269,7 +270,8 @@ fn closed_or_forked_groups_reject_commit_installation() {
     );
 
     let mut forked = lite_state();
-    let prepared_for_forked = prepare_commit(&forked, role_change_plan(GroupRole::Moderator)).unwrap();
+    let prepared_for_forked =
+        prepare_commit(&forked, role_change_plan(GroupRole::Moderator)).unwrap();
     forked.mark_forked();
     assert_eq!(
         install_prepared_commit(&mut forked, prepared_for_forked),

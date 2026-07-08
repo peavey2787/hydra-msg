@@ -7,6 +7,9 @@ pub(super) fn active_sender_entries(mode: GroupMode, roster: &[RosterEntry]) -> 
         .collect()
 }
 
-pub(super) fn compute_roster_hash(mode: GroupMode, roster: &[RosterEntry]) -> GroupResult<[u8; 64]> {
+pub(super) fn compute_roster_hash(
+    mode: GroupMode,
+    roster: &[RosterEntry],
+) -> GroupResult<[u8; 64]> {
     roster_hash(&crate::encode_roster(mode, roster)?)
 }
