@@ -1037,16 +1037,13 @@ impl Hydra {
         let parsed = decode_handshake_offer(offer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
         let contact_id = ContactId(parsed.peer_id.0);
-        if !self.contacts.contains_key(&contact_id) {
-            let contact = HydraContact {
-                id: contact_id,
-                label: format!("contact-{}", contact_id.hex()),
-                public_key: parsed.public_key,
-                verified: false,
-                blocked: false,
-            };
-            self.contacts.insert(contact_id, contact);
-        }
+        self.contacts.entry(contact_id).or_insert_with(|| HydraContact {
+            id: contact_id,
+            label: format!("contact-{}", contact_id.hex()),
+            public_key: parsed.public_key,
+            verified: false,
+            blocked: false,
+        });
         let (secret, transcript_hash) =
             derive_facade_handshake_material(parsed.nonce, parsed.peer_id, active.id);
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
@@ -2493,7 +2490,7 @@ fn hex_encode(bytes: &[u8]) -> String {
 
 fn hex_decode(input: &str) -> HydraResult<Vec<u8>> {
     let input = input.trim();
-    if input.len() % 2 != 0 {
+    if !input.len().is_multiple_of(2) {
         return Err(HydraMsgError::InvalidEncoding("hex length"));
     }
     let mut out = Vec::with_capacity(input.len() / 2);
