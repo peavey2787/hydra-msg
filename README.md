@@ -149,12 +149,20 @@ Run runnable examples and browser package checks separately:
 .\qa\ci\check-examples.ps1
 ```
 
+Unix setup after ZIP extraction:
+
+```bash
+sh qa/ci/linux-permissions.sh
+```
+
 Unix equivalents:
 
 ```bash
-qa/ci/check-all.sh
-qa/ci/check-examples.sh
+./qa/ci/check-all.sh
+./qa/ci/check-examples.sh
 ```
+
+Do not run the Unix scripts with `sudo` unless Cargo/Rust is installed for root.
 
 The full validation script runs formatting, workspace tests, clippy, docs/static checks, and vector checks. The example script runs native examples, compiles browser hosts, and builds the WASM packages so normal validation does not wait on example flows.
 

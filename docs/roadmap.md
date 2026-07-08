@@ -425,5 +425,6 @@ Target sentence:
 
 - Kept full workspace validation in `qa/ci/check-all.ps1` and `qa/ci/check-all.sh`.
 - Added separate example validation scripts at `qa/ci/check-examples.ps1` and `qa/ci/check-examples.sh`.
+- Added `qa/ci/linux-permissions.sh` so Unix users can restore execute bits after ZIP extraction before running validation scripts.
 - Kept runnable examples separate from the full validation script so maintainers can test the SDK without waiting on browser/example flows.
 - P13 is still manual and not marked complete.
