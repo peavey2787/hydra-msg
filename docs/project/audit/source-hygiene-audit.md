@@ -29,21 +29,35 @@ Fix applied:
 
 ### 2. Facade file size and separation of concerns
 
-`crates/hydra-msg/src/lib.rs` had grown into a mixed file containing public facade types, public facade methods, persistence encoding, contact-card encoding, backup encoding, handshake encoding, payload packing, line escaping, and byte helpers.
+`crates/hydra-msg/src/lib.rs` and the former private `codec.rs` had grown into mixed files containing public facade types, high-level facade methods, persistence encoding, contact-card encoding, backup encoding, handshake encoding, payload packing, line escaping, byte helpers, lobby helpers, and benchmark behavior.
 
 Fix applied:
 
-- added `crates/hydra-msg/src/codec.rs`;
-- moved private encoding, decoding, persistence-line, contact-card, backup, handshake, payload, hex, byte-reader, and random-byte helpers into `codec.rs`;
-- kept the public developer surface and `Hydra` facade methods in `lib.rs`;
-- kept all moved helpers private to the crate module boundary;
+- kept the public developer API re-exported through `crates/hydra-msg/src/lib.rs`;
+- moved identity lifecycle code into `identity.rs`;
+- moved contact-card and contact-book code into `contacts.rs`;
+- moved handshake/session code into `handshake.rs`;
+- moved message and attachment code into `messages.rs`;
+- moved lobby invite/member/send code into `lobbies.rs`;
+- moved local state, backup, and persistence code into `storage.rs`;
+- moved benchmark behavior into `benchmark.rs`;
+- replaced the single large `codec.rs` with a private `codec/` module tree split by domain;
+- extended the source-size guardrail to scan both `crates/hydra-group/src` and `crates/hydra-msg/src`;
+- kept all moved helpers private to crate/module boundaries;
 - kept the public API unchanged.
 
 Result:
 
 ```text
-crates/hydra-msg/src/lib.rs    public facade and high-level behavior
-crates/hydra-msg/src/codec.rs  private wire/storage/payload helper code
+crates/hydra-msg/src/lib.rs       public facade surface and stable re-exports
+crates/hydra-msg/src/identity.rs  identity ids, records, import/export, active identity, and unlock flow
+crates/hydra-msg/src/contacts.rs  contact ids, contact cards, verification, blocking, and import/export
+crates/hydra-msg/src/handshake.rs handshake wrappers, session records, and opaque payload sealing/opening
+crates/hydra-msg/src/messages.rs  message ids, attachments, sent/received messages, and message store helpers
+crates/hydra-msg/src/lobbies.rs   lobby ids, policy, invites, members, and per-member sends
+crates/hydra-msg/src/storage.rs   open/load/persist, snapshots, backups, and storage status
+crates/hydra-msg/src/benchmark.rs facade benchmark report
+crates/hydra-msg/src/codec/       private wire/state/contact/message/lobby encoding helpers
 ```
 
 ### 3. Crate and example ownership
@@ -74,6 +88,6 @@ Still required:
 
 ## Audit conclusion
 
-This pass fixed the reported WASM dead-code warning and split the largest public facade source file by concern without changing the public developer API.
+This pass fixed the reported WASM dead-code warning, split the public facade source by concern, split the former monolithic codec helper by domain, and kept the public developer API unchanged.
 
 The codebase is cleaner and closer to the project rules, but it is not release-ready until the maintainer-run P13 validation gate passes and the external review gaps are addressed.

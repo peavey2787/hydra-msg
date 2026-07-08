@@ -5,7 +5,7 @@ set -eu
 hydra_enter_repo_root
 
 threshold=400
-scan_root="crates/hydra-group/src"
+scan_roots="crates/hydra-group/src crates/hydra-msg/src"
 allowlist="qa/ci/rust-size-allowlist.txt"
 
 if [ ! -f "$allowlist" ]; then
@@ -17,11 +17,13 @@ large_files=$(mktemp)
 allowed_paths=$(mktemp)
 trap 'rm -f "$large_files" "$allowed_paths"' EXIT
 
-find "$scan_root" -name '*.rs' -type f ! -path '*/target/*' | sort | while IFS= read -r file; do
-  lines=$(wc -l < "$file" | tr -d ' ')
-  if [ "$lines" -gt "$threshold" ]; then
-    printf '%s|%s\n' "$file" "$lines"
-  fi
+for scan_root in $scan_roots; do
+  find "$scan_root" -name '*.rs' -type f ! -path '*/target/*' | sort | while IFS= read -r file; do
+    lines=$(wc -l < "$file" | tr -d ' ')
+    if [ "$lines" -gt "$threshold" ]; then
+      printf '%s|%s\n' "$file" "$lines"
+    fi
+  done
 done > "$large_files"
 
 failure=0

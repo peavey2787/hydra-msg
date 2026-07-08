@@ -8,7 +8,7 @@ Set-Location $RepoRoot
 Write-Host "HYDRA-MSG repo root: $RepoRoot"
 
 $Threshold = 400
-$ScanRoot = "crates/hydra-group/src"
+$ScanRoots = @("crates/hydra-group/src", "crates/hydra-msg/src")
 $AllowList = "qa/ci/rust-size-allowlist.txt"
 
 if (!(Test-Path $AllowList)) {
@@ -28,15 +28,17 @@ function Get-LineCount {
 }
 
 $largeFiles = @{}
-Get-ChildItem $ScanRoot -Recurse -File -Filter *.rs |
-    Where-Object { $_.FullName -notmatch "[\\/]target[\\/]" } |
-    ForEach-Object {
-        $relative = Get-RelativeRepoPath $_.FullName
-        $lines = Get-LineCount $relative
-        if ($lines -gt $Threshold) {
-            $largeFiles[$relative] = $lines
+foreach ($ScanRoot in $ScanRoots) {
+    Get-ChildItem $ScanRoot -Recurse -File -Filter *.rs |
+        Where-Object { $_.FullName -notmatch "[\\/]target[\\/]" } |
+        ForEach-Object {
+            $relative = Get-RelativeRepoPath $_.FullName
+            $lines = Get-LineCount $relative
+            if ($lines -gt $Threshold) {
+                $largeFiles[$relative] = $lines
+            }
         }
-    }
+}
 
 $allowedPaths = @{}
 $failure = $false
