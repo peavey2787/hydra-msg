@@ -1037,13 +1037,15 @@ impl Hydra {
         let parsed = decode_handshake_offer(offer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
         let contact_id = ContactId(parsed.peer_id.0);
-        self.contacts.entry(contact_id).or_insert_with(|| HydraContact {
-            id: contact_id,
-            label: format!("contact-{}", contact_id.hex()),
-            public_key: parsed.public_key,
-            verified: false,
-            blocked: false,
-        });
+        self.contacts
+            .entry(contact_id)
+            .or_insert_with(|| HydraContact {
+                id: contact_id,
+                label: format!("contact-{}", contact_id.hex()),
+                public_key: parsed.public_key,
+                verified: false,
+                blocked: false,
+            });
         let (secret, transcript_hash) =
             derive_facade_handshake_material(parsed.nonce, parsed.peer_id, active.id);
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
