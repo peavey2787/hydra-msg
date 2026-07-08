@@ -14,7 +14,10 @@ fn main() -> HydraResult<()> {
     bob.set_active_id(bob_id, "bob-password")?;
 
     let alice_card = alice.create_contact_card()?;
-    println!("Alice contact card:\n{}", String::from_utf8_lossy(&alice_card));
+    println!(
+        "Alice contact card:\n{}",
+        String::from_utf8_lossy(&alice_card)
+    );
 
     let alice_contact = bob.add_contact(alice_card)?;
     let safety_code = alice_contact.safety_code();
@@ -22,7 +25,10 @@ fn main() -> HydraResult<()> {
 
     println!("Bob added Alice as contact {}", alice_contact.id().hex());
     println!("Safety code: {safety_code}");
-    println!("Verified: {}", bob.get_contact(alice_contact.id())?.verified());
+    println!(
+        "Verified: {}",
+        bob.get_contact(alice_contact.id())?.verified()
+    );
 
     let exported = bob.export_contacts()?;
     let mut restored = Hydra::open("target/examples/contact_card/restored")?;

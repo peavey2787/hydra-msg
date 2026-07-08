@@ -9,7 +9,8 @@
 
 use hydra_msg::{
     ContactId, HandshakeAnswer, HandshakeOffer, Hydra, HydraAttachment, HydraBenchmarkReport,
-    HydraEnvelope, HydraLobbyEnvelope, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId, MessageId, ReceivedHydraMessage,
+    HydraEnvelope, HydraLobbyEnvelope, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId,
+    MessageId, ReceivedHydraMessage,
 };
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -62,7 +63,11 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = importId)]
     pub fn import_id(&mut self, bytes: Vec<u8>, password: &str) -> Result<String, JsValue> {
-        Ok(self.inner.import_id(bytes, password).map_err(to_js_error)?.hex())
+        Ok(self
+            .inner
+            .import_id(bytes, password)
+            .map_err(to_js_error)?
+            .hex())
     }
 
     #[wasm_bindgen(js_name = exportId)]
@@ -146,7 +151,12 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = addContact)]
     pub fn add_contact(&mut self, contact_card: Vec<u8>) -> Result<String, JsValue> {
-        Ok(self.inner.add_contact(contact_card).map_err(to_js_error)?.id().hex())
+        Ok(self
+            .inner
+            .add_contact(contact_card)
+            .map_err(to_js_error)?
+            .id()
+            .hex())
     }
 
     #[wasm_bindgen(js_name = importContacts)]
@@ -170,7 +180,10 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = getContact)]
     pub fn get_contact(&self, contact_id_hex: &str) -> Result<String, JsValue> {
-        let contact = self.inner.get_contact(contact_id(contact_id_hex)?).map_err(to_js_error)?;
+        let contact = self
+            .inner
+            .get_contact(contact_id(contact_id_hex)?)
+            .map_err(to_js_error)?;
         Ok(format!(
             "{{\"id\":\"{}\",\"label\":\"{}\",\"verified\":{},\"blocked\":{},\"safetyCode\":\"{}\"}}",
             contact.id().hex(),
@@ -184,11 +197,19 @@ impl WasmHydra {
     #[wasm_bindgen(js_name = contactSafetyCode)]
     pub fn contact_safety_code(&self, contact_id_hex: &str) -> Result<String, JsValue> {
         let id = contact_id(contact_id_hex)?;
-        Ok(self.inner.get_contact(id).map_err(to_js_error)?.safety_code())
+        Ok(self
+            .inner
+            .get_contact(id)
+            .map_err(to_js_error)?
+            .safety_code())
     }
 
     #[wasm_bindgen(js_name = verifyContact)]
-    pub fn verify_contact(&mut self, contact_id_hex: &str, safety_code: &str) -> Result<(), JsValue> {
+    pub fn verify_contact(
+        &mut self,
+        contact_id_hex: &str,
+        safety_code: &str,
+    ) -> Result<(), JsValue> {
         self.inner
             .verify_contact(contact_id(contact_id_hex)?, safety_code)
             .map_err(to_js_error)
@@ -279,7 +300,11 @@ impl WasmHydra {
     }
 
     #[wasm_bindgen(js_name = send)]
-    pub fn send(&mut self, contact_id_hex: &str, message: &WasmHydraMessage) -> Result<Vec<u8>, JsValue> {
+    pub fn send(
+        &mut self,
+        contact_id_hex: &str,
+        message: &WasmHydraMessage,
+    ) -> Result<Vec<u8>, JsValue> {
         Ok(self
             .inner
             .send(contact_id(contact_id_hex)?, message.inner.clone())
@@ -371,12 +396,19 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = joinLobby)]
     pub fn join_lobby(&mut self, invite: Vec<u8>) -> Result<String, JsValue> {
-        Ok(self.inner.join_lobby(invite).map_err(to_js_error)?.id().hex())
+        Ok(self
+            .inner
+            .join_lobby(invite)
+            .map_err(to_js_error)?
+            .id()
+            .hex())
     }
 
     #[wasm_bindgen(js_name = leaveLobby)]
     pub fn leave_lobby(&mut self, lobby_id_hex: &str) -> Result<(), JsValue> {
-        self.inner.leave_lobby(lobby_id(lobby_id_hex)?).map_err(to_js_error)
+        self.inner
+            .leave_lobby(lobby_id(lobby_id_hex)?)
+            .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = listLobbies)]
@@ -390,7 +422,10 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = getLobby)]
     pub fn get_lobby(&self, lobby_id_hex: &str) -> Result<String, JsValue> {
-        let lobby = self.inner.get_lobby(lobby_id(lobby_id_hex)?).map_err(to_js_error)?;
+        let lobby = self
+            .inner
+            .get_lobby(lobby_id(lobby_id_hex)?)
+            .map_err(to_js_error)?;
         Ok(format!(
             "{{\"id\":\"{}\",\"label\":\"{}\",\"maxMembers\":{},\"memberCount\":{}}}",
             lobby.id().hex(),
@@ -412,21 +447,33 @@ impl WasmHydra {
     }
 
     #[wasm_bindgen(js_name = addLobbyMember)]
-    pub fn add_lobby_member(&mut self, lobby_id_hex: &str, contact_id_hex: &str) -> Result<(), JsValue> {
+    pub fn add_lobby_member(
+        &mut self,
+        lobby_id_hex: &str,
+        contact_id_hex: &str,
+    ) -> Result<(), JsValue> {
         self.inner
             .add_lobby_member(lobby_id(lobby_id_hex)?, contact_id(contact_id_hex)?)
             .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = removeLobbyMember)]
-    pub fn remove_lobby_member(&mut self, lobby_id_hex: &str, contact_id_hex: &str) -> Result<(), JsValue> {
+    pub fn remove_lobby_member(
+        &mut self,
+        lobby_id_hex: &str,
+        contact_id_hex: &str,
+    ) -> Result<(), JsValue> {
         self.inner
             .remove_lobby_member(lobby_id(lobby_id_hex)?, contact_id(contact_id_hex)?)
             .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = sendLobby)]
-    pub fn send_lobby(&mut self, lobby_id_hex: &str, message: &WasmHydraMessage) -> Result<Array, JsValue> {
+    pub fn send_lobby(
+        &mut self,
+        lobby_id_hex: &str,
+        message: &WasmHydraMessage,
+    ) -> Result<Array, JsValue> {
         Ok(self
             .inner
             .send_lobby(lobby_id(lobby_id_hex)?, message.inner.clone())
@@ -437,7 +484,10 @@ impl WasmHydra {
     }
 
     #[wasm_bindgen(js_name = receiveLobby)]
-    pub fn receive_lobby(&mut self, envelope: Vec<u8>) -> Result<WasmReceivedHydraMessage, JsValue> {
+    pub fn receive_lobby(
+        &mut self,
+        envelope: Vec<u8>,
+    ) -> Result<WasmReceivedHydraMessage, JsValue> {
         Ok(WasmReceivedHydraMessage {
             inner: self
                 .inner
@@ -448,12 +498,16 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = rekeyLobby)]
     pub fn rekey_lobby(&mut self, lobby_id_hex: &str) -> Result<(), JsValue> {
-        self.inner.rekey_lobby(lobby_id(lobby_id_hex)?).map_err(to_js_error)
+        self.inner
+            .rekey_lobby(lobby_id(lobby_id_hex)?)
+            .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = closeLobby)]
     pub fn close_lobby(&mut self, lobby_id_hex: &str) -> Result<(), JsValue> {
-        self.inner.close_lobby(lobby_id(lobby_id_hex)?).map_err(to_js_error)
+        self.inner
+            .close_lobby(lobby_id(lobby_id_hex)?)
+            .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = exportBackup)]
@@ -463,7 +517,9 @@ impl WasmHydra {
 
     #[wasm_bindgen(js_name = importBackup)]
     pub fn import_backup(&mut self, bytes: Vec<u8>, password: &str) -> Result<(), JsValue> {
-        self.inner.import_backup(bytes, password).map_err(to_js_error)
+        self.inner
+            .import_backup(bytes, password)
+            .map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = verifyBackup)]
@@ -510,8 +566,15 @@ impl WasmHydraMessage {
     }
 
     #[wasm_bindgen(js_name = attachBytes)]
-    pub fn attach_bytes(mut self, filename: &str, bytes: Vec<u8>) -> Result<WasmHydraMessage, JsValue> {
-        self.inner = self.inner.attach_bytes(filename, bytes).map_err(to_js_error)?;
+    pub fn attach_bytes(
+        mut self,
+        filename: &str,
+        bytes: Vec<u8>,
+    ) -> Result<WasmHydraMessage, JsValue> {
+        self.inner = self
+            .inner
+            .attach_bytes(filename, bytes)
+            .map_err(to_js_error)?;
         Ok(self)
     }
 

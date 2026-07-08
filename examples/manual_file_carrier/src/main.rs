@@ -29,10 +29,16 @@ fn main() -> HydraResult<()> {
 
     // Handshake bytes are opaque too. Files are only a manual carrier.
     let offer = alice.init_handshake(bob_contact.id())?;
-    fs::write(carrier.join("alice-to-bob.handshake-offer"), offer.as_bytes())?;
+    fs::write(
+        carrier.join("alice-to-bob.handshake-offer"),
+        offer.as_bytes(),
+    )?;
 
     let answer = bob.reply_handshake(fs::read(carrier.join("alice-to-bob.handshake-offer"))?)?;
-    fs::write(carrier.join("bob-to-alice.handshake-answer"), answer.as_bytes())?;
+    fs::write(
+        carrier.join("bob-to-alice.handshake-answer"),
+        answer.as_bytes(),
+    )?;
 
     alice.finish_handshake(fs::read(carrier.join("bob-to-alice.handshake-answer"))?)?;
 

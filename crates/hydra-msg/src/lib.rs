@@ -1557,7 +1557,7 @@ impl Hydra {
             if line.trim().is_empty() {
                 continue;
             }
-            let mut parts = line.split('	');
+            let mut parts = line.split('\t');
             match parts.next() {
                 Some("next_message_id") => {
                     if let Some(value) = parts.next() {
@@ -1843,7 +1843,7 @@ fn encode_identity_line(record: &IdentityRecord) -> String {
 }
 
 fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
-    let parts = line.split('	').collect::<Vec<_>>();
+    let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() != 7 || parts[0] != "identity" {
         return Err(HydraMsgError::InvalidEncoding("identity state record"));
     }
@@ -1880,7 +1880,7 @@ fn encode_contact_line(contact: &HydraContact) -> String {
 }
 
 fn decode_contact_line(line: &str) -> HydraResult<HydraContact> {
-    let parts = line.split('	').collect::<Vec<_>>();
+    let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() != 6 || parts[0] != "contact" {
         return Err(HydraMsgError::InvalidEncoding("contact state record"));
     }
@@ -1923,7 +1923,7 @@ fn encode_message_line(message: &StoredMessage) -> String {
 }
 
 fn decode_message_line(line: &str) -> HydraResult<StoredMessage> {
-    let parts = line.split('	').collect::<Vec<_>>();
+    let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() < 6 || parts[0] != "message" {
         return Err(HydraMsgError::InvalidEncoding("message state record"));
     }
@@ -2004,7 +2004,7 @@ fn encode_lobby_line(lobby: &HydraLobby) -> String {
 }
 
 fn decode_lobby_line(line: &str) -> HydraResult<HydraLobby> {
-    let parts = line.split('	').collect::<Vec<_>>();
+    let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() != 5 || parts[0] != "lobby" {
         return Err(HydraMsgError::InvalidEncoding("lobby state record"));
     }

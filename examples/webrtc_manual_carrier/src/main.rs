@@ -32,7 +32,11 @@ fn main() -> HydraResult<()> {
         let (status, content_type, body) = if let Some(pkg_path) = path.strip_prefix("/pkg/") {
             serve_pkg_file(pkg_path)
         } else {
-            ("200 OK", "text/html; charset=utf-8", index_html().as_bytes().to_vec())
+            (
+                "200 OK",
+                "text/html; charset=utf-8",
+                index_html().as_bytes().to_vec(),
+            )
         };
 
         let response_head = format!(
@@ -48,7 +52,11 @@ fn main() -> HydraResult<()> {
 
 fn serve_pkg_file(pkg_path: &str) -> (&'static str, &'static str, Vec<u8>) {
     if pkg_path.contains("..") || pkg_path.contains('/') || pkg_path.contains('\\') {
-        return ("400 Bad Request", "text/plain; charset=utf-8", b"bad pkg path".to_vec());
+        return (
+            "400 Bad Request",
+            "text/plain; charset=utf-8",
+            b"bad pkg path".to_vec(),
+        );
     }
 
     let path = Path::new("examples/webrtc_manual_carrier/web/pkg").join(pkg_path);

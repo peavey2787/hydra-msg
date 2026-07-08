@@ -32,7 +32,11 @@ fn main() -> HydraResult<()> {
         } else if let Some(pkg_path) = path.strip_prefix("/pkg/") {
             serve_pkg_file(pkg_path)
         } else {
-            ("200 OK", "text/html; charset=utf-8", index_html().into_bytes())
+            (
+                "200 OK",
+                "text/html; charset=utf-8",
+                index_html().into_bytes(),
+            )
         };
 
         let response_head = format!(
@@ -51,16 +55,17 @@ fn benchmark_json() -> HydraResult<String> {
     let report = hydra.benchmark()?;
     Ok(format!(
         "{{\"suite\":\"{}\",\"iterations\":{},\"handshakeAvgMs\":{},\"sendReceiveAvgMs\":{}}}",
-        report.suite,
-        report.iterations,
-        report.handshake_avg_ms,
-        report.send_receive_avg_ms
+        report.suite, report.iterations, report.handshake_avg_ms, report.send_receive_avg_ms
     ))
 }
 
 fn serve_pkg_file(pkg_path: &str) -> (&'static str, &'static str, Vec<u8>) {
     if pkg_path.contains("..") || pkg_path.contains('/') || pkg_path.contains('\\') {
-        return ("400 Bad Request", "text/plain; charset=utf-8", b"bad pkg path".to_vec());
+        return (
+            "400 Bad Request",
+            "text/plain; charset=utf-8",
+            b"bad pkg path".to_vec(),
+        );
     }
     let path = Path::new("examples/mobile_perf_web/web/pkg").join(pkg_path);
     match fs::read(&path) {

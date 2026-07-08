@@ -29,6 +29,10 @@ fn main() -> HydraResult<()> {
     let envelope = alice.send(bob_contact.id(), HydraMessage::text("hello from Alice"))?;
     let received = bob.receive(envelope)?;
 
-    println!("Bob received from {}: {}", received.from().hex(), received.text()?);
+    println!(
+        "Bob received from {}: {}",
+        received.from().hex(),
+        received.text()?
+    );
     Ok(())
 }
