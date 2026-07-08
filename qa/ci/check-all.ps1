@@ -71,6 +71,63 @@ function Assert-PathExists {
     }
 }
 
+
+function Get-LockPairs {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $pairs = New-Object System.Collections.Generic.List[string]
+    $name = $null
+    $version = $null
+    foreach ($line in Get-Content $Path) {
+        if ($line -eq "[[package]]") {
+            if ($name -and $version) {
+                $pairs.Add("$name $version")
+            }
+            $name = $null
+            $version = $null
+            continue
+        }
+        if ($line -match '^name = "(.+)"$') {
+            $name = $Matches[1]
+            continue
+        }
+        if ($line -match '^version = "(.+)"$') {
+            $version = $Matches[1]
+            continue
+        }
+    }
+    if ($name -and $version) {
+        $pairs.Add("$name $version")
+    }
+    $pairs | Sort-Object -Unique
+}
+
+function Invoke-LockGate {
+    Write-Host ""
+    Write-Host "==> lock-file checks" -ForegroundColor Cyan
+    $rootPairs = @(Get-LockPairs "Cargo.lock")
+    $rootSet = @{}
+    foreach ($pair in $rootPairs) {
+        $rootSet[$pair] = $true
+    }
+
+    $missing = @()
+    foreach ($pair in @(Get-LockPairs "qa/tools/vector-gen/Cargo.lock")) {
+        if ($pair -eq "hydra-vector-gen 0.1.0") {
+            continue
+        }
+        if (!$rootSet.ContainsKey($pair)) {
+            $missing += $pair
+        }
+    }
+
+    if ($missing.Count -gt 0) {
+        $missing | ForEach-Object { Write-Host "  $_" }
+        throw "vector tool lock contains package versions not present in the main workspace lock"
+    }
+    Write-Host "lock-file checks passed." -ForegroundColor Green
+}
+
 function Invoke-DocsGate {
     Write-Host ""
     Write-Host "==> docs/path/stale-term checks" -ForegroundColor Cyan
@@ -112,6 +169,7 @@ Invoke-Step "cargo clippy --workspace --all-targets -- -D warnings" {
     cargo clippy --workspace --all-targets -- -D warnings
 }
 Invoke-DocsGate
+Invoke-LockGate
 
 if (!$SkipVectors) {
     Invoke-Step "qa vector checks" {

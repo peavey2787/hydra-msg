@@ -166,6 +166,9 @@ Do not run the Unix scripts with `sudo` unless Cargo/Rust is installed for root.
 
 The full validation script runs formatting, workspace tests, clippy, docs/static checks, and vector checks. The example script runs native examples, compiles browser hosts, and builds the WASM packages so normal validation does not wait on example flows.
 
+Offline note: the full gate includes vector checks. Those run with Cargo offline mode. The vector-tool lock file is aligned with the main workspace lock so a normal workspace build primes the local Cargo cache for vector validation.
+
+
 ## Developer CLI
 
 The new CLI is `hydra-msg-cli`, a thin utility over the public facade:

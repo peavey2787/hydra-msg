@@ -17,6 +17,7 @@ check-examples.ps1 # Windows PowerShell runnable example/browser package gate
 check-examples.sh  # Unix shell runnable example/browser package gate
 check-rust.sh      # workspace fmt/test/clippy gate
 check-docs.sh      # docs/path/stale-term/source-marker gate
+check-locks.sh     # lock-file alignment checks for offline validation
 check-vectors.sh   # vector generator + candidate manifest verification
 ```
 
@@ -90,5 +91,7 @@ The printed root should match the directory where the ZIP was extracted.
 Script existence is not evidence that validation passed. Passing evidence is the
 successful output from running the relevant script on the active repo state.
 
+
+Offline note: vector checks use the isolated vector-tool lock file with `--offline`. `check-locks.sh` verifies every vector-tool package version is already present in the main workspace lock, so a normal workspace build primes the local Cargo cache for vector validation.
 
 Vector formatting: `check-vectors.sh` formats by default. Use `check-vectors.sh --check-format` for strict format-check mode. PowerShell strict format mode is `check-all.ps1 -CheckFormatOnly`. Example scripts require `wasm-pack` for browser package checks unless you pass `-SkipWasm` or `--skip-wasm`.
