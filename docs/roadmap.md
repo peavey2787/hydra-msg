@@ -10,7 +10,7 @@
 
 This roadmap replaces the prior active roadmap. The current goal is a focused SRP cleanup of the largest `hydra-group` files before calling the codebase production-ready or enterprise-grade.
 
-Current target files:
+Baseline target files:
 
 ```text
 crates/hydra-group/src/commit.rs      1123 lines
@@ -18,7 +18,7 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-The work below is planning only until implementation is explicitly started.
+Implementation has started and currently covers P0 and P1 only. P2 through P5 are not started.
 
 ## Rules and guidelines
 
@@ -227,12 +227,12 @@ This roadmap succeeds when:
 
 ### 2026-07-08 — P0 baseline and guardrails complete
 
-Status: P0 complete; P1 not started.
+Status: P0 complete.
 
 - Replaced the prior active roadmap with this `hydra-group` SRP size roadmap.
 - Kept rules/guidelines at the top, phases/steps in the middle, and progress report below.
 - Recorded the baseline map in [`docs/project/audit/hydra-group-srp-baseline.md`](project/audit/hydra-group-srp-baseline.md).
-- Confirmed current target file sizes:
+- Confirmed baseline target file sizes:
 
 ```text
 crates/hydra-group/src/commit.rs      1123 lines
@@ -245,6 +245,46 @@ crates/hydra-group/src/canonical.rs    858 lines
 - Mapped existing local unit tests to target modules where ownership is clear.
 - Defined the practical size target: most new Rust files under 400 lines, with documented exceptions only when a cohesive concern must be larger.
 - No source modules were moved in P0.
-- Production-ready status: no. P1 through P5, full validation, security review, and final vector/interoperability confirmation remain.
-- Enterprise-grade status: no. The largest group files still need the planned ownership split and review.
+
+### 2026-07-08 — P1 canonical encoding split complete
+
+Status: P1 complete; P2 not started.
+
+- Replaced `crates/hydra-group/src/canonical.rs` with a focused `crates/hydra-group/src/canonical/` module folder.
+- Kept `canonical/mod.rs` as the stable public module surface.
+- Preserved the existing `crate::canonical::*` and `hydra_group::*` export surface through re-exports.
+- Split canonical ownership by encoding family:
+
+```text
+crates/hydra-group/src/canonical/mod.rs
+crates/hydra-group/src/canonical/primitives.rs
+crates/hydra-group/src/canonical/roster.rs
+crates/hydra-group/src/canonical/governance.rs
+crates/hydra-group/src/canonical/signatures.rs
+crates/hydra-group/src/canonical/changes.rs
+crates/hydra-group/src/canonical/commit_core.rs
+crates/hydra-group/src/canonical/hashes.rs
+crates/hydra-group/src/canonical/test_support.rs
+```
+
+- Moved tests with their owning canonical concern.
+- Current canonical split line counts:
+
+```text
+crates/hydra-group/src/canonical/changes.rs       220 lines
+crates/hydra-group/src/canonical/commit_core.rs   107 lines
+crates/hydra-group/src/canonical/governance.rs     96 lines
+crates/hydra-group/src/canonical/hashes.rs        187 lines
+crates/hydra-group/src/canonical/mod.rs            26 lines
+crates/hydra-group/src/canonical/primitives.rs     63 lines
+crates/hydra-group/src/canonical/roster.rs        125 lines
+crates/hydra-group/src/canonical/signatures.rs     87 lines
+crates/hydra-group/src/canonical/test_support.rs   62 lines
+```
+
+- All P1 files are under the 400-line target.
+- No public behavior change was intended in P1.
+- Cargo validation was not run in this environment; P5 remains the full validation gate after P2 through P4.
+- Production-ready status: no. P2 through P5, full validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: no. The `state.rs` and `commit.rs` ownership splits remain.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
