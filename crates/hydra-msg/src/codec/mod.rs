@@ -6,10 +6,10 @@ mod messages;
 mod storage;
 mod util;
 
-pub(super) use contacts::*;
-pub(super) use handshake::*;
-pub(super) use identity::*;
-pub(super) use lobbies::*;
-pub(super) use messages::*;
-pub(super) use storage::*;
-pub(super) use util::*;
+pub(crate) use contacts::*;
+pub(crate) use handshake::*;
+pub(crate) use identity::*;
+pub(crate) use lobbies::*;
+pub(crate) use messages::*;
+pub(crate) use storage::*;
+pub(crate) use util::*;

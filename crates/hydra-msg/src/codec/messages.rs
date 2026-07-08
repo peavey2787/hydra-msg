@@ -4,7 +4,7 @@ use crate::{
     LobbyId, MessageId, ReceivedHydraMessage, StoredMessage, PAYLOAD_MAGIC,
 };
 
-pub(super) fn encode_message_line(message: &StoredMessage) -> String {
+pub(crate) fn encode_message_line(message: &StoredMessage) -> String {
     let mut parts = vec![
         "message".to_string(),
         message.id.0.to_string(),
@@ -25,7 +25,7 @@ pub(super) fn encode_message_line(message: &StoredMessage) -> String {
     parts.join("	")
 }
 
-pub(super) fn decode_message_line(line: &str) -> HydraResult<StoredMessage> {
+pub(crate) fn decode_message_line(line: &str) -> HydraResult<StoredMessage> {
     let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() < 6 || parts[0] != "message" {
         return Err(HydraMsgError::InvalidEncoding("message state record"));
@@ -75,7 +75,7 @@ pub(super) fn decode_message_line(line: &str) -> HydraResult<StoredMessage> {
     })
 }
 
-pub(super) fn pack_message(message: &HydraMessage) -> HydraResult<Vec<u8>> {
+pub(crate) fn pack_message(message: &HydraMessage) -> HydraResult<Vec<u8>> {
     let mut out = Vec::new();
     out.extend_from_slice(PAYLOAD_MAGIC);
     write_u64(&mut out, message.plaintext.len() as u64);
@@ -95,7 +95,7 @@ pub(super) fn pack_message(message: &HydraMessage) -> HydraResult<Vec<u8>> {
     Ok(out)
 }
 
-pub(super) fn unpack_message(
+pub(crate) fn unpack_message(
     bytes: &[u8],
     from: ContactId,
     message_id: MessageId,

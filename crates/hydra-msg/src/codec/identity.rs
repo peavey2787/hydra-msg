@@ -2,7 +2,7 @@ use super::{exact_array_from_vec, hex_decode, hex_encode, random_array};
 use crate::{HydraMsgError, HydraResult, IdentityId, IdentityRecord, ID_EXPORT_MAGIC};
 use hydra_crypto::{CryptoBackend, MlDsaKeyPair, RustCryptoBackend, SecretBytes};
 
-pub(super) fn identity_record_from_seed(
+pub(crate) fn identity_record_from_seed(
     label: String,
     seed: [u8; 32],
     password: &str,
@@ -25,7 +25,7 @@ pub(super) fn identity_record_from_seed(
     })
 }
 
-pub(super) fn seed_key(id: IdentityId, password: &str) -> SecretBytes<32> {
+pub(crate) fn seed_key(id: IdentityId, password: &str) -> SecretBytes<32> {
     let mut input = Vec::new();
     input.extend_from_slice(b"HYDRA-MSG/v1/facade/identity-seed-key");
     input.extend_from_slice(&id.0);
@@ -33,7 +33,7 @@ pub(super) fn seed_key(id: IdentityId, password: &str) -> SecretBytes<32> {
     RustCryptoBackend::hkdf_extract(b"HYDRA-MSG/v1/facade/identity-seed", &input)
 }
 
-pub(super) fn encrypt_seed(
+pub(crate) fn encrypt_seed(
     id: IdentityId,
     seed: &[u8; 32],
     password: &str,
@@ -44,7 +44,7 @@ pub(super) fn encrypt_seed(
         .map_err(Into::into)
 }
 
-pub(super) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResult<[u8; 32]> {
+pub(crate) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResult<[u8; 32]> {
     verify_password(record, password)?;
     let key = seed_key(record.id, password);
     let plaintext = RustCryptoBackend::aead_open(
@@ -56,7 +56,7 @@ pub(super) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResu
     exact_array_from_vec((*plaintext).clone())
 }
 
-pub(super) fn verify_password(record: &IdentityRecord, password: &str) -> HydraResult<()> {
+pub(crate) fn verify_password(record: &IdentityRecord, password: &str) -> HydraResult<()> {
     if record.password_tag == password_tag(password) {
         Ok(())
     } else {
@@ -64,14 +64,14 @@ pub(super) fn verify_password(record: &IdentityRecord, password: &str) -> HydraR
     }
 }
 
-pub(super) fn password_tag(password: &str) -> [u8; 32] {
+pub(crate) fn password_tag(password: &str) -> [u8; 32] {
     let mut input = Vec::new();
     input.extend_from_slice(b"HYDRA-MSG/v1/facade/password-tag");
     input.extend_from_slice(password.as_bytes());
     RustCryptoBackend::sha3_256(&input)
 }
 
-pub(super) fn encode_identity_line(record: &IdentityRecord) -> String {
+pub(crate) fn encode_identity_line(record: &IdentityRecord) -> String {
     [
         "identity".to_string(),
         record.id.hex(),
@@ -84,7 +84,7 @@ pub(super) fn encode_identity_line(record: &IdentityRecord) -> String {
     .join("	")
 }
 
-pub(super) fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
+pub(crate) fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
     let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() != 7 || parts[0] != "identity" {
         return Err(HydraMsgError::InvalidEncoding("identity state record"));
@@ -111,7 +111,7 @@ pub(super) fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
     })
 }
 
-pub(super) fn encode_identity_export(seed: &[u8; 32]) -> Vec<u8> {
+pub(crate) fn encode_identity_export(seed: &[u8; 32]) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(ID_EXPORT_MAGIC);
     out.extend_from_slice(&hex_encode(seed).into_bytes());
@@ -119,7 +119,7 @@ pub(super) fn encode_identity_export(seed: &[u8; 32]) -> Vec<u8> {
     out
 }
 
-pub(super) fn decode_identity_export(bytes: &[u8]) -> HydraResult<[u8; 32]> {
+pub(crate) fn decode_identity_export(bytes: &[u8]) -> HydraResult<[u8; 32]> {
     if !bytes.starts_with(ID_EXPORT_MAGIC) {
         return Err(HydraMsgError::InvalidEncoding("identity export magic"));
     }

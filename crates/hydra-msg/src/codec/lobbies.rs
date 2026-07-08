@@ -6,7 +6,7 @@ use crate::{
 use hydra_core::HASH_SIZE;
 use hydra_group::GroupMode;
 
-pub(super) fn validate_lobby_policy(policy: &HydraLobbyPolicy) -> HydraResult<()> {
+pub(crate) fn validate_lobby_policy(policy: &HydraLobbyPolicy) -> HydraResult<()> {
     if policy.label.trim().is_empty() {
         return Err(HydraMsgError::InvalidInput("lobby label is empty"));
     }
@@ -23,7 +23,7 @@ pub(super) fn validate_lobby_policy(policy: &HydraLobbyPolicy) -> HydraResult<()
     Ok(())
 }
 
-pub(super) fn encode_lobby_line(lobby: &HydraLobby) -> String {
+pub(crate) fn encode_lobby_line(lobby: &HydraLobby) -> String {
     let members = lobby
         .members
         .iter()
@@ -40,7 +40,7 @@ pub(super) fn encode_lobby_line(lobby: &HydraLobby) -> String {
     .join("	")
 }
 
-pub(super) fn decode_lobby_line(line: &str) -> HydraResult<HydraLobby> {
+pub(crate) fn decode_lobby_line(line: &str) -> HydraResult<HydraLobby> {
     let parts = line.split('\t').collect::<Vec<_>>();
     if parts.len() != 5 || parts[0] != "lobby" {
         return Err(HydraMsgError::InvalidEncoding("lobby state record"));
@@ -66,7 +66,7 @@ pub(super) fn decode_lobby_line(line: &str) -> HydraResult<HydraLobby> {
     })
 }
 
-pub(super) fn encode_lobby_invite(lobby: &HydraLobby, members: &[ContactId]) -> Vec<u8> {
+pub(crate) fn encode_lobby_invite(lobby: &HydraLobby, members: &[ContactId]) -> Vec<u8> {
     let mut out = Vec::new();
     out.extend_from_slice(LOBBY_INVITE_MAGIC.as_bytes());
     out.push(b'\n');
@@ -89,7 +89,7 @@ pub(super) fn encode_lobby_invite(lobby: &HydraLobby, members: &[ContactId]) -> 
     out
 }
 
-pub(super) fn decode_lobby_invite(bytes: &[u8]) -> HydraResult<HydraLobby> {
+pub(crate) fn decode_lobby_invite(bytes: &[u8]) -> HydraResult<HydraLobby> {
     let text = std::str::from_utf8(bytes)
         .map_err(|_| HydraMsgError::InvalidEncoding("lobby invite is not utf-8"))?;
     let mut lines = text.lines();
@@ -149,7 +149,7 @@ pub(super) fn decode_lobby_invite(bytes: &[u8]) -> HydraResult<HydraLobby> {
     Err(HydraMsgError::InvalidEncoding("lobby invite id"))
 }
 
-pub(super) fn pack_lobby_payload(lobby_id: LobbyId, packed_message: &[u8]) -> HydraResult<Vec<u8>> {
+pub(crate) fn pack_lobby_payload(lobby_id: LobbyId, packed_message: &[u8]) -> HydraResult<Vec<u8>> {
     let mut out = Vec::new();
     out.extend_from_slice(LOBBY_PAYLOAD_MAGIC);
     out.extend_from_slice(&lobby_id.0);
@@ -158,7 +158,7 @@ pub(super) fn pack_lobby_payload(lobby_id: LobbyId, packed_message: &[u8]) -> Hy
     Ok(out)
 }
 
-pub(super) fn unpack_lobby_payload(bytes: &[u8]) -> HydraResult<(LobbyId, Vec<u8>)> {
+pub(crate) fn unpack_lobby_payload(bytes: &[u8]) -> HydraResult<(LobbyId, Vec<u8>)> {
     let mut reader = BytesReader::new(bytes);
     reader.expect(LOBBY_PAYLOAD_MAGIC)?;
     let lobby_id = LobbyId(exact_array_from_vec(reader.read(HASH_SIZE)?.to_vec())?);

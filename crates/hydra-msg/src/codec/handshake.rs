@@ -4,13 +4,13 @@ use hydra_core::{ML_DSA_65_VK_SIZE, TRANSCRIPT_HASH_SIZE};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 
 #[derive(Clone, Copy)]
-pub(super) struct ParsedHandshake {
-    pub(super) peer_id: IdentityId,
-    pub(super) public_key: [u8; ML_DSA_65_VK_SIZE],
-    pub(super) nonce: [u8; 32],
+pub(crate) struct ParsedHandshake {
+    pub(crate) peer_id: IdentityId,
+    pub(crate) public_key: [u8; ML_DSA_65_VK_SIZE],
+    pub(crate) nonce: [u8; 32],
 }
 
-pub(super) fn encode_handshake_offer(
+pub(crate) fn encode_handshake_offer(
     id: IdentityId,
     public_key: &[u8; ML_DSA_65_VK_SIZE],
     nonce: [u8; 32],
@@ -18,7 +18,7 @@ pub(super) fn encode_handshake_offer(
     encode_handshake(OFFER_MAGIC, id, public_key, nonce)
 }
 
-pub(super) fn encode_handshake_answer(
+pub(crate) fn encode_handshake_answer(
     id: IdentityId,
     public_key: &[u8; ML_DSA_65_VK_SIZE],
     nonce: [u8; 32],
@@ -26,7 +26,7 @@ pub(super) fn encode_handshake_answer(
     encode_handshake(ANSWER_MAGIC, id, public_key, nonce)
 }
 
-pub(super) fn encode_handshake(
+pub(crate) fn encode_handshake(
     magic: &[u8],
     id: IdentityId,
     public_key: &[u8; ML_DSA_65_VK_SIZE],
@@ -44,15 +44,15 @@ pub(super) fn encode_handshake(
     out
 }
 
-pub(super) fn decode_handshake_offer(bytes: &[u8]) -> HydraResult<ParsedHandshake> {
+pub(crate) fn decode_handshake_offer(bytes: &[u8]) -> HydraResult<ParsedHandshake> {
     decode_handshake(bytes, OFFER_MAGIC)
 }
 
-pub(super) fn decode_handshake_answer(bytes: &[u8]) -> HydraResult<ParsedHandshake> {
+pub(crate) fn decode_handshake_answer(bytes: &[u8]) -> HydraResult<ParsedHandshake> {
     decode_handshake(bytes, ANSWER_MAGIC)
 }
 
-pub(super) fn decode_handshake(bytes: &[u8], magic: &[u8]) -> HydraResult<ParsedHandshake> {
+pub(crate) fn decode_handshake(bytes: &[u8], magic: &[u8]) -> HydraResult<ParsedHandshake> {
     if !bytes.starts_with(magic) {
         return Err(HydraMsgError::InvalidEncoding("handshake magic"));
     }
@@ -85,7 +85,7 @@ pub(super) fn decode_handshake(bytes: &[u8], magic: &[u8]) -> HydraResult<Parsed
     })
 }
 
-pub(super) fn derive_facade_handshake_material(
+pub(crate) fn derive_facade_handshake_material(
     nonce: [u8; 32],
     left: IdentityId,
     right: IdentityId,

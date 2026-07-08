@@ -2,17 +2,17 @@ use crate::{HydraMsgError, HydraResult};
 use getrandom::SysRng;
 use rand_core::TryRng;
 
-pub(super) struct BytesReader<'a> {
+pub(crate) struct BytesReader<'a> {
     bytes: &'a [u8],
     offset: usize,
 }
 
 impl<'a> BytesReader<'a> {
-    pub(super) const fn new(bytes: &'a [u8]) -> Self {
+    pub(crate) const fn new(bytes: &'a [u8]) -> Self {
         Self { bytes, offset: 0 }
     }
 
-    pub(super) fn expect(&mut self, expected: &[u8]) -> HydraResult<()> {
+    pub(crate) fn expect(&mut self, expected: &[u8]) -> HydraResult<()> {
         let got = self.read(expected.len())?;
         if got == expected {
             Ok(())
@@ -21,7 +21,7 @@ impl<'a> BytesReader<'a> {
         }
     }
 
-    pub(super) fn read(&mut self, len: usize) -> HydraResult<&'a [u8]> {
+    pub(crate) fn read(&mut self, len: usize) -> HydraResult<&'a [u8]> {
         let end = self
             .offset
             .checked_add(len)
@@ -34,39 +34,39 @@ impl<'a> BytesReader<'a> {
         Ok(out)
     }
 
-    pub(super) fn read_vec(&mut self, len: usize) -> HydraResult<Vec<u8>> {
+    pub(crate) fn read_vec(&mut self, len: usize) -> HydraResult<Vec<u8>> {
         Ok(self.read(len)?.to_vec())
     }
 
-    pub(super) fn read_u8(&mut self) -> HydraResult<u8> {
+    pub(crate) fn read_u8(&mut self) -> HydraResult<u8> {
         Ok(*self
             .read(1)?
             .first()
             .ok_or(HydraMsgError::InvalidEncoding("u8"))?)
     }
 
-    pub(super) fn read_u32(&mut self) -> HydraResult<u32> {
+    pub(crate) fn read_u32(&mut self) -> HydraResult<u32> {
         Ok(u32::from_be_bytes(exact_array_from_vec(
             self.read(4)?.to_vec(),
         )?))
     }
 
-    pub(super) fn read_u64(&mut self) -> HydraResult<u64> {
+    pub(crate) fn read_u64(&mut self) -> HydraResult<u64> {
         Ok(u64::from_be_bytes(exact_array_from_vec(
             self.read(8)?.to_vec(),
         )?))
     }
 }
 
-pub(super) fn write_u32(out: &mut Vec<u8>, value: u32) {
+pub(crate) fn write_u32(out: &mut Vec<u8>, value: u32) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
-pub(super) fn write_u64(out: &mut Vec<u8>, value: u64) {
+pub(crate) fn write_u64(out: &mut Vec<u8>, value: u64) {
     out.extend_from_slice(&value.to_be_bytes());
 }
 
-pub(super) fn random_array<const N: usize>() -> HydraResult<[u8; N]> {
+pub(crate) fn random_array<const N: usize>() -> HydraResult<[u8; N]> {
     let mut out = [0_u8; N];
     SysRng
         .try_fill_bytes(&mut out)
@@ -74,13 +74,13 @@ pub(super) fn random_array<const N: usize>() -> HydraResult<[u8; N]> {
     Ok(out)
 }
 
-pub(super) fn exact_array_from_vec<const N: usize>(bytes: Vec<u8>) -> HydraResult<[u8; N]> {
+pub(crate) fn exact_array_from_vec<const N: usize>(bytes: Vec<u8>) -> HydraResult<[u8; N]> {
     bytes
         .try_into()
         .map_err(|_| HydraMsgError::InvalidEncoding("array length"))
 }
 
-pub(super) fn hex_encode(bytes: &[u8]) -> String {
+pub(crate) fn hex_encode(bytes: &[u8]) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut out = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
@@ -90,7 +90,7 @@ pub(super) fn hex_encode(bytes: &[u8]) -> String {
     out
 }
 
-pub(super) fn hex_decode(input: &str) -> HydraResult<Vec<u8>> {
+pub(crate) fn hex_decode(input: &str) -> HydraResult<Vec<u8>> {
     let input = input.trim();
     if !input.len().is_multiple_of(2) {
         return Err(HydraMsgError::InvalidEncoding("hex length"));
@@ -107,7 +107,7 @@ pub(super) fn hex_decode(input: &str) -> HydraResult<Vec<u8>> {
     Ok(out)
 }
 
-pub(super) fn hex_nibble(byte: u8) -> HydraResult<u8> {
+pub(crate) fn hex_nibble(byte: u8) -> HydraResult<u8> {
     match byte {
         b'0'..=b'9' => Ok(byte - b'0'),
         b'a'..=b'f' => Ok(byte - b'a' + 10),
@@ -116,14 +116,14 @@ pub(super) fn hex_nibble(byte: u8) -> HydraResult<u8> {
     }
 }
 
-pub(super) fn escape_line(input: &str) -> String {
+pub(crate) fn escape_line(input: &str) -> String {
     input
         .replace('%', "%25")
         .replace('\n', "%0a")
         .replace('\r', "%0d")
 }
 
-pub(super) fn unescape_line(input: &str) -> String {
+pub(crate) fn unescape_line(input: &str) -> String {
     input
         .replace("%0d", "\r")
         .replace("%0a", "\n")
