@@ -8,4 +8,5 @@ qa/ci/check-rust.sh
 qa/ci/check-docs.sh
 qa/ci/check-vectors.sh
 
-echo "HYDRA-MSG production QA gate passed"
+echo "HYDRA-MSG full validation passed"
+echo "Run qa/ci/check-examples.sh separately for runnable examples and browser package checks."

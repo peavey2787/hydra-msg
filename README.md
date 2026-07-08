@@ -134,6 +134,30 @@ Older low-end tablet, browser WASM, 1 KiB payload:
 
 See `docs/project/benchmark-results.md` for the full table and caveats. These are user-reported real-world results, not the final P13 validation record.
 
+
+## Validation scripts
+
+Run the full workspace validation from the repo root:
+
+```powershell
+.\qa\ci\check-all.ps1
+```
+
+Run runnable examples and browser package checks separately:
+
+```powershell
+.\qa\ci\check-examples.ps1
+```
+
+Unix equivalents:
+
+```bash
+qa/ci/check-all.sh
+qa/ci/check-examples.sh
+```
+
+The full validation script runs formatting, workspace tests, clippy, docs/static checks, and vector checks. The example script runs native examples, compiles browser hosts, and builds the WASM packages so normal validation does not wait on example flows.
+
 ## Developer CLI
 
 The new CLI is `hydra-msg-cli`, a thin utility over the public facade:

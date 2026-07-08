@@ -6,52 +6,46 @@ P13 is intentionally manual. It does not add product features or change the publ
 
 ## Required local checks
 
-Run from the repository root:
+Run the full workspace validation from the repository root.
 
-```bash
-cargo fmt
-cargo test --workspace
-cargo clippy --workspace --all-targets -- -D warnings
+Windows PowerShell:
+
+```powershell
+.\qa\ci\check-all.ps1
 ```
 
-Run the active native examples:
-
-```bash
-cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
-cargo run --manifest-path examples/contact_card/Cargo.toml
-cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml
-cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
-cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
-```
-
-Build and run the WASM benchmark host:
-
-```bash
-wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
-cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
-```
-
-Build and run the WebRTC carrier host:
-
-```bash
-examples/webrtc_manual_carrier/scripts/build-wasm.sh
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
-```
-
-On Windows PowerShell, use the `.ps1` script in the same carrier example directory.
-
-## Required documentation checks
-
-Run the repository QA scripts if your platform supports them:
+Unix shell:
 
 ```bash
 qa/ci/check-all.sh
 ```
 
-or on PowerShell:
+Run runnable examples and browser package checks separately.
+
+Windows PowerShell:
 
 ```powershell
-qa\ci\check-all.ps1
+.\qa\ci\check-examples.ps1
+```
+
+Unix shell:
+
+```bash
+qa/ci/check-examples.sh
+```
+
+The example script runs the native examples, checks the browser host examples, and builds the WASM packages. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+
+The WebRTC carrier example still requires a manual browser run to confirm manual contact-card exchange and DataChannel message flow:
+
+```bash
+cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
+```
+
+The mobile benchmark host can be run manually after the example package build:
+
+```bash
+cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 
 ## Pass condition

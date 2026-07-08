@@ -10,46 +10,48 @@ belongs here so it can be run locally and in CI the same way.
 ## Available checks
 
 ```text
-check-all.ps1   # Windows PowerShell production QA gate
-check-all.sh    # Unix shell production QA gate
-check-rust.sh   # workspace fmt/test/clippy gate
-check-docs.sh   # docs/path/stale-term/source-marker gate
-check-vectors.sh# vector generator + candidate manifest verification
+check-all.ps1      # Windows PowerShell full validation gate
+check-all.sh       # Unix shell full validation gate
+check-examples.ps1 # Windows PowerShell runnable example/browser package gate
+check-examples.sh  # Unix shell runnable example/browser package gate
+check-rust.sh      # workspace fmt/test/clippy gate
+check-docs.sh      # docs/path/stale-term/source-marker gate
+check-vectors.sh   # vector generator + candidate manifest verification
 ```
 
-## Windows production QA gate
+## Windows validation gates
 
-Run all non-interactive production checks from PowerShell:
-
-```powershell
-.\qa\ci\check-all.ps1 -SkipGui
-```
-
-Run all checks and then launch the GUI:
+Run the full non-interactive workspace validation from PowerShell:
 
 ```powershell
 .\qa\ci\check-all.ps1
 ```
 
-By default, the PowerShell gate runs `cargo fmt` before tests so local check runs also clean up formatting. To enforce formatting without modifying files, use:
+Run runnable examples and browser package checks separately:
 
 ```powershell
-.\qa\ci\check-all.ps1 -CheckFormatOnly -SkipGui
+.\qa\ci\check-examples.ps1
+```
+
+By default, the PowerShell full gate runs `cargo fmt` before tests so local check runs also clean up formatting. To enforce formatting without modifying files, use:
+
+```powershell
+.\qa\ci\check-all.ps1 -CheckFormatOnly
 ```
 
 Skip isolated vector checks only when debugging app-only failures:
 
 ```powershell
-.\qa\ci\check-all.ps1 -SkipGui -SkipVectors
+.\qa\ci\check-all.ps1 -SkipVectors
 ```
 
-`-SkipVectors` is not sufficient for P13 completion. The full P13 gate includes
-vector checks.
+`-SkipVectors` is not sufficient for P13 completion. The full P13 gate includes vector checks.
 
-## Unix production QA gate
+## Unix validation gates
 
 ```sh
 qa/ci/check-all.sh
+qa/ci/check-examples.sh
 ```
 
 ## Evidence rule
@@ -58,4 +60,4 @@ Script existence is not evidence that validation passed. Passing evidence is the
 successful output from running the relevant script on the active repo state.
 
 
-Vector formatting: `check-vectors.sh` formats by default. Use `check-vectors.sh --check-format` for strict format-check mode. PowerShell strict format mode is `check-all.ps1 -CheckFormatOnly`.
+Vector formatting: `check-vectors.sh` formats by default. Use `check-vectors.sh --check-format` for strict format-check mode. PowerShell strict format mode is `check-all.ps1 -CheckFormatOnly`. Example scripts require `wasm-pack` for browser package checks unless you pass `-SkipWasm` or `--skip-wasm`.

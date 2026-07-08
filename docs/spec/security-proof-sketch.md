@@ -67,7 +67,7 @@ distinct stable commit hashes.
 
 Lite distributes a fresh committed epoch secret through authenticated pairwise
 channels. Interactive/Broadcast TreeKEM replaces the committer path, encrypts
-path secrets only to canonical copath resolutions, retires node keys known to
+path secrets only to canonical copath resolutions, stops using node keys known to
 a removed leaf, authenticates the candidate tree hash, and confirms root
 agreement. Assuming KEM security and correct filtered resolution, a removed
 member cannot derive the new root from its retained parent state.

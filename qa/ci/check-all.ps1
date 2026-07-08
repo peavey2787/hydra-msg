@@ -1,10 +1,9 @@
-# HYDRA-MSG production QA gate runner.
-# Runs the validation gate required before production release-candidate packaging.
-# Use -SkipGui for non-interactive runs. By default this script runs cargo fmt before tests. Use -CheckFormatOnly to enforce formatting without modifying files.
+# HYDRA-MSG full validation runner.
+# Runs the non-interactive checks for the active workspace.
+# Example runs live in qa\ci\check-examples.ps1 so normal tests do not wait on browser/example flows.
 
 [CmdletBinding()]
 param(
-    [switch]$SkipGui,
     [switch]$CheckFormatOnly,
     [switch]$SkipVectors
 )
@@ -131,11 +130,5 @@ if (!$SkipVectors) {
 }
 
 Write-Host ""
-Write-Host "HYDRA-MSG production QA gate passed." -ForegroundColor Green
-
-if ($SkipGui) {
-    Write-Host "GUI launch skipped. Run without -SkipGui to start the GUI after checks."
-    exit 0
-}
-
-Invoke-Step "cargo run -p hydra-app -- gui" { cargo run -p hydra-app -- gui }
+Write-Host "HYDRA-MSG full validation passed." -ForegroundColor Green
+Write-Host "Run qa\ci\check-examples.ps1 separately for runnable examples and browser package checks."

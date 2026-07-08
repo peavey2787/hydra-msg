@@ -26,6 +26,23 @@ cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
 cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 ```
 
+
+## Run all example checks
+
+From the repo root, run:
+
+```powershell
+.\qa\ci\check-examples.ps1
+```
+
+Unix:
+
+```bash
+qa/ci/check-examples.sh
+```
+
+The script runs the native examples, checks the browser host examples, and builds WASM packages with `wasm-pack`. For native-only example checks, use `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+
 ## Browser/mobile WASM facade benchmark
 
 Build the WASM binding package and run the LAN benchmark host:

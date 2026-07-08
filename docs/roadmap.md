@@ -181,7 +181,7 @@ Goal: turn the API into obvious copy-paste developer workflows.
 
 Steps:
 
-- Keep moved demo app crates under `examples/` until the retirement phase removes them from the active workspace.
+- Keep moved demo app crates under `examples/` until P9 removes them from the active workspace.
 - Add `examples/handshake_roundtrip` using `hydra-msg`.
 - Add `examples/contact_card` using `hydra-msg`.
 - Add `examples/attachment_roundtrip` using `HydraMessage::text(...).attach_file(...)` and `HydraAttachment::from_bytes(...)`.
@@ -264,7 +264,8 @@ Goal: run final validation manually after the roadmap implementation is complete
 
 Steps:
 
-- Run format, tests, clippy, examples, and docs checks.
+- Run the full validation script: `qa/ci/check-all.ps1` on Windows or `qa/ci/check-all.sh` on Unix.
+- Run the example validation script separately: `qa/ci/check-examples.ps1` on Windows or `qa/ci/check-examples.sh` on Unix.
 - Fix any reported failures before release.
 - Record the exact validation commands and results.
 
@@ -419,3 +420,10 @@ Target sentence:
 - Removed stale out-of-scope phase wording from demo app reference CSS comments.
 - Confirmed the public API remained trimmed: no config/profile/builder layer, no advanced public API, no protocol-info/suite APIs, no session import/export, no public chunk APIs, no checkpoint/lobby-state/predicate APIs.
 - Did not run format, tests, clippy, examples, WASM builds, or docs checks; those remain P13 and must be run manually by the maintainer.
+
+### 2026-07-08 — P13 validation scripts prepared
+
+- Kept full workspace validation in `qa/ci/check-all.ps1` and `qa/ci/check-all.sh`.
+- Added separate example validation scripts at `qa/ci/check-examples.ps1` and `qa/ci/check-examples.sh`.
+- Kept runnable examples separate from the full validation script so maintainers can test the SDK without waiting on browser/example flows.
+- P13 is still manual and not marked complete.
