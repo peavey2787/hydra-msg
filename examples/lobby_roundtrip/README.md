@@ -6,8 +6,8 @@ Minimal lobby flow using the public `hydra-msg` SDK.
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
-- [Public developer API](../../docs/project/public-developer-api.md)
+- [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
+- [Public developer API](../../docs/spec/public-developer-api.md)
 
 ## What it does
 

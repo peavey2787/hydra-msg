@@ -8,8 +8,8 @@ Contact-card exchange is manual and out-of-band. The page does not send contact 
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
-- [Carrier example rules](../../docs/project/carrier-examples.md)
+- [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
+- [Carrier example rules](../../docs/impl/carrier-examples.md)
 
 ## Build example-local WASM
 

@@ -8,8 +8,8 @@ HYDRA creates opaque bytes for contact cards, handshake offers/answers, and encr
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
-- [Carrier example rules](../../docs/project/carrier-examples.md)
+- [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
+- [Carrier example rules](../../docs/impl/carrier-examples.md)
 
 ## Run
 

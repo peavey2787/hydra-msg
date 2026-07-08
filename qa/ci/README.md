@@ -6,8 +6,6 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 
 - [Main README](../../README.md)
 - [Parent workspace](../README.md)
-- [Examples](../../examples/README.md)
-- [Release criteria](../../docs/validation/release-criteria.md)
 
 ## Scripts
 

@@ -6,11 +6,12 @@ It gives apps a simple way to create identities, add contacts, establish session
 
 ## Navigation
 
-- [How HYDRA messaging works](docs/project/message-flow/README.md)
+- [How HYDRA messaging works](docs/impl/message-flow/README.md)
+- [Repository structure](docs/spec/README.md)
 - [Crates](crates/README.md)
 - [Examples](examples/README.md)
-- [Public developer API](docs/project/public-developer-api.md)
-- [Benchmark notes](docs/project/benchmark-results.md)
+- [Public developer API](docs/spec/public-developer-api.md)
+- [Benchmark notes](docs/validation/benchmark-results.md)
 - [Roadmap](docs/roadmap.md)
 
 ## Simple mental model
@@ -23,31 +24,32 @@ open local HYDRA store
   -> send encrypted HYDRA envelopes over any app carrier
 ```
 
-A normal HYDRA message is contact/session based. Apps can still create anonymous-feeling flows by using one-time identities, temporary contact cards, invite links, QR codes, or relay/mailbox pickup, but HYDRA still needs peer key material and a session internally so the receiver can decrypt.
+A normal HYDRA message is contact/session based. Apps can still create anonymous-feeling flows with one-time identities, temporary contact cards, invite links, QR codes, or relay/mailbox pickup. Internally, HYDRA still needs peer key material and a session so the receiver can decrypt.
 
-For the detailed flow, see [How HYDRA messaging works](docs/project/message-flow/README.md).
+For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 
 ## Super-simple app shape
 
-Bob's app starts a session with Alice and sends a message:
+Bob's app imports Alice's contact card, starts a session, and sends a message:
 
 ```rust
 use hydra_msg::{Hydra, HydraMessage, HydraResult};
 
 fn bob_sends_to_alice() -> HydraResult<()> {
-    // Open Bob's local HYDRA store.
+    // Open Bob's local HYDRA store for this app/device.
     let mut bob = Hydra::open_default()?;
 
-    // Create Bob's local identity and unlock it for this run.
+    // Create or import Bob's identity, then unlock it for this run.
     let bob_id = bob.generate_id("bob-password")?;
     bob.set_active_id(bob_id, "bob-password")?;
 
-    // Alice's contact card arrives through your app: QR, invite link,
-    // file, WebRTC, relay, mailbox, or any other carrier.
-    let alice = bob.add_contact(app_wait_for_alice_contact_card()?)?;
+    // Alice's contact card arrives through the app carrier:
+    // QR, invite link, WebRTC, relay, mailbox, file, or manual copy/paste.
+    let alice_card = app_wait_for_alice_contact_card()?;
+    let alice = bob.add_contact(alice_card)?;
 
-    // Optional but recommended: show this code to the user and let them
-    // confirm it with Alice before marking the contact as verified.
+    // Optional but recommended: compare the safety code with Alice through
+    // another channel before showing the contact as verified in the app UI.
     // bob.verify_contact(alice.id(), confirmed_safety_code)?;
 
     // Create a HYDRA handshake offer and send those opaque bytes to Alice.
@@ -58,7 +60,7 @@ fn bob_sends_to_alice() -> HydraResult<()> {
     let answer = app_wait_for_alice_answer()?;
     bob.finish_handshake(answer)?;
 
-    // Send an encrypted HYDRA envelope through your app carrier.
+    // Encrypt a message for Alice. The app carrier only moves the envelope bytes.
     let envelope = bob.send(alice.id(), HydraMessage::text("hello Alice"))?;
     app_send_to_alice(envelope.as_bytes())?;
 
@@ -66,20 +68,20 @@ fn bob_sends_to_alice() -> HydraResult<()> {
 }
 ```
 
-Alice's app shares her contact card, answers Bob, and receives the message:
+Alice's app shares her contact card, answers Bob's handshake, and receives the message:
 
 ```rust
 use hydra_msg::{Hydra, HydraResult};
 
 fn alice_receives_from_bob() -> HydraResult<()> {
-    // Open Alice's local HYDRA store.
+    // Open Alice's local HYDRA store for this app/device.
     let mut alice = Hydra::open_default()?;
 
-    // Create Alice's local identity and unlock it for this run.
+    // Create or import Alice's identity, then unlock it for this run.
     let alice_id = alice.generate_id("alice-password")?;
     alice.set_active_id(alice_id, "alice-password")?;
 
-    // Share Alice's contact card with Bob through your app carrier.
+    // Share Alice's contact card with Bob through the app carrier.
     let alice_card = alice.create_contact_card()?;
     app_send_to_bob(alice_card)?;
 
@@ -107,8 +109,10 @@ Runnable examples are in [examples](examples/README.md).
 crates/      maintained Rust components
 examples/    runnable examples over the public SDK
 qa/          local check scripts and validation tooling
-docs/        project docs grouped by purpose
+docs/        specs, implementation notes, validation notes, future work, and AI working notes
 ```
+
+For the full folder map, see [Repository structure](docs/spec/README.md).
 
 ## Benchmark snapshot
 
@@ -131,4 +135,4 @@ browser WASM, 1 KiB payload:
   send+receive avg:    1.27 ms
 ```
 
-See [Benchmark notes](docs/project/benchmark-results.md) for the full table.
+See [Benchmark notes](docs/validation/benchmark-results.md) for the full table.

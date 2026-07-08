@@ -9,7 +9,7 @@ code may be reused behind the future stupid-simple public facade.
 The public API contract remains:
 
 ```text
-docs/project/public-developer-api.md
+docs/spec/public-developer-api.md
 ```
 
 The rule is strict: app developers get one simple `hydra-msg` facade. Anything

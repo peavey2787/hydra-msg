@@ -1,5 +1,12 @@
 # HYDRA-MSG WASM / JavaScript Bindings
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Repository structure](../spec/README.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+
 Status: P6 binding target and implementation notes.
 
 Goal: make the same stupid-simple HYDRA API usable from browser/mobile apps without exposing crypto/session/wire internals.

@@ -1,5 +1,12 @@
 # HYDRA-MSG manual validation gate
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Repository structure](../spec/README.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 Status: P13 manual validation gate.
 
 P13 is intentionally manual. It does not add product features or change the public API. It verifies that the release-candidate worktree produced by the roadmap is clean on a real developer machine with Rust/Cargo/WASM tools installed.
@@ -74,6 +81,6 @@ P13 passes only when:
 - example-local WASM packages build during example validation;
 - WebRTC carrier host serves and manual contact-card exchange works;
 - no runtime `hydra-msg-data/` or local identity material is staged;
-- benchmark numbers are recorded or updated in `docs/project/benchmark-results.md` if they materially differ.
+- benchmark numbers are recorded or updated in `docs/validation/benchmark-results.md` if they materially differ.
 
 Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit or external interoperability certification.

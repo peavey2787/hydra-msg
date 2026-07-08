@@ -144,7 +144,33 @@ function Invoke-DocsGate {
         Assert-PathExists $path
     }
 
-    Assert-NoTextMatch "stale docs/planning references" @("docs", "crates", "README.md", "Cargo.toml") "docs/planning"
+    $unexpectedTopLevelDocs = Get-ChildItem "docs" -File | Where-Object { $_.Name -ne "roadmap.md" }
+    if ($unexpectedTopLevelDocs) {
+        $unexpectedTopLevelDocs | ForEach-Object { Write-Host $_.FullName }
+        throw "unexpected top-level docs file found"
+    }
+
+    $projectFiles = Get-ChildItem "docs/project" -File -Recurse | Where-Object {
+        $_.FullName -notmatch "[\\/]docs[\\/]project[\\/]audit[\\/]"
+    }
+    if ($projectFiles) {
+        $projectFiles | ForEach-Object { Write-Host $_.FullName }
+        throw "non-audit file found under docs/project"
+    }
+
+    $readmes = Get-ChildItem . -Filter README.md -File -Recurse |
+        Where-Object { $_.FullName -notmatch "[\\/]\.git[\\/]" -and $_.FullName -notmatch "[\\/]target[\\/]" }
+    foreach ($readme in $readmes) {
+        if ($readme.FullName -eq (Join-Path $RepoRoot "README.md")) {
+            continue
+        }
+        if ((Get-Content $readme.FullName -Raw) -notmatch "Main README") {
+            throw "README missing Main README navigation: $($readme.FullName)"
+        }
+    }
+
+    Assert-NoTextMatch "docs/planning references" @("docs", "crates", "README.md", "Cargo.toml") "docs/planning"
+    Assert-NoTextMatch "product doc references under docs/project" @("docs", "crates", "examples", "README.md", "Cargo.toml") "docs/project/(message-flow|public-developer-api|benchmark-results|carrier-examples|hydra-msg-cli|wasm-javascript-bindings|production-qa-gate|release-readiness)"
     Assert-NoTextMatch "crate name references" @("docs", "crates", "README.md", "Cargo.toml") "hydra-types|hydra-wire"
     Assert-NoTextMatch "primitive terminology" @("docs/spec", "docs/impl", "docs/validation", "crates") "Kyber|Dilithium|XChaCha20"
     Assert-NoTextMatch "source TODO/unimplemented markers" @("crates") "todo!|unimplemented!|TODO|FIXME"

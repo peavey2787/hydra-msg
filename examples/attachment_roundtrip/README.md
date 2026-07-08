@@ -6,8 +6,8 @@ Shows text plus file and byte attachments through the public send/receive API.
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
-- [Public developer API](../../docs/project/public-developer-api.md)
+- [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
+- [Public developer API](../../docs/spec/public-developer-api.md)
 
 ## Shape
 

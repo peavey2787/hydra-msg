@@ -1,0 +1,90 @@
+# Repository structure
+
+## Navigation
+
+- [Main README](../../README.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Public developer API](public-developer-api.md)
+- [Examples](../../examples/README.md)
+- [Roadmap](../roadmap.md)
+
+This document is the project structure map. It explains where files belong so the repository stays organized, consistent, and easy to maintain.
+
+## Top-level layout
+
+```text
+crates/      maintained Rust components and system modules
+docs/        specifications, implementation notes, validation notes, future work, and AI working notes
+qa/          local correctness scripts, fixtures, vectors, fuzzing, and validation tools
+examples/    runnable examples and small demo entry points
+external/    third-party apps, libraries, or vendored external material when needed
+scripts/     automation that is not part of QA
+```
+
+Only `docs/roadmap.md` belongs directly under `docs/`. All other documentation belongs in one of the grouped docs folders below.
+
+## `crates/`
+
+`crates/` holds the maintained code components. Each crate should have one clear responsibility and should avoid duplicating logic owned by another crate.
+
+Current app-facing components include:
+
+```text
+crates/hydra-msg       Rust SDK facade for app developers
+crates/hydra-msg-wasm  WASM/JavaScript binding over the facade
+crates/hydra-msg-cli   command-line developer utility over the facade
+```
+
+Lower-level protocol crates live beside them and should stay focused on their own domain: crypto, sessions, groups, serialization, and shared core types.
+
+## `docs/`
+
+`docs/` is split by purpose:
+
+```text
+docs/future-work/  ideas, future features, and long-term plans
+docs/impl/         implementation-focused docs and scaffolding
+docs/spec/         foundational specifications and public behavior contracts
+docs/validation/   checks, release criteria, proofs, vectors, and benchmark evidence
+docs/project/      AI working notes, audits, temporary assistant summaries, and helper artifacts
+```
+
+Important product docs must not live in `docs/project/`. That folder is only for assistant working material such as audits and temporary project notes.
+
+## `qa/`
+
+`qa/` owns correctness-related tooling:
+
+```text
+qa/ci/       local CI scripts and one-command check gates
+qa/fuzz/     fuzzing harnesses
+qa/tools/    internal QA utilities
+qa/vectors/  protocol fixtures and test vectors
+qa/tests/    global or system-level tests when needed
+```
+
+The master local validation command lives in `qa/ci/`.
+
+## `examples/`
+
+`examples/` holds runnable examples and minimal demo programs. Examples should show how to use the public SDK without becoming product architecture.
+
+## `external/`
+
+`external/` is reserved for third-party apps, libraries, or vendored outside material when needed.
+
+## `scripts/`
+
+`scripts/` is for automation that is not itself QA: environment setup, local developer bootstrap, packaging helpers, or repeatable maintenance commands.
+
+## General rules
+
+```text
+Keep file and folder ownership clear.
+Keep naming consistent.
+Keep each module focused on one responsibility.
+Avoid duplicated or unused code.
+When a file grows too large, split it by responsibility.
+When a folder gathers too many files, group them by purpose.
+Before calling work complete, ask whether it is production-ready, enterprise-grade, and mathematically sound. If not, document what is missing.
+```

@@ -5,10 +5,6 @@
 ## Navigation
 
 - [Main README](../README.md)
-- [Scripts](ci/README.md)
-- [Fuzzing workspace](fuzz/README.md)
-- [Vector generator](tools/vector-gen/README.md)
-- [Release criteria](../docs/validation/release-criteria.md)
 
 ## Contents
 

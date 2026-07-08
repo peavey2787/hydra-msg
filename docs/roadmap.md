@@ -1,9 +1,10 @@
-# HYDRA-MSG Stupid-Simple API Refactor Roadmap
+# HYDRA-MSG Stupid-Simple API Roadmap
 
 ## Navigation
 
 - [Main README](../README.md)
-- [How HYDRA messaging works](project/message-flow/README.md)
+- [How HYDRA messaging works](impl/message-flow/README.md)
+- [Repository structure](spec/README.md)
 - [Crates](../crates/README.md)
 - [Examples](../examples/README.md)
 
@@ -25,7 +26,7 @@ run storage status and benchmarks
 The public API source of truth is:
 
 ```text
-docs/project/public-developer-api.md
+docs/spec/public-developer-api.md
 ```
 
 The P2 audit artifact is:
@@ -40,7 +41,7 @@ docs/project/audit/api-inventory-ownership-audit.md
 2. **No public advanced API for v1.** Do not add `HydraConfig`, `HydraProfile`, builders, protocol-info APIs, supported-suite APIs, session import/export APIs, public chunk APIs, checkpoint APIs, predicate APIs, or lobby-state import/export APIs.
 3. **HYDRA is transport-agnostic.** WebRTC, libp2p, HTTP, QR codes, files, relays, Kaspa pointers, mailbox nodes, and manual copy/paste are carriers only. They move opaque HYDRA bytes. They are not protocol authority.
 4. **`crates/` is for protocol/product crates only.** Demo apps belong under top-level `examples/`.
-5. **Project/audit/refactor docs go under `docs/project/`.** Implementation/spec/validation docs that predate this roadmap can remain where they are, but new refactor and audit docs belong in `docs/project/`.
+5. **Keep docs organized by purpose.** Product docs belong under `docs/spec/`, `docs/impl/`, or `docs/validation/`. Assistant working notes and audits belong under `docs/project/`.
 6. **Do not make `hydra-msg` depend on example crates.** Reuse implementation ideas by migrating/copying code into the facade internals, not by depending on `examples/hydra-app-core`.
 7. **Runtime data must never be committed.** `hydra-msg-data/`, identity vaults, test identities, app runtime state, and local secrets stay out of git.
 8. **One owner per concern.** Public facade in `hydra-msg`; crypto in `hydra-crypto`; wire encoding in `hydra-envelope`; sessions in `hydra-session`; group/lobby internals in `hydra-group`; app/demo behavior in `examples/`.
@@ -104,7 +105,7 @@ for attachment in data.attachments() {
 }
 ```
 
-See `docs/project/public-developer-api.md` for the complete API list.
+See `docs/spec/public-developer-api.md` for the complete API list.
 
 ## Phases and steps
 
@@ -117,7 +118,7 @@ Steps:
 - Add `hydra-msg-data/` to `.gitignore`.
 - Remove tracked/staged `hydra-msg-data/` artifacts.
 - Document that identity vaults, local secrets, test identities, and app runtime state must not be committed.
-- Add the public API source-of-truth doc under `docs/project/public-developer-api.md`.
+- Add the public API source-of-truth doc under `docs/spec/public-developer-api.md`.
 - Replace the old app-polish roadmap with this developer API roadmap.
 - Do not change protocol behavior.
 
@@ -144,7 +145,7 @@ Steps:
 - Inspect `examples/hydra-app-core` identity vault, contact, session, storage, recovery, attachment/payload, message store, group, and carrier-boundary modules.
 - Classify each module as facade candidate, internal implementation, example helper, app-demo helper, or code to remove.
 - Identify duplicate abstractions between app-domain code and protocol crates.
-- Map existing code to `docs/project/public-developer-api.md`.
+- Map existing code to `docs/spec/public-developer-api.md`.
 - Record gaps before creating the new facade crate.
 - Write the audit to `docs/project/audit/api-inventory-ownership-audit.md`.
 - Do not make `crates/hydra-msg` depend on example crates.
@@ -217,7 +218,7 @@ Steps:
 - Create `hydra-msg-cli`.
 - Support commands such as `generate-id`, `contact-card`, `handshake-demo`, `send-demo`, `attachment-demo`, `bench`, and `doctor`.
 - Keep the CLI as a tool over `hydra-msg`, not protocol authority.
-- Document CLI usage under `docs/project/hydra-msg-cli.md`.
+- Document CLI usage under `docs/impl/hydra-msg-cli.md`.
 
 ### P8 — Group/lobby facade completion — COMPLETE
 
@@ -225,7 +226,7 @@ Goal: wire lobbies to real group/session internals only through the trimmed publ
 
 Steps:
 
-- Implement the simple lobby methods listed in `docs/project/public-developer-api.md`.
+- Implement the simple lobby methods listed in `docs/spec/public-developer-api.md`.
 - Do not expose checkpoint APIs, AOL2 state APIs, predicate APIs, lobby-state import/export, or advanced group/lobby controls.
 - Add lobby send/receive examples and tests.
 
@@ -278,7 +279,7 @@ Steps:
 
 ## Success criteria
 
-The refactor succeeds when a new developer can:
+This roadmap succeeds when a new developer can:
 
 1. add one dependency;
 2. open HYDRA with one data path;
@@ -301,8 +302,8 @@ Target sentence:
 
 - Added `hydra-msg-data/` to `.gitignore`.
 - Removed runtime data from the package.
-- Added/kept the public API source-of-truth under `docs/project/public-developer-api.md`.
-- Replaced the old roadmap with the stupid-simple API refactor roadmap.
+- Added/kept the public API source-of-truth under `docs/spec/public-developer-api.md`.
+- Replaced the prior roadmap with the stupid-simple API roadmap.
 
 ### 2026-07-08 — P1 complete
 
@@ -320,7 +321,7 @@ Target sentence:
 
 - Added `crates/hydra-msg` to the workspace.
 - Exposed the stupid-simple public facade types: `Hydra`, `HydraMessage`, `HydraAttachment`, receive data, IDs, opaque handshake bytes, opaque envelope bytes, lobby types, storage status, benchmark report, and simple errors.
-- Implemented the public open, identity, contact, handshake/session, message, lobby, backup/restore, storage status, and benchmark method surfaces from `docs/project/public-developer-api.md`.
+- Implemented the public open, identity, contact, handshake/session, message, lobby, backup/restore, storage status, and benchmark method surfaces from `docs/spec/public-developer-api.md`.
 - Ensured `reply_handshake` creates/activates the responder-side session and `finish_handshake` creates/activates the initiator-side session.
 - Made `send` accept `HydraMessage` with text, raw bytes, file attachments, named byte attachments, and simple `HydraAttachment::from_bytes(bytes)` construction.
 - Made `receive` return plaintext and attachment accessors while keeping payload packing/chunk mechanics internal.
@@ -363,7 +364,7 @@ Target sentence:
 - Added `WasmHydraMessage.text(...)`, `WasmHydraMessage.bytes(...)`, `attachBytes(...)`, and browser file-style attachment support through filename + bytes.
 - Added received-message accessors for plaintext, text, attachment count, attachment names, attachment bytes, and attachment source flags.
 - Updated `examples/mobile_perf_web` to serve the generated WASM package and run browser/device-side HYDRA facade benchmarks.
-- Added `docs/project/wasm-javascript-bindings.md`.
+- Added `docs/impl/wasm-javascript-bindings.md`.
 - Browser persistence is intentionally in-memory in P6; apps can persist using explicit backup/export/import helpers.
 
 
@@ -371,7 +372,7 @@ Target sentence:
 
 - Added `crates/hydra-msg-cli` as a developer command-line utility over the public `hydra-msg` facade.
 - Added commands for `generate-id`, `contact-card`, `handshake-demo`, `send-demo`, `attachment-demo`, `bench`, and `doctor`.
-- Added `docs/project/hydra-msg-cli.md` with command usage and ownership rules.
+- Added `docs/impl/hydra-msg-cli.md` with command usage and ownership rules.
 - Added `hydra-msg-cli` to the root workspace.
 - Updated `crates/README.md` and root `README.md` so developers can find the CLI.
 - Kept the CLI thin: no `HydraConfig`, no profiles, no builders, no protocol-info/suite APIs, no session import/export, no public chunk APIs, no checkpoint/lobby-state/AOL2 predicate APIs, and no advanced public API layer.
@@ -411,7 +412,7 @@ Target sentence:
 - Kept contact-card exchange strictly manual and out-of-band in the WebRTC example. WebRTC is only used after both users import and verify each other's contact cards.
 - Made the WebRTC example use manual SDP copy/paste for signaling, then carry HYDRA handshake offers/answers and encrypted envelopes over the DataChannel.
 - Added build scripts and README docs for the WebRTC carrier example.
-- Added `docs/project/carrier-examples.md` documenting carrier ownership and WebRTC/manual-file carrier behavior.
+- Added `docs/impl/carrier-examples.md` documenting carrier ownership and WebRTC/manual-file carrier behavior.
 - Added the new carrier examples to the active workspace and README example lists.
 - No transport code was added to `hydra-msg`; WebRTC and files remain carriers only.
 - No advanced public API was added.
@@ -420,9 +421,9 @@ Target sentence:
 ### 2026-07-08 — P12 complete
 
 - Kept the active workspace focused on `crates/hydra-*`, `hydra-msg`, `hydra-msg-wasm`, `hydra-msg-cli`, and the active facade/carrier examples.
-- Replaced the previous app-focused QA gate with the current P13 manual validation gate under `docs/project/production-qa-gate.md`.
-- Added `docs/project/release-readiness.md` as the P12 cleanup and P13 handoff artifact.
-- Added `docs/project/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition, and a 64 KiB larger-message run.
+- Replaced the previous app-focused QA gate with the current P13 manual validation gate under `docs/validation/production-qa-gate.md`.
+- Added `docs/validation/release-readiness.md` as the P12 cleanup and P13 handoff artifact.
+- Added `docs/validation/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition, and a 64 KiB larger-message run.
 - Updated root `README.md` with a benchmark snapshot and accurate pre-P13 release-status caveats.
 - Removed stale out-of-scope phase wording from demo app reference CSS comments.
 - Confirmed the public API remained trimmed: no config/profile/builder layer, no advanced public API, no protocol-info/suite APIs, no session import/export, no public chunk APIs, no checkpoint/lobby-state/predicate APIs.
@@ -457,7 +458,15 @@ Target sentence:
 
 - Rewrote the main `README.md` as a concise app-developer entry point.
 - Replaced the one-process roundtrip snippet with a two-device Bob/Alice app-shape example that explains each step.
-- Added `docs/project/message-flow/README.md` with diagrams and contact/session flow notes.
+- Added `docs/impl/message-flow/README.md` with diagrams and contact/session flow notes.
 - Added return navigation to linked project docs, including benchmark notes.
 - Kept docs organized with only `docs/roadmap.md` at the top level.
 - Updated benchmark wording to identify the BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition.
+
+### 2026-07-08 — Docs ownership cleanup
+
+- Moved important product docs out of `docs/project/` and into the correct purpose folders under `docs/spec/`, `docs/impl/`, and `docs/validation/`.
+- Kept `docs/project/` limited to assistant working notes and audit artifacts.
+- Added `docs/spec/README.md` as the repository structure and documentation ownership map.
+- Updated README navigation and Markdown links to use the corrected docs layout.
+- Added docs checks that fail if important product docs are placed under `docs/project/` or if extra files are placed directly under `docs/`.

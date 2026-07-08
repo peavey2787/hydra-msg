@@ -3,10 +3,10 @@
 ## Navigation
 
 - [Main README](../../../README.md)
-- [Crates](../../../crates/README.md)
+- [Repository structure](../../spec/README.md)
+- [Public developer API](../../spec/public-developer-api.md)
 - [Examples](../../../examples/README.md)
-- [Public developer API](../public-developer-api.md)
-- [Benchmark notes](../benchmark-results.md)
+- [Benchmark notes](../../validation/benchmark-results.md)
 
 ## The short version
 

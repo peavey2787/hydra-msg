@@ -7,10 +7,10 @@ Examples show how app code moves opaque HYDRA bytes over different carriers. Pro
 ## Navigation
 
 - [Main README](../README.md)
-- [How HYDRA messaging works](../docs/project/message-flow/README.md)
+- [How HYDRA messaging works](../docs/impl/message-flow/README.md)
 - [Crates](../crates/README.md)
-- [Public developer API](../docs/project/public-developer-api.md)
-- [Carrier example rules](../docs/project/carrier-examples.md)
+- [Public developer API](../docs/spec/public-developer-api.md)
+- [Carrier example rules](../docs/impl/carrier-examples.md)
 
 ## Example list
 

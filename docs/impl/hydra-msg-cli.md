@@ -1,5 +1,12 @@
 # HYDRA-MSG CLI developer tool
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Repository structure](../spec/README.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+
 Status: P7 developer utility over `hydra-msg`.
 
 `hydra-msg-cli` is a thin command-line helper for trying the stupid-simple

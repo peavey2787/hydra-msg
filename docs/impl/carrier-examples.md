@@ -3,7 +3,9 @@
 ## Navigation
 
 - [Main README](../../README.md)
+- [Repository structure](../spec/README.md)
 - [How HYDRA messaging works](message-flow/README.md)
+- [Public developer API](../spec/public-developer-api.md)
 - [Examples](../../examples/README.md)
 
 HYDRA carriers move opaque bytes. They are not protocol authority.

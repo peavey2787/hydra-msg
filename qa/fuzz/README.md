@@ -6,8 +6,6 @@ This directory is reserved for dedicated fuzzing infrastructure such as cargo-fu
 
 - [Main README](../../README.md)
 - [Parent workspace](../README.md)
-- [Scripts](../ci/README.md)
-- [Release criteria](../../docs/validation/release-criteria.md)
 
 ## Current rule
 

@@ -5,9 +5,9 @@
 ## Navigation
 
 - [Main README](../README.md)
-- [How HYDRA messaging works](../docs/project/message-flow/README.md)
+- [How HYDRA messaging works](../docs/impl/message-flow/README.md)
 - [Examples](../examples/README.md)
-- [Public developer API](../docs/project/public-developer-api.md)
+- [Public developer API](../docs/spec/public-developer-api.md)
 - [Roadmap](../docs/roadmap.md)
 
 ## Crate map

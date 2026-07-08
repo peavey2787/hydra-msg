@@ -3,7 +3,8 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [How HYDRA messaging works](message-flow/README.md)
+- [Repository structure](README.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
 - [Crates](../../crates/README.md)
 - [Examples](../../examples/README.md)
 
@@ -558,4 +559,4 @@ const data = hydra.receive(envelope);
 console.log(data.text());
 ```
 
-The JS/WASM API must not expose advanced protocol controls. Browser persistence in P6 is in-memory unless the app uses explicit backup/export/import helpers. See `docs/project/wasm-javascript-bindings.md`.
+The JS/WASM API must not expose advanced protocol controls. Browser persistence in P6 is in-memory unless the app uses explicit backup/export/import helpers. See `docs/impl/wasm-javascript-bindings.md`.

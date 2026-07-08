@@ -1,5 +1,12 @@
 # HYDRA-MSG P12 release-readiness cleanup
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Repository structure](../spec/README.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 Status: P12 cleanup artifact.
 
 P12 makes the developer-facing repository credible before the maintainer-run P13 validation gate. It does not publish a release, freeze the protocol, add new public APIs, add carriers to `hydra-msg`, or run the final validation commands.
@@ -22,7 +29,7 @@ Accurate status wording:
 - Kept the active workspace focused on protocol/product crates and active facade examples.
 - Kept demo app crates outside the active workspace under `examples/` as reference material only.
 - Removed stale phase wording from demo app CSS comments.
-- Added real-world benchmark notes under `docs/project/benchmark-results.md`.
+- Added real-world benchmark notes under `docs/validation/benchmark-results.md`.
 - Updated README files to point app developers at `hydra-msg` first.
 - Preserved the trimmed public API rule: no config/profile/builder layer, no advanced public API, no protocol-info/suite APIs, no session import/export, no public chunk API, no checkpoint/lobby-state/predicate APIs.
 

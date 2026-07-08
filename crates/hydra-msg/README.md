@@ -8,9 +8,9 @@ Apps should start here instead of depending directly on crypto, envelope, sessio
 
 - [Main README](../../README.md)
 - [Crates](../README.md)
-- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
+- [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
 - [Examples](../../examples/README.md)
-- [Public developer API](../../docs/project/public-developer-api.md)
+- [Public developer API](../../docs/spec/public-developer-api.md)
 
 ## Small app shape
 
@@ -31,7 +31,7 @@ let envelope = hydra.send(peer.id(), HydraMessage::text("hello"))?;
 app_send_to_peer(envelope.as_bytes())?;
 ```
 
-For the full two-device explanation, see [How HYDRA messaging works](../../docs/project/message-flow/README.md).
+For the full two-device explanation, see [How HYDRA messaging works](../../docs/impl/message-flow/README.md).
 
 For runnable code, use:
 
