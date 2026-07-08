@@ -1757,7 +1757,6 @@ impl Hydra {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
