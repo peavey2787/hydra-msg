@@ -19,8 +19,8 @@ use std::fs;
 
 use getrandom::SysRng;
 use hydra_core::{FULL_MAX_CONTENT_SIZE, HASH_SIZE, ML_DSA_65_VK_SIZE, TRANSCRIPT_HASH_SIZE};
-use hydra_group::GroupMode;
 use hydra_crypto::{CryptoBackend, MlDsaKeyPair, RustCryptoBackend, SecretBytes};
+use hydra_group::GroupMode;
 use hydra_session::{derive_initial_secrets, SessionError, SessionRole, SessionState};
 use rand_core::TryRng;
 
@@ -322,7 +322,9 @@ impl HydraAttachment {
             let filename = path
                 .file_name()
                 .and_then(|name| name.to_str())
-                .ok_or(HydraMsgError::InvalidInput("attachment path has no valid filename"))?
+                .ok_or(HydraMsgError::InvalidInput(
+                    "attachment path has no valid filename",
+                ))?
                 .to_string();
             Ok(Self {
                 filename,
@@ -791,9 +793,14 @@ impl Hydra {
     }
 
     pub fn export_id(&self, id: IdentityId, password: impl AsRef<str>) -> HydraResult<Vec<u8>> {
-        let record = self.identities.get(&id).ok_or(HydraMsgError::IdentityNotFound)?;
+        let record = self
+            .identities
+            .get(&id)
+            .ok_or(HydraMsgError::IdentityNotFound)?;
         verify_password(record, password.as_ref())?;
-        Ok(encode_identity_export(&self.identity_seed(record, password.as_ref())?))
+        Ok(encode_identity_export(
+            &self.identity_seed(record, password.as_ref())?,
+        ))
     }
 
     #[must_use]
@@ -809,7 +816,10 @@ impl Hydra {
     }
 
     pub fn get_id(&self, id: IdentityId) -> HydraResult<HydraIdentitySummary> {
-        let record = self.identities.get(&id).ok_or(HydraMsgError::IdentityNotFound)?;
+        let record = self
+            .identities
+            .get(&id)
+            .ok_or(HydraMsgError::IdentityNotFound)?;
         Ok(HydraIdentitySummary {
             id: record.id,
             label: record.label.clone(),
@@ -822,11 +832,7 @@ impl Hydra {
         self.active_id
     }
 
-    pub fn set_active_id(
-        &mut self,
-        id: IdentityId,
-        password: impl AsRef<str>,
-    ) -> HydraResult<()> {
+    pub fn set_active_id(&mut self, id: IdentityId, password: impl AsRef<str>) -> HydraResult<()> {
         self.unlock_id(id, password)?;
         self.active_id = Some(id);
         Ok(())
@@ -872,7 +878,10 @@ impl Hydra {
     }
 
     pub fn delete_id(&mut self, id: IdentityId, password: impl AsRef<str>) -> HydraResult<()> {
-        let record = self.identities.get(&id).ok_or(HydraMsgError::IdentityNotFound)?;
+        let record = self
+            .identities
+            .get(&id)
+            .ok_or(HydraMsgError::IdentityNotFound)?;
         verify_password(record, password.as_ref())?;
         self.identities.remove(&id);
         if self.active_id == Some(id) {
@@ -1019,20 +1028,12 @@ impl Hydra {
         let record = self.active_unlocked_record()?;
         let nonce = random_array::<32>()?;
         let offer = encode_handshake_offer(record.id, &record.public_key, nonce);
-        self.pending_offers.insert(
-            nonce,
-            PendingOffer {
-                contact_id,
-                nonce,
-            },
-        );
+        self.pending_offers
+            .insert(nonce, PendingOffer { contact_id, nonce });
         Ok(HandshakeOffer(offer))
     }
 
-    pub fn reply_handshake(
-        &mut self,
-        offer: impl AsRef<[u8]>,
-    ) -> HydraResult<HandshakeAnswer> {
+    pub fn reply_handshake(&mut self, offer: impl AsRef<[u8]>) -> HydraResult<HandshakeAnswer> {
         let parsed = decode_handshake_offer(offer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
         let contact_id = ContactId(parsed.peer_id.0);
@@ -1046,11 +1047,8 @@ impl Hydra {
             };
             self.contacts.insert(contact_id, contact);
         }
-        let (secret, transcript_hash) = derive_facade_handshake_material(
-            parsed.nonce,
-            parsed.peer_id,
-            active.id,
-        );
+        let (secret, transcript_hash) =
+            derive_facade_handshake_material(parsed.nonce, parsed.peer_id, active.id);
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
         let state = SessionState::established(
             SessionRole::Responder,
@@ -1074,10 +1072,7 @@ impl Hydra {
         )))
     }
 
-    pub fn finish_handshake(
-        &mut self,
-        answer: impl AsRef<[u8]>,
-    ) -> HydraResult<()> {
+    pub fn finish_handshake(&mut self, answer: impl AsRef<[u8]>) -> HydraResult<()> {
         let parsed = decode_handshake_answer(answer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
         let pending = self
@@ -1090,11 +1085,8 @@ impl Hydra {
             ));
         }
         let _ = pending.nonce;
-        let (secret, transcript_hash) = derive_facade_handshake_material(
-            parsed.nonce,
-            active.id,
-            parsed.peer_id,
-        );
+        let (secret, transcript_hash) =
+            derive_facade_handshake_material(parsed.nonce, active.id, parsed.peer_id);
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
         let state = SessionState::established(
             SessionRole::Initiator,
@@ -1252,7 +1244,10 @@ impl Hydra {
     }
 
     pub fn create_lobby_invite(&self, lobby_id: LobbyId) -> HydraResult<HydraLobbyInvite> {
-        let lobby = self.lobbies.get(&lobby_id).ok_or(HydraMsgError::LobbyNotFound)?;
+        let lobby = self
+            .lobbies
+            .get(&lobby_id)
+            .ok_or(HydraMsgError::LobbyNotFound)?;
         let members = self.lobby_invite_members(lobby);
         Ok(HydraLobbyInvite(encode_lobby_invite(lobby, &members)))
     }
@@ -1360,10 +1355,13 @@ impl Hydra {
         &mut self,
         envelope: impl AsRef<[u8]>,
     ) -> HydraResult<ReceivedHydraMessage> {
-        let (from, lobby_id, packed_message) = self.open_lobby_payload_from_contact(envelope.as_ref())?;
+        let (from, lobby_id, packed_message) =
+            self.open_lobby_payload_from_contact(envelope.as_ref())?;
         let lobby = self.get_lobby(lobby_id)?;
         if !lobby.members.contains(&from) {
-            return Err(HydraMsgError::InvalidInput("lobby message sender is not a member"));
+            return Err(HydraMsgError::InvalidInput(
+                "lobby message sender is not a member",
+            ));
         }
         let message = unpack_message(
             &packed_message,
@@ -1561,9 +1559,9 @@ impl Hydra {
             match parts.next() {
                 Some("next_message_id") => {
                     if let Some(value) = parts.next() {
-                        self.next_message_id = value.parse().map_err(|_| {
-                            HydraMsgError::InvalidEncoding("state next_message_id")
-                        })?;
+                        self.next_message_id = value
+                            .parse()
+                            .map_err(|_| HydraMsgError::InvalidEncoding("state next_message_id"))?;
                     }
                 }
                 Some("identity") => {
@@ -1589,11 +1587,7 @@ impl Hydra {
         Ok(())
     }
 
-    fn identity_seed(
-        &self,
-        record: &IdentityRecord,
-        password: &str,
-    ) -> HydraResult<[u8; 32]> {
+    fn identity_seed(&self, record: &IdentityRecord, password: &str) -> HydraResult<[u8; 32]> {
         if let Some(seed) = record.seed {
             verify_password(record, password)?;
             return Ok(seed);
@@ -1603,7 +1597,9 @@ impl Hydra {
 
     fn active_record(&self) -> HydraResult<&IdentityRecord> {
         let id = self.active_id.ok_or(HydraMsgError::IdentityNotFound)?;
-        self.identities.get(&id).ok_or(HydraMsgError::IdentityNotFound)
+        self.identities
+            .get(&id)
+            .ok_or(HydraMsgError::IdentityNotFound)
     }
 
     fn active_unlocked_record(&self) -> HydraResult<&IdentityRecord> {
@@ -1853,7 +1849,9 @@ fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
     let public_key = exact_array_from_vec(hex_decode(parts[3])?)?;
     let expected_id = IdentityId(RustCryptoBackend::sha3_256(&public_key));
     if id != expected_id {
-        return Err(HydraMsgError::InvalidEncoding("identity fingerprint mismatch"));
+        return Err(HydraMsgError::InvalidEncoding(
+            "identity fingerprint mismatch",
+        ));
     }
     Ok(IdentityRecord {
         id,
@@ -1890,7 +1888,9 @@ fn decode_contact_line(line: &str) -> HydraResult<HydraContact> {
     let public_key = exact_array_from_vec(hex_decode(parts[3])?)?;
     let expected_id = ContactId(RustCryptoBackend::sha3_256(&public_key));
     if id != expected_id {
-        return Err(HydraMsgError::InvalidEncoding("contact fingerprint mismatch"));
+        return Err(HydraMsgError::InvalidEncoding(
+            "contact fingerprint mismatch",
+        ));
     }
     Ok(HydraContact {
         id,
@@ -1972,16 +1972,19 @@ fn decode_message_line(line: &str) -> HydraResult<StoredMessage> {
     })
 }
 
-
 fn validate_lobby_policy(policy: &HydraLobbyPolicy) -> HydraResult<()> {
     if policy.label.trim().is_empty() {
         return Err(HydraMsgError::InvalidInput("lobby label is empty"));
     }
     if policy.max_members == 0 {
-        return Err(HydraMsgError::InvalidInput("lobby max_members must be greater than zero"));
+        return Err(HydraMsgError::InvalidInput(
+            "lobby max_members must be greater than zero",
+        ));
     }
     if policy.max_members > GroupMode::Interactive.max_roster_entries() {
-        return Err(HydraMsgError::InvalidInput("lobby max_members exceeds HYDRA group limit"));
+        return Err(HydraMsgError::InvalidInput(
+            "lobby max_members exceeds HYDRA group limit",
+        ));
     }
     Ok(())
 }
@@ -2028,7 +2031,6 @@ fn decode_lobby_line(line: &str) -> HydraResult<HydraLobby> {
         members,
     })
 }
-
 
 fn encode_lobby_invite(lobby: &HydraLobby, members: &[ContactId]) -> Vec<u8> {
     let mut out = Vec::new();
@@ -2081,13 +2083,16 @@ fn decode_lobby_invite(bytes: &[u8]) -> HydraResult<HydraLobby> {
             if let Some(value) = line.strip_prefix("id:") {
                 id = Some(LobbyId(exact_array_from_vec(hex_decode(value)?)?));
             } else if let Some(value) = line.strip_prefix("label:") {
-                label = Some(String::from_utf8(hex_decode(value)?).map_err(|_| {
-                    HydraMsgError::InvalidEncoding("lobby invite label")
-                })?);
+                label = Some(
+                    String::from_utf8(hex_decode(value)?)
+                        .map_err(|_| HydraMsgError::InvalidEncoding("lobby invite label"))?,
+                );
             } else if let Some(value) = line.strip_prefix("max_members:") {
-                max_members = Some(value.parse::<usize>().map_err(|_| {
-                    HydraMsgError::InvalidEncoding("lobby invite max_members")
-                })?);
+                max_members = Some(
+                    value
+                        .parse::<usize>()
+                        .map_err(|_| HydraMsgError::InvalidEncoding("lobby invite max_members"))?,
+                );
             } else if let Some(value) = line.strip_prefix("members:") {
                 if !value.trim().is_empty() {
                     members = value
@@ -2214,7 +2219,9 @@ fn decode_contact_card(bytes: &[u8]) -> HydraResult<HydraContact> {
     let expected_id = ContactId(RustCryptoBackend::sha3_256(&public_key));
     let id = id.unwrap_or(expected_id);
     if id != expected_id {
-        return Err(HydraMsgError::InvalidEncoding("contact fingerprint mismatch"));
+        return Err(HydraMsgError::InvalidEncoding(
+            "contact fingerprint mismatch",
+        ));
     }
     Ok(HydraContact {
         id,
@@ -2306,7 +2313,9 @@ fn decode_handshake(bytes: &[u8], magic: &[u8]) -> HydraResult<ParsedHandshake> 
     let expected_id = IdentityId(RustCryptoBackend::sha3_256(&public_key));
     let id = id.ok_or(HydraMsgError::InvalidEncoding("handshake id"))?;
     if id != expected_id {
-        return Err(HydraMsgError::InvalidEncoding("handshake identity mismatch"));
+        return Err(HydraMsgError::InvalidEncoding(
+            "handshake identity mismatch",
+        ));
     }
     Ok(ParsedHandshake {
         peer_id: id,
@@ -2331,10 +2340,8 @@ fn derive_facade_handshake_material(
     transcript.extend_from_slice(&a);
     transcript.extend_from_slice(&b);
     let transcript_hash = RustCryptoBackend::sha3_512(&transcript);
-    let secret = RustCryptoBackend::hkdf_extract(
-        b"HYDRA-MSG/v1/facade-handshake-secret",
-        &transcript_hash,
-    );
+    let secret =
+        RustCryptoBackend::hkdf_extract(b"HYDRA-MSG/v1/facade-handshake-secret", &transcript_hash);
     (secret, transcript_hash)
 }
 
@@ -2440,11 +2447,15 @@ impl<'a> BytesReader<'a> {
     }
 
     fn read_u32(&mut self) -> HydraResult<u32> {
-        Ok(u32::from_be_bytes(exact_array_from_vec(self.read(4)?.to_vec())?))
+        Ok(u32::from_be_bytes(exact_array_from_vec(
+            self.read(4)?.to_vec(),
+        )?))
     }
 
     fn read_u64(&mut self) -> HydraResult<u64> {
-        Ok(u64::from_be_bytes(exact_array_from_vec(self.read(8)?.to_vec())?))
+        Ok(u64::from_be_bytes(exact_array_from_vec(
+            self.read(8)?.to_vec(),
+        )?))
     }
 }
 
@@ -2507,7 +2518,10 @@ fn hex_nibble(byte: u8) -> HydraResult<u8> {
 }
 
 fn escape_line(input: &str) -> String {
-    input.replace('%', "%25").replace('\n', "%0a").replace('\r', "%0d")
+    input
+        .replace('%', "%25")
+        .replace('\n', "%0a")
+        .replace('\r', "%0d")
 }
 
 fn unescape_line(input: &str) -> String {
@@ -2568,7 +2582,10 @@ mod tests {
         let mut imported = fresh("target/hydra-msg-test-contact-import");
         imported.import_contacts(exported).unwrap();
         assert_eq!(imported.list_contacts().len(), 1);
-        assert_eq!(imported.get_contact(bob_contact.id()).unwrap().label(), "Bob");
+        assert_eq!(
+            imported.get_contact(bob_contact.id()).unwrap().label(),
+            "Bob"
+        );
         assert!(!imported.get_contact(bob_contact.id()).unwrap().verified());
         imported.block_contact(bob_contact.id()).unwrap();
         assert!(imported.get_contact(bob_contact.id()).unwrap().blocked());
@@ -2593,8 +2610,14 @@ mod tests {
         let offer = alice.init_handshake(bob_contact.id()).unwrap();
         let answer = bob.reply_handshake(offer).unwrap();
         alice.finish_handshake(answer).unwrap();
-        assert_eq!(alice.session_status(bob_contact.id()).unwrap(), HydraSessionStatus::Active);
-        assert_eq!(bob.session_status(alice_contact.id()).unwrap(), HydraSessionStatus::Active);
+        assert_eq!(
+            alice.session_status(bob_contact.id()).unwrap(),
+            HydraSessionStatus::Active
+        );
+        assert_eq!(
+            bob.session_status(alice_contact.id()).unwrap(),
+            HydraSessionStatus::Active
+        );
 
         let bytes_attachment = HydraAttachment::from_bytes(b"anonymous-bytes".to_vec()).unwrap();
         assert_eq!(bytes_attachment.filename(), "attachment.bin");
@@ -2631,9 +2654,15 @@ mod tests {
         let bob_id = bob.generate_id("pw").unwrap();
         alice.set_active_id(alice_id, "pw").unwrap();
         bob.set_active_id(bob_id, "pw").unwrap();
-        let alice_contact = bob.add_contact(alice.create_contact_card().unwrap()).unwrap();
-        let bob_contact = alice.add_contact(bob.create_contact_card().unwrap()).unwrap();
-        let answer = bob.reply_handshake(alice.init_handshake(bob_contact.id()).unwrap()).unwrap();
+        let alice_contact = bob
+            .add_contact(alice.create_contact_card().unwrap())
+            .unwrap();
+        let bob_contact = alice
+            .add_contact(bob.create_contact_card().unwrap())
+            .unwrap();
+        let answer = bob
+            .reply_handshake(alice.init_handshake(bob_contact.id()).unwrap())
+            .unwrap();
         alice.finish_handshake(answer).unwrap();
 
         let envelope = alice
@@ -2656,7 +2685,9 @@ mod tests {
         let mut hydra = fresh("target/hydra-msg-test-lobby");
         let id = hydra.generate_id("pw").unwrap();
         hydra.set_active_id(id, "pw").unwrap();
-        let lobby = hydra.create_lobby(HydraLobbyPolicy::new("test", 4)).unwrap();
+        let lobby = hydra
+            .create_lobby(HydraLobbyPolicy::new("test", 4))
+            .unwrap();
         let invite = hydra.create_lobby_invite(lobby.id()).unwrap();
         let joined = hydra.join_lobby(invite).unwrap();
         assert_eq!(joined.id(), lobby.id());
@@ -2682,17 +2713,30 @@ mod tests {
         alice.set_active_id(alice_id, "pw").unwrap();
         bob.set_active_id(bob_id, "pw").unwrap();
 
-        let alice_contact = bob.add_contact(alice.create_contact_card().unwrap()).unwrap();
-        let bob_contact = alice.add_contact(bob.create_contact_card().unwrap()).unwrap();
-        let answer = bob.reply_handshake(alice.init_handshake(bob_contact.id()).unwrap()).unwrap();
+        let alice_contact = bob
+            .add_contact(alice.create_contact_card().unwrap())
+            .unwrap();
+        let bob_contact = alice
+            .add_contact(bob.create_contact_card().unwrap())
+            .unwrap();
+        let answer = bob
+            .reply_handshake(alice.init_handshake(bob_contact.id()).unwrap())
+            .unwrap();
         alice.finish_handshake(answer).unwrap();
 
-        let lobby = alice.create_lobby(HydraLobbyPolicy::new("party", 4)).unwrap();
-        alice.add_lobby_member(lobby.id(), bob_contact.id()).unwrap();
+        let lobby = alice
+            .create_lobby(HydraLobbyPolicy::new("party", 4))
+            .unwrap();
+        alice
+            .add_lobby_member(lobby.id(), bob_contact.id())
+            .unwrap();
         let invite = alice.create_lobby_invite(lobby.id()).unwrap();
         let joined = bob.join_lobby(invite).unwrap();
         assert_eq!(joined.id(), lobby.id());
-        assert_eq!(bob.lobby_members(joined.id()).unwrap(), vec![alice_contact.id()]);
+        assert_eq!(
+            bob.lobby_members(joined.id()).unwrap(),
+            vec![alice_contact.id()]
+        );
 
         let outbound = alice
             .send_lobby(
@@ -2712,7 +2756,10 @@ mod tests {
 
         let normal = alice.send(bob_contact.id(), "not a lobby message").unwrap();
         assert!(bob.receive_lobby(normal.clone()).is_err());
-        assert_eq!(bob.receive(normal).unwrap().text().unwrap(), "not a lobby message");
+        assert_eq!(
+            bob.receive(normal).unwrap().text().unwrap(),
+            "not a lobby message"
+        );
     }
 
     #[test]
@@ -2724,10 +2771,15 @@ mod tests {
         let card = hydra.create_contact_card().unwrap();
         let contact = hydra.add_contact(card).unwrap();
         hydra.rename_contact(contact.id(), "self-contact").unwrap();
-        hydra.store_message(contact.id(), true, b"persisted".to_vec(), vec![
-            HydraAttachment::from_named_bytes("persisted.bin", b"bytes".to_vec()).unwrap(),
-        ]);
-        let lobby = hydra.create_lobby(HydraLobbyPolicy::new("persisted lobby", 3)).unwrap();
+        hydra.store_message(
+            contact.id(),
+            true,
+            b"persisted".to_vec(),
+            vec![HydraAttachment::from_named_bytes("persisted.bin", b"bytes".to_vec()).unwrap()],
+        );
+        let lobby = hydra
+            .create_lobby(HydraLobbyPolicy::new("persisted lobby", 3))
+            .unwrap();
         hydra.add_lobby_member(lobby.id(), contact.id()).unwrap();
         hydra.persist().unwrap();
 
@@ -2737,7 +2789,10 @@ mod tests {
         assert!(!reopened.get_id(id).unwrap().unlocked());
         reopened.set_active_id(id, "pw").unwrap();
         assert_eq!(reopened.list_contacts().len(), 1);
-        assert_eq!(reopened.get_contact(contact.id()).unwrap().label(), "self-contact");
+        assert_eq!(
+            reopened.get_contact(contact.id()).unwrap().label(),
+            "self-contact"
+        );
         let messages = reopened.list_messages(contact.id());
         assert_eq!(messages.len(), 1);
         let message = reopened.get_message(messages[0]).unwrap();
@@ -2751,7 +2806,9 @@ mod tests {
         let mut hydra = fresh("target/hydra-msg-test-backup-source");
         let id = hydra.generate_id("id-pw").unwrap();
         hydra.set_active_id(id, "id-pw").unwrap();
-        let contact = hydra.add_contact(hydra.create_contact_card().unwrap()).unwrap();
+        let contact = hydra
+            .add_contact(hydra.create_contact_card().unwrap())
+            .unwrap();
         hydra.store_message(contact.id(), true, b"backup-message".to_vec(), Vec::new());
         hydra.persist().unwrap();
         let backup = hydra.export_backup("backup-pw").unwrap();
@@ -2765,5 +2822,4 @@ mod tests {
         assert_eq!(restored.list_messages(contact.id()).len(), 1);
         restored.set_active_id(id, "id-pw").unwrap();
     }
-
 }
