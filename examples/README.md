@@ -1,22 +1,30 @@
 # HYDRA-MSG examples
 
-This directory contains runnable examples over the public `hydra-msg` facade.
+`examples/` contains runnable examples over the public `hydra-msg` facade.
 
-Examples are **not protocol authority**. They demonstrate how app developers move opaque HYDRA bytes over any carrier.
+Examples demonstrate how app code moves opaque HYDRA bytes over different carriers. Protocol authority stays in the crates and specs.
 
-## Active stupid-simple examples
+## Navigation
 
-```text
-examples/handshake_roundtrip     two identities, contact cards, handshake, send/receive
-examples/contact_card            contact-card create/add/verify/export/import flow
-examples/attachment_roundtrip    text + file attachment + in-memory byte attachment
-examples/lobby_roundtrip         lobby invite + recipient-tagged lobby send/receive
-examples/mobile_perf_web         LAN browser/device WASM benchmark host
-examples/manual_file_carrier     files on disk as a manual opaque-byte carrier
-examples/webrtc_manual_carrier   WebRTC DataChannel carrier after manual contact-card exchange
-```
+- [Main README](../README.md)
+- [Rust SDK facade](../crates/hydra-msg/README.md)
+- [WASM/JavaScript bindings](../crates/hydra-msg-wasm/README.md)
+- [QA and validation](../qa/README.md)
+- [Carrier example rules](../docs/project/carrier-examples.md)
 
-Run the native examples from the repo root:
+## Example list
+
+| Example | Purpose |
+|---|---|
+| [handshake_roundtrip](handshake_roundtrip/README.md) | Two identities, contact cards, handshake, send/receive. |
+| [contact_card](contact_card/README.md) | Contact-card create/add/verify/export/import flow. |
+| [attachment_roundtrip](attachment_roundtrip/README.md) | Text plus file and byte attachments. |
+| [lobby_roundtrip](lobby_roundtrip/README.md) | Lobby invite and recipient-tagged lobby send/receive. |
+| [manual_file_carrier](manual_file_carrier/README.md) | Files on disk as a manual opaque-byte carrier. |
+| [mobile_perf_web](mobile_perf_web/README.md) | LAN browser/device WASM benchmark host. |
+| [webrtc_manual_carrier](webrtc_manual_carrier/README.md) | WebRTC DataChannel carrier after manual contact-card exchange. |
+
+## Run native examples
 
 ```bash
 cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
@@ -26,26 +34,27 @@ cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
 cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 ```
 
-
 ## Run all example checks
 
-From the repo root, run:
+Unix:
+
+```bash
+./qa/ci/check-examples.sh
+```
+
+PowerShell:
 
 ```powershell
 .\qa\ci\check-examples.ps1
 ```
 
-Unix:
+Use `--skip-wasm` on Unix or `-SkipWasm` on PowerShell for native-only example checks.
 
-```bash
-qa/ci/check-examples.sh
-```
+## Reusable WASM package
 
-The script runs the native examples, checks the browser host examples, and builds example-local WASM packages with `wasm-pack`. For native-only example checks, use `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+The real WASM component lives in `crates/hydra-msg-wasm`.
 
-## Reusable WASM web package
-
-The real WASM component lives in `crates/hydra-msg-wasm`. Build the reusable package for your own web app from the repo root:
+Build reusable web output for your own app:
 
 ```bash
 ./qa/ci/build-wasm-web.sh
@@ -57,44 +66,4 @@ Output:
 target/hydra-msg-wasm/web/
 ```
 
-## Browser/mobile WASM facade benchmark
-
-Build the example-local WASM package and run the LAN benchmark host:
-
-```bash
-examples/mobile_perf_web/scripts/build-wasm.sh
-cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
-```
-
-Then open the LAN URL from a phone/tablet/browser and click **Run browser/device HYDRA WASM benchmark**.
-
-## WebRTC manual carrier
-
-Build the WASM binding package and run the WebRTC carrier host:
-
-```bash
-examples/webrtc_manual_carrier/scripts/build-wasm.sh
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
-```
-
-Or on Windows PowerShell:
-
-```powershell
-examples\webrtc_manual_carrier\scripts\build-wasm.ps1
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
-```
-
-Contact cards are exchanged manually and out-of-band. WebRTC only carries HYDRA handshake bytes and encrypted envelopes after both users import/verify each other's contact cards.
-
-## Demo reference material
-
-The `hydra-app-core` and `hydra-app` demo crates are kept under:
-
-```text
-examples/hydra-app-core
-examples/hydra-app
-```
-
-They are not active workspace members, not release targets, and not public API authority. Do not add new flows there; write new examples against `crates/hydra-msg` instead.
-
-Carrier ownership and carrier example rules are documented in `../docs/project/carrier-examples.md`.
+Example browser hosts build their own `web/pkg/` folders only when testing those examples.

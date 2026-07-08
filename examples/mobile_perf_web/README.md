@@ -1,30 +1,40 @@
 # HYDRA mobile performance web host
 
-Hosts a tiny LAN web page that can run two benchmarks:
+Hosts a LAN web page for browser/device WASM benchmarks.
 
-1. **Server-side facade benchmark** — calls `hydra.benchmark()` on the machine hosting this page.
-2. **Browser/device WASM benchmark** — calls the `hydra-msg-wasm` binding on the phone/tablet/browser that opened the page.
+## Navigation
 
-Build the example-local WASM package first:
+- [Main README](../../README.md)
+- [Examples](../README.md)
+- [WASM/JavaScript bindings](../../crates/hydra-msg-wasm/README.md)
+- [Benchmark notes](../../docs/project/benchmark-results.md)
+
+## Build example-local WASM
+
+Unix:
 
 ```bash
 examples/mobile_perf_web/scripts/build-wasm.sh
 ```
 
-Or:
+PowerShell:
 
 ```powershell
 examples\mobile_perf_web\scripts\build-wasm.ps1
 ```
 
-For a reusable web package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
+This writes the example package to:
 
-Run the LAN host from the repo root:
+```text
+examples/mobile_perf_web/web/pkg/
+```
+
+For a reusable package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
+
+## Run
 
 ```bash
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 
-Then open the LAN URL from another device.
-
-The WASM binding is intentionally still stupid-simple: no configs, no profiles, no advanced public API. Browser persistence in this phase is in-memory unless the app explicitly uses `exportBackup` / `importBackup` or individual export/import helpers.
+Open the LAN URL from another device and run the browser/device benchmark.

@@ -1,27 +1,37 @@
 # WebRTC manual carrier example
 
-This example demonstrates WebRTC as a carrier for opaque HYDRA bytes.
+Demonstrates WebRTC DataChannel as a carrier for opaque HYDRA bytes.
 
-Important rule: **contact-card exchange is manual and out-of-band**. The page does
-not send contact cards over WebRTC. Both users must copy/paste each other's
-contact card first. Only after both sides have imported and verified the peer
-contact card should WebRTC carry HYDRA handshake bytes and encrypted envelopes.
+Contact-card exchange is manual and out-of-band. The page does not send contact cards over WebRTC. Both users copy/paste each other's contact card first. WebRTC carries HYDRA handshake bytes and encrypted envelopes after both users import and verify the peer contact card.
 
-## Build WASM
+## Navigation
 
-From the repo root, build the example-local WASM package:
+- [Main README](../../README.md)
+- [Examples](../README.md)
+- [WASM/JavaScript bindings](../../crates/hydra-msg-wasm/README.md)
+- [Carrier example rules](../../docs/project/carrier-examples.md)
 
-```powershell
-examples\webrtc_manual_carrier\scripts\build-wasm.ps1
-```
+## Build example-local WASM
 
-or:
+Unix:
 
 ```bash
 examples/webrtc_manual_carrier/scripts/build-wasm.sh
 ```
 
-For a reusable web package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
+PowerShell:
+
+```powershell
+examples\webrtc_manual_carrier\scripts\build-wasm.ps1
+```
+
+This writes the example package to:
+
+```text
+examples/webrtc_manual_carrier/web/pkg/
+```
+
+For a reusable package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
 
 ## Run
 
@@ -33,16 +43,11 @@ Open the printed LAN URL from two browser tabs or two devices.
 
 ## Flow
 
-1. On both devices, click **Create local HYDRA identity/contact card**.
-2. Manually copy each contact card to the other device using any out-of-band
-   method: QR, text file, chat, clipboard, or in-person transfer.
-3. Paste the peer contact card and click **Import peer contact card**.
-4. Compare/confirm the safety code, then click **Verify imported contact**.
+1. On both devices, create a local HYDRA identity/contact card.
+2. Manually copy each contact card to the other device using QR, text file, chat, clipboard, or in-person transfer.
+3. Paste the peer contact card and import it.
+4. Compare and confirm the safety code.
 5. Use the WebRTC manual SDP offer/answer text boxes to open a DataChannel.
 6. The initiator sends the HYDRA handshake offer over the DataChannel.
 7. The responder replies with the HYDRA handshake answer over the DataChannel.
-8. Both sides can send encrypted HYDRA messages over WebRTC.
-
-WebRTC, SDP copy/paste, and the DataChannel are carrier mechanics only. HYDRA
-identity, contact trust, handshake, encryption, decryption, and message parsing
-stay inside the `hydra-msg` facade.
+8. Both sides send encrypted HYDRA messages over WebRTC.

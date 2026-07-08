@@ -2,14 +2,23 @@
 
 This example demonstrates the simplest possible carrier: files on disk.
 
-HYDRA creates opaque bytes for contact cards, handshake offers/answers, and
-encrypted envelopes. This example writes those bytes to files and reads them
-back to prove the carrier has no protocol authority.
+HYDRA creates opaque bytes for contact cards, handshake offers/answers, and encrypted envelopes. This example writes those bytes to files and reads them back.
 
-Run from the repo root:
+## Navigation
+
+- [Main README](../../README.md)
+- [Examples](../README.md)
+- [Rust SDK facade](../../crates/hydra-msg/README.md)
+- [Carrier example rules](../../docs/project/carrier-examples.md)
+
+## Run
 
 ```bash
 cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 ```
 
-The example writes carrier files under `target/examples/manual_file_carrier/carrier`.
+Carrier files are written under:
+
+```text
+target/examples/manual_file_carrier/carrier
+```

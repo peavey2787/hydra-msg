@@ -1,101 +1,71 @@
 # HYDRA-MSG
 
-HYDRA-MSG is a Rust/WASM post-quantum encrypted messaging SDK. The current refactor goal is simple:
+HYDRA-MSG is a Rust/WASM post-quantum encrypted messaging SDK for app developers.
 
-> Make HYDRA stupid-simple for app developers.
+Use `crates/hydra-msg` for the Rust SDK, `crates/hydra-msg-wasm` for browser/mobile bindings, and `examples/` for runnable copy/paste flows.
 
-App developers should start with `crates/hydra-msg`, not the lower-level protocol crates and not the demo reference crates.
+## Navigation
 
-## Status
-
-This repository is an active refactor worktree, not a final cryptographic standard. Protocol authority remains in `docs/spec/`, while the public developer API target lives in `docs/project/public-developer-api.md`.
-
-Do not describe this project as independently reviewed, fully interoperable, or finally frozen until the release criteria in `docs/validation/release-criteria.md` are satisfied.
+- [Crates](crates/README.md)
+- [Rust SDK facade](crates/hydra-msg/README.md)
+- [WASM/JavaScript bindings](crates/hydra-msg-wasm/README.md)
+- [Examples](examples/README.md)
+- [QA and validation](qa/README.md)
+- [CI helpers](qa/ci/README.md)
+- [Public developer API](docs/project/public-developer-api.md)
+- [WASM build notes](docs/project/wasm-javascript-bindings.md)
+- [Benchmark notes](docs/project/benchmark-results.md)
 
 ## Repository layout
 
 ```text
-crates/               protocol/product Rust crates
-  hydra-core          protocol constants, shared types, errors, domain labels
-  hydra-crypto        fixed-suite crypto backend internals
-  hydra-envelope      byte-exact envelope/header encoding and validation
-  hydra-session       1:1 sessions, ratchets, replay handling, refresh, close
-  hydra-group         group modes and lobby/group internals behind the facade
-  hydra-msg           stupid-simple public developer facade
-  hydra-msg-wasm      browser/mobile WASM bindings over hydra-msg
-  hydra-msg-cli       developer CLI over hydra-msg
-
-examples/             active copy-paste developer examples
-  handshake_roundtrip contact cards, handshake, send/receive
-  contact_card        contact-card create/add/verify/export/import flow
-  attachment_roundtrip text + file + in-memory byte attachment flow
-  lobby_roundtrip     lobby invite + recipient-tagged lobby send/receive flow
-  mobile_perf_web     LAN web host for server and browser/device WASM benchmarks
-  manual_file_carrier files on disk as a manual opaque-byte carrier
-  webrtc_manual_carrier WebRTC DataChannel carrier after manual contact-card exchange
-  hydra-app-core      app-domain demo reference, outside active workspace
-  hydra-app           CLI/local browser GUI demo reference, outside active workspace
-
-docs/project/         roadmap, public API target, audits, WASM/CLI docs
-docs/spec/            protocol authority
-docs/impl/            implementation notes
-docs/validation/      release/freeze criteria and test-vector notes
-qa/                   QA scripts, vector tooling, fuzz workspace, validation assets
+crates/      maintained Rust components
+examples/    runnable examples over the public SDK
+qa/          validation scripts, vector tooling, and fuzzing workspace
+docs/        API docs, protocol specs, implementation notes, and validation criteria
 ```
 
-## Stupid-simple Rust API shape
+## Small working Rust example
 
 ```rust
-use hydra_msg::{Hydra, HydraMessage};
+use hydra_msg::{Hydra, HydraMessage, HydraResult};
 
-let mut hydra = Hydra::open("./hydra-msg-data")?;
+fn main() -> HydraResult<()> {
+    let _ = std::fs::remove_dir_all("target/readme-example/alice");
+    let _ = std::fs::remove_dir_all("target/readme-example/bob");
 
-let my_id = hydra.generate_id("password")?;
-hydra.set_active_id(my_id, "password")?;
+    let mut alice = Hydra::open("target/readme-example/alice")?;
+    let mut bob = Hydra::open("target/readme-example/bob")?;
 
-let my_card = hydra.create_contact_card()?;
-let bob = hydra.add_contact(bob_card)?;
-hydra.verify_contact(bob.id(), safety_code)?;
+    let alice_id = alice.generate_id("alice-password")?;
+    let bob_id = bob.generate_id("bob-password")?;
+    alice.set_active_id(alice_id, "alice-password")?;
+    bob.set_active_id(bob_id, "bob-password")?;
 
-let offer = hydra.init_handshake(bob.id())?;
-let answer = hydra.reply_handshake(offer)?;
-hydra.finish_handshake(answer)?;
+    let alice_contact = bob.add_contact(alice.create_contact_card()?)?;
+    let bob_contact = alice.add_contact(bob.create_contact_card()?)?;
 
-let envelope = hydra.send(
-    bob.id(),
-    HydraMessage::text("hello")
-        .attach_file("./photo.jpg")?
-        .attach_bytes("data.bin", bytes_here)?,
-)?;
+    alice.verify_contact(bob_contact.id(), bob_contact.safety_code())?;
+    bob.verify_contact(alice_contact.id(), alice_contact.safety_code())?;
 
-let data = hydra.receive(envelope)?;
-println!("{}", data.text()?);
-for attachment in data.attachments() {
-    std::fs::write(attachment.filename(), attachment.bytes())?;
+    let answer = bob.reply_handshake(alice.init_handshake(bob_contact.id())?)?;
+    alice.finish_handshake(answer)?;
+
+    let envelope = alice.send(bob_contact.id(), HydraMessage::text("hello"))?;
+    let received = bob.receive(envelope)?;
+
+    println!("Bob received: {}", received.text()?);
+    Ok(())
 }
 ```
 
-See `docs/project/public-developer-api.md` for the full public API list.
+Run the complete version:
 
-## Active examples
-
-Run the primary public SDK examples from the repo root:
-
-```powershell
+```bash
 cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
-cargo run --manifest-path examples/contact_card/Cargo.toml
-cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml
-cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
-cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
-cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
 ```
 
-Build the reusable browser/mobile WASM package when you want files for your own web app:
-
-```powershell
-.\qa\ci\build-wasm-web.ps1
-```
+## Build reusable WASM for a web app
 
 Unix:
 
@@ -103,112 +73,62 @@ Unix:
 ./qa/ci/build-wasm-web.sh
 ```
 
-The reusable package is written to:
+PowerShell:
+
+```powershell
+.\qa\ci\build-wasm-web.ps1
+```
+
+Output:
 
 ```text
 target/hydra-msg-wasm/web/
 ```
 
-Example hosts build their own `web/pkg/` output only when testing those examples. For the mobile browser benchmark:
+Example browser hosts build their own `web/pkg/` folders only when testing those examples.
 
-```powershell
-examples\mobile_perf_web\scripts\build-wasm.ps1
-cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
-```
+## Run validation
 
-For the WebRTC carrier example:
-
-```powershell
-examples\webrtc_manual_carrier\scripts\build-wasm.ps1
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
-```
-
-That example requires manual/out-of-band contact-card exchange before WebRTC carries any HYDRA handshake bytes or encrypted envelopes.
-
-
-## Real-world benchmark snapshot
-
-Informal Rust/WASM browser benchmark runs reported during the refactor are promising:
-
-```text
-Samsung Galaxy S20 Ultra, browser WASM, 1 KiB payload:
-  handshake avg:     10.0 ms
-  send+receive avg:   0.0775 ms
-
-ASUS TUF Ryzen 7 A16 laptop, browser WASM, 1 KiB payload:
-  handshake avg:      5.7333 ms
-  send+receive avg:   0.0521 ms
-
-Desktop PC, browser WASM, 1 KiB payload:
-  handshake avg:      4.6633 ms
-  send+receive avg:   0.0412 ms
-
-Older low-end tablet, browser WASM, 1 KiB payload:
-  handshake avg:    162.5 ms
-  send+receive avg:   1.27 ms
-```
-
-See `docs/project/benchmark-results.md` for the full table and caveats. These are user-reported real-world results, not the final P13 validation record.
-
-
-## Validation scripts
-
-Run the full workspace validation from the repo root:
-
-```powershell
-.\qa\ci\check-all.ps1
-```
-
-Run runnable examples and browser package checks separately:
-
-```powershell
-.\qa\ci\check-examples.ps1
-```
-
-Unix setup after ZIP extraction:
+Unix after extracting a ZIP:
 
 ```bash
 sh qa/ci/linux-permissions.sh
-```
-
-Unix equivalents:
-
-```bash
 ./qa/ci/check-all.sh
 ./qa/ci/check-examples.sh
 ```
 
-Do not run the Unix scripts with `sudo` unless Cargo/Rust is installed for root.
-
-The full validation script runs formatting, workspace tests, clippy, docs/static checks, and vector checks. The example script runs native examples, compiles browser hosts, and builds the WASM packages so normal validation does not wait on example flows.
-
-Offline note: the full gate includes vector checks. Those run with Cargo offline mode. The vector-tool lock file is aligned with the main workspace lock so a normal workspace build primes the local Cargo cache for vector validation.
-
-
-## Developer CLI
-
-The new CLI is `hydra-msg-cli`, a thin utility over the public facade:
+PowerShell:
 
 ```powershell
-cargo run -p hydra-msg-cli -- generate-id
-cargo run -p hydra-msg-cli -- contact-card
-cargo run -p hydra-msg-cli -- handshake-demo
-cargo run -p hydra-msg-cli -- send-demo
-cargo run -p hydra-msg-cli -- attachment-demo
-cargo run -p hydra-msg-cli -- bench
-cargo run -p hydra-msg-cli -- doctor
+.\qa\ci\check-all.ps1
+.\qa\ci\check-examples.ps1
 ```
 
-See `docs/project/hydra-msg-cli.md`.
+`check-all` runs workspace validation. `check-examples` runs runnable examples and browser package checks separately.
 
-Carrier ownership and carrier example rules are documented in `docs/project/carrier-examples.md`.
+## Benchmark snapshot
 
-## Demo app status
+```text
+Samsung Galaxy S20 Ultra, browser WASM, 1 KiB payload:
+  handshake avg:      10.0 ms
+  send+receive avg:    0.0775 ms
 
-`examples/hydra-app-core` and `examples/hydra-app` are demo reference crates kept outside the active workspace while useful flows are rewritten against `hydra-msg`.
+ASUS TUF Ryzen 7 A16 laptop, browser WASM, 1 KiB payload:
+  handshake avg:       5.7333 ms
+  send+receive avg:    0.0521 ms
 
-They are not protocol authority, not the public API, and not part of the active release path.
+Desktop PC, browser WASM, 1 KiB payload:
+  handshake avg:       4.6633 ms
+  send+receive avg:    0.0412 ms
+
+BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition,
+browser WASM, 1 KiB payload:
+  handshake avg:     162.5 ms
+  send+receive avg:    1.27 ms
+```
+
+See [Benchmark notes](docs/project/benchmark-results.md) for the full table.
 
 ## Source-control safety
 
-Runtime data must not be committed. `hydra-msg-data/`, identity vaults, test identities, app runtime state, and local secrets stay out of git.
+Do not commit runtime data, identity stores, test identities, app state, local secrets, `target/`, or generated browser `pkg/` folders.

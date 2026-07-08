@@ -1,8 +1,6 @@
 # HYDRA-MSG real-world benchmark notes
 
-Status: user-reported P12 performance evidence, not final P13 validation.
-
-These numbers came from real browser/WASM runs reported during the HYDRA-MSG facade refactor. They are useful evidence that the `hydra-msg` message path is viable on modern mobile hardware, but they are not a substitute for the final manual validation gate.
+These numbers came from real browser/WASM runs reported during HYDRA-MSG development. They are useful evidence that the `hydra-msg` message path is viable on modern mobile hardware, but they are not a substitute for the final validation gate.
 
 ## Important caveats
 
@@ -11,7 +9,7 @@ These numbers came from real browser/WASM runs reported during the HYDRA-MSG fac
 - WASM results measure the device/browser that opened the page.
 - Server/native results measure the computer hosting the page, not the phone/tablet.
 - Message timings are batched internally and reported as per-operation averages.
-- The final P13 validation gate still needs to run format, tests, clippy, examples, docs checks, and fresh benchmark captures on the release candidate.
+- The final validation gate still needs to run format, tests, clippy, examples, docs checks, and fresh benchmark captures on the release candidate.
 
 ## 1 KiB payload browser/WASM results
 
@@ -22,7 +20,7 @@ Payload: 1,024 bytes. Envelope: 4,096 bytes. Message batch: 256 encrypt/decrypt 
 | Desktop PC | Browser WASM | 535.8 ms | 4.6633 ms | 2.0000 ms | 9.8000 ms | 0.0178 ms | 0.0168 ms | 0.0219 ms | 0.0234 ms | 0.0223 ms | 0.0293 ms | 0.0412 ms | 0.0398 ms | 0.0469 ms |
 | ASUS TUF Ryzen 7 A16 laptop | Browser WASM | 632.0 ms | 5.7333 ms | 2.0000 ms | 14.0000 ms | 0.0230 ms | 0.0195 ms | 0.0273 ms | 0.0290 ms | 0.0234 ms | 0.0312 ms | 0.0521 ms | 0.0469 ms | 0.0547 ms |
 | Samsung Galaxy S20 Ultra | Browser WASM | 1,064 ms | 10.0 ms | 5.4 ms | 20.6 ms | 0.0340 ms | 0.0300 ms | 0.0340 ms | 0.0432 ms | 0.0400 ms | 0.0450 ms | 0.0775 ms | 0.0762 ms | 0.0797 ms |
-| Older low-end tablet, over 5 years old | Browser WASM | 17,042.5 ms | 162.5 ms | not captured | 310.2 ms | 0.5 ms | not captured | 0.7 ms | 0.7 ms | not captured | 1.03 ms | 1.27 ms | not captured | 1.69 ms |
+| BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition | Browser WASM | 17,042.5 ms | 162.5 ms | not captured | 310.2 ms | 0.5 ms | not captured | 0.7 ms | 0.7 ms | not captured | 1.03 ms | 1.27 ms | not captured | 1.69 ms |
 
 ## Laptop native/server reference
 
@@ -45,19 +43,19 @@ Payload: 64,024 bytes. Envelope: 147,456 bytes. Message batch: 16 encrypt/decryp
 
 ## Interpretation
 
-The reported data supports these P12 conclusions:
+The reported data supports these conclusions:
 
-1. The normal 1 KiB message path is fast on desktop, laptop, modern mobile, and even a very old low-end tablet.
+1. The normal 1 KiB message path is fast on desktop, laptop, modern mobile, and even a BLU M8L (Original).
 2. The modern mobile result is especially strong: about 10 ms average handshake and under 0.1 ms average send+receive for 1 KiB payloads.
-3. The weak tablet is still usable for message send/receive, but full handshakes are visibly heavier and should remain session setup/rekey events, not per-message work.
+3. The BLU M8L (Original) is still usable for message send/receive, but full handshakes are visibly heavier and should remain session setup/rekey events, not per-message work.
 4. The larger-message result suggests payload sizes around 64 KiB remain practical, but padding/envelope expansion and sustained thermal behavior still need release-candidate validation.
 5. The likely bottlenecks for a real app are carrier setup, WebRTC negotiation/reconnect, storage writes, UI rendering, network latency, background mobile behavior, and optional relay/mailbox behavior — not HYDRA message encryption itself.
 
-## Release language allowed before P13
+## Release language before final validation
 
 Allowed:
 
-> HYDRA-MSG has promising real-world Rust/WASM benchmark results on desktop, laptop, a Samsung Galaxy S20 Ultra, and an older low-end tablet. The message path appears mobile-viable, pending final release-candidate validation.
+> HYDRA-MSG has promising real-world Rust/WASM benchmark results on desktop, laptop, a Samsung Galaxy S20 Ultra, and a BLU M8L (Original). The message path appears mobile-viable, pending final validation.
 
 Not allowed yet:
 

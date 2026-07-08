@@ -1,49 +1,46 @@
 # HYDRA-MSG QA workspace
 
-This directory contains validation, evidence, and quality-assurance
-infrastructure for HYDRA-MSG.
+`qa/` contains validation scripts, vector tooling, fuzzing workspace folders, and release evidence helpers.
 
-`qa/` is not protocol specification and not runtime/library implementation
-source. Protocol authority lives in `docs/spec/`. Runtime/reference
-implementation source lives in `crates/`.
+## Navigation
 
-QA artifacts may be release-critical. Passing CI, reproducible vectors, fuzzing
-results, manifests, and provenance records can become part of the production
-release evidence. However, the existence of files in `qa/` does not by itself
-prove that a check passed.
+- [Main README](../README.md)
+- [CI helpers](ci/README.md)
+- [Fuzzing workspace](fuzz/README.md)
+- [Vector generator](tools/vector-gen/README.md)
+- [Validation docs](../docs/validation/release-criteria.md)
 
 ## Contents
 
 ```text
 qa/
-├── ci/       # reusable CI/local-check scripts
-├── fuzz/     # dedicated fuzzing infrastructure, targets, corpora, artifacts
-├── vectors/  # generated vectors, manifests, provenance, frozen/candidate evidence
-└── tools/    # validation and vector-generation tooling
+├── ci/       reusable CI/local-check scripts
+├── fuzz/     fuzzing workspace
+├── vectors/  generated vector artifacts
+└── tools/    validation and vector-generation tooling
 ```
 
-## Authority model
+## Rules
 
-docs/spec/ defines the HYDRA-MSG protocol.
-docs/impl/ defines required implementation profiles.
-docs/validation/ defines evidence, vector, interoperability, and release criteria.
-docs/roadmap.md defines roadmap/progress tracking.
-crates/ contains runtime/reference implementation source.
-qa/ contains executable validation infrastructure and release evidence.
+- `qa/` is validation infrastructure, not protocol specification.
+- Protocol authority lives in `docs/spec/`.
+- Runtime implementation source lives in `crates/`.
+- Script existence is not proof that validation passed.
+- Passing evidence is the successful output from running the relevant script on the active repo state.
 
-## Rules for AI coding agents
+## Main commands
 
-AI coding agents may add or update files under qa/ only when doing validation,
-testing, vector generation, fuzzing, CI, provenance, or release-evidence work.
+Unix:
 
-AI coding agents must not:
+```bash
+sh qa/ci/linux-permissions.sh
+./qa/ci/check-all.sh
+./qa/ci/check-examples.sh
+```
 
-change protocol semantics from this directory;
-treat candidate vectors as frozen vectors;
-claim fuzzing, CI, backend reproduction, or vector validation passed merely
-because files exist;
-move protocol specification files into qa/;
-move runtime/reference implementation source into qa/.
+PowerShell:
 
-When in doubt, check docs/roadmap.md and resume from
-the first incomplete milestone.
+```powershell
+.\qa\ci\check-all.ps1
+.\qa\ci\check-examples.ps1
+```

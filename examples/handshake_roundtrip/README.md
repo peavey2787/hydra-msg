@@ -1,6 +1,14 @@
 # HYDRA handshake roundtrip
 
-Minimal two-device-style flow using only the public `hydra-msg` facade:
+Minimal two-device-style flow using the public `hydra-msg` facade.
+
+## Navigation
+
+- [Main README](../../README.md)
+- [Examples](../README.md)
+- [Rust SDK facade](../../crates/hydra-msg/README.md)
+
+## What it does
 
 1. Alice and Bob open local HYDRA stores.
 2. Each generates an identity.
@@ -11,7 +19,7 @@ Minimal two-device-style flow using only the public `hydra-msg` facade:
 7. Alice sends an encrypted message.
 8. Bob receives plaintext.
 
-Run from the repo root:
+## Run
 
 ```bash
 cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml

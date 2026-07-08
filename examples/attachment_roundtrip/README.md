@@ -1,6 +1,14 @@
 # HYDRA attachment roundtrip
 
-Shows the clean public send/receive design:
+Shows text plus file and byte attachments through the public send/receive API.
+
+## Navigation
+
+- [Main README](../../README.md)
+- [Examples](../README.md)
+- [Rust SDK facade](../../crates/hydra-msg/README.md)
+
+## Code shape
 
 ```rust
 let envelope = hydra.send(
@@ -17,7 +25,7 @@ for attachment in data.attachments() {
 }
 ```
 
-Run from the repo root:
+## Run
 
 ```bash
 cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml

@@ -1,106 +1,79 @@
 # HYDRA-MSG CI helpers
 
-Status: active CI support directory.
+Reusable local/CI scripts for validation, examples, vector checks, and WASM builds.
 
-This directory contains reusable CI/local-check scripts for HYDRA-MSG. The
-GitHub Actions workflow under `.github/workflows/`, if added, should remain a
-thin entrypoint that calls scripts from this directory. The real check logic
-belongs here so it can be run locally and in CI the same way.
+## Navigation
 
-## Available checks
+- [Main README](../../README.md)
+- [QA workspace](../README.md)
+- [Examples](../../examples/README.md)
+- [WASM/JavaScript bindings](../../crates/hydra-msg-wasm/README.md)
+- [Validation docs](../../docs/validation/release-criteria.md)
 
-```text
-check-all.ps1       # Windows PowerShell full validation gate
-check-all.sh        # Unix shell full validation gate
-build-wasm-web.ps1  # Windows reusable WASM web package builder
-build-wasm-web.sh   # Unix reusable WASM web package builder
-linux-permissions.sh # Unix helper that restores execute bits and stale worktree metadata after ZIP extraction
-check-examples.ps1  # Windows PowerShell runnable example/browser package gate
-check-examples.sh   # Unix shell runnable example/browser package gate
-check-rust.sh       # workspace fmt/test/clippy gate
-check-docs.sh      # docs/path/stale-term/source-marker gate
-check-locks.sh     # lock-file alignment checks for offline validation
-check-vectors.sh   # vector generator + candidate manifest verification
+## Scripts
+
+| Script | Purpose |
+|---|---|
+| `check-all.ps1` / `check-all.sh` | Full validation gate. |
+| `check-examples.ps1` / `check-examples.sh` | Runnable examples and browser package checks. |
+| `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable WASM web package builder. |
+| `linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
+| `check-rust.sh` | Workspace format, test, and clippy gate. |
+| `check-docs.sh` | Docs/static checks. |
+| `check-locks.sh` | Lock-file alignment checks for offline validation. |
+| `check-vectors.sh` | Vector generator and candidate manifest verification. |
+
+## Full validation
+
+Unix:
+
+```bash
+sh qa/ci/linux-permissions.sh
+./qa/ci/check-all.sh
 ```
 
-## Windows validation gates
-
-Run the full non-interactive workspace validation from PowerShell:
+PowerShell:
 
 ```powershell
 .\qa\ci\check-all.ps1
 ```
 
-Run runnable examples and browser package checks separately:
+## Example validation
+
+Unix:
+
+```bash
+./qa/ci/check-examples.sh
+```
+
+PowerShell:
 
 ```powershell
 .\qa\ci\check-examples.ps1
 ```
 
-By default, the PowerShell full gate runs `cargo fmt` before tests so local check runs also clean up formatting. To enforce formatting without modifying files, use:
-
-```powershell
-.\qa\ci\check-all.ps1 -CheckFormatOnly
-```
-
-Skip isolated vector checks only when debugging app-only failures:
-
-```powershell
-.\qa\ci\check-all.ps1 -SkipVectors
-```
-
-`-SkipVectors` is not sufficient for P13 completion. The full P13 gate includes vector checks.
-
-## Unix validation gates
-
-After extracting a ZIP on Linux/macOS, restore script permissions and repair stale Git worktree metadata once:
-
-```sh
-sh qa/ci/linux-permissions.sh
-```
-
-Then run the full gate from the repo root:
-
-```sh
-./qa/ci/check-all.sh
-```
-
-Run examples separately:
-
-```sh
-./qa/ci/check-examples.sh
-```
-
 Skip WASM package checks while debugging native examples:
 
-```sh
+```bash
 ./qa/ci/check-examples.sh --skip-wasm
 ```
 
-Do not run these scripts with `sudo` unless your Rust toolchain is installed for root.
-
-If Git ever resolves the repo to a trashed or old path, rerun:
-
-```sh
-sh qa/ci/linux-permissions.sh
-git rev-parse --show-toplevel
+```powershell
+.\qa\ci\check-examples.ps1 -SkipWasm
 ```
-
-The printed root should match the directory where the ZIP was extracted.
-
 
 ## Reusable WASM web package
 
-Build the reusable browser/mobile package from the repo root:
+Unix:
+
+```bash
+./qa/ci/build-wasm-web.sh
+```
+
+PowerShell:
 
 ```powershell
 .\qa\ci\build-wasm-web.ps1
-```
-
-Unix:
-
-```sh
-./qa/ci/build-wasm-web.sh
 ```
 
 Output:
@@ -109,14 +82,8 @@ Output:
 target/hydra-msg-wasm/web/
 ```
 
-Example validation still builds example-local `web/pkg/` directories only when running `check-examples`.
+Example validation builds example-local `web/pkg/` directories only when running `check-examples`.
 
-## Evidence rule
+## Offline note
 
-Script existence is not evidence that validation passed. Passing evidence is the
-successful output from running the relevant script on the active repo state.
-
-
-Offline note: vector checks use the isolated vector-tool lock file with `--offline`. `check-locks.sh` verifies every vector-tool package version is already present in the main workspace lock, so a normal workspace build primes the local Cargo cache for vector validation.
-
-Vector formatting: `check-vectors.sh` formats by default. Use `check-vectors.sh --check-format` for strict format-check mode. PowerShell strict format mode is `check-all.ps1 -CheckFormatOnly`. Example scripts require `wasm-pack` for browser package checks unless you pass `-SkipWasm` or `--skip-wasm`.
+Vector checks use the isolated vector-tool lock file with `--offline`. `check-locks.sh` verifies vector-tool package versions are present in the main workspace lock so a normal workspace build primes the local Cargo cache for vector validation.
