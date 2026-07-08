@@ -428,3 +428,11 @@ Target sentence:
 - Added `qa/ci/linux-permissions.sh` so Unix users can restore execute bits after ZIP extraction before running validation scripts.
 - Kept runnable examples separate from the full validation script so maintainers can test the SDK without waiting on browser/example flows.
 - P13 is still manual and not marked complete.
+
+### 2026-07-08 — Source hygiene audit pass
+
+- Removed the WASM-only dead-code warning by gating native filesystem state helpers to native targets.
+- Split private `hydra-msg` encoding, decoding, persistence-line, backup, contact-card, handshake, payload, hex, byte-reader, and random-byte helpers into `crates/hydra-msg/src/codec.rs`.
+- Kept the public `hydra-msg` API unchanged while reducing mixed-concern code in the facade file.
+- Added `docs/project/audit/source-hygiene-audit.md` documenting the audit findings and remaining release blockers.
+- P13 is still manual and not marked complete.
