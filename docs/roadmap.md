@@ -18,7 +18,7 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-Implementation has started and currently covers P0 and P1 only. P2 through P5 are not started.
+Implementation has started and currently covers P0 through P2. P3 through P5 are not started.
 
 ## Rules and guidelines
 
@@ -248,7 +248,7 @@ crates/hydra-group/src/canonical.rs    858 lines
 
 ### 2026-07-08 — P1 canonical encoding split complete
 
-Status: P1 complete; P2 not started.
+Status: P1 complete.
 
 - Replaced `crates/hydra-group/src/canonical.rs` with a focused `crates/hydra-group/src/canonical/` module folder.
 - Kept `canonical/mod.rs` as the stable public module surface.
@@ -284,7 +284,46 @@ crates/hydra-group/src/canonical/test_support.rs   62 lines
 
 - All P1 files are under the 400-line target.
 - No public behavior change was intended in P1.
-- Cargo validation was not run in this environment; P5 remains the full validation gate after P2 through P4.
-- Production-ready status: no. P2 through P5, full validation, security review, and final vector/interoperability confirmation remain.
-- Enterprise-grade status: no. The `state.rs` and `commit.rs` ownership splits remain.
+- Cargo validation was not run in this environment; P5 remains the full validation gate after P3 and P4.
+- Production-ready status: no. P3 through P5, full validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: no. The `commit.rs` ownership split remains.
+- Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
+
+
+### 2026-07-08 — P2 state mechanics split complete
+
+Status: P2 complete; P3 not started.
+
+- Replaced `crates/hydra-group/src/state.rs` with a focused `crates/hydra-group/src/state/` module folder.
+- Kept `state/mod.rs` as the stable public module surface.
+- Preserved the existing `crate::state::*` visibility for public state items through module re-exports.
+- Split state ownership by responsibility:
+
+```text
+crates/hydra-group/src/state/mod.rs
+crates/hydra-group/src/state/config.rs
+crates/hydra-group/src/state/membership_private.rs
+crates/hydra-group/src/state/replay.rs
+crates/hydra-group/src/state/roster_view.rs
+crates/hydra-group/src/state/sender_chain.rs
+crates/hydra-group/src/state/snapshot.rs
+```
+
+- Current state split line counts:
+
+```text
+crates/hydra-group/src/state/config.rs               15 lines
+crates/hydra-group/src/state/membership_private.rs  102 lines
+crates/hydra-group/src/state/mod.rs                 318 lines
+crates/hydra-group/src/state/replay.rs              118 lines
+crates/hydra-group/src/state/roster_view.rs          12 lines
+crates/hydra-group/src/state/sender_chain.rs        400 lines
+crates/hydra-group/src/state/snapshot.rs             82 lines
+```
+
+- The largest P2 file is exactly at the 400-line target.
+- No public behavior change was intended in P2.
+- Cargo validation was not run in this environment; P5 remains the full validation gate after P3 and P4.
+- Production-ready status: no. P3 through P5, full validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: no. The `commit.rs` ownership split remains.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
