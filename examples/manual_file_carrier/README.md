@@ -8,7 +8,7 @@ HYDRA creates opaque bytes for contact cards, handshake offers/answers, and encr
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [Rust SDK facade](../../crates/hydra-msg/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
 - [Carrier example rules](../../docs/project/carrier-examples.md)
 
 ## Run

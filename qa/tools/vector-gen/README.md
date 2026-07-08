@@ -5,8 +5,8 @@ This isolated tool generates deterministic envelope and 1:1 handshake vectors fr
 ## Navigation
 
 - [Main README](../../../README.md)
-- [QA workspace](../../README.md)
-- [CI helpers](../../ci/README.md)
+- [Parent workspace](../../README.md)
+- [Scripts](../../ci/README.md)
 - [Test-vector docs](../../../docs/validation/test-vectors.md)
 
 ## Generate vectors

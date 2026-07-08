@@ -1,5 +1,11 @@
 # HYDRA-MSG real-world benchmark notes
 
+## Navigation
+
+- [Main README](../../README.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 These numbers came from real browser/WASM runs reported during HYDRA-MSG development. They are useful evidence that the `hydra-msg` message path is viable on modern mobile hardware, but they are not a substitute for the final validation gate.
 
 ## Important caveats

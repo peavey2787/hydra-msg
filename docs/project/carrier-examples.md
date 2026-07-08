@@ -1,5 +1,11 @@
 # HYDRA carrier examples
 
+## Navigation
+
+- [Main README](../../README.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 HYDRA carriers move opaque bytes. They are not protocol authority.
 
 The public `hydra-msg` facade owns:

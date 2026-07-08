@@ -1,14 +1,14 @@
 # hydra-msg-wasm
 
-`hydra-msg-wasm` provides WASM/JavaScript bindings over the `hydra-msg` Rust SDK facade.
+`hydra-msg-wasm` provides browser/mobile bindings over the `hydra-msg` Rust SDK.
 
 ## Navigation
 
 - [Main README](../../README.md)
 - [Crates](../README.md)
-- [Rust SDK facade](../hydra-msg/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
 - [Examples](../../examples/README.md)
-- [WASM build notes](../../docs/project/wasm-javascript-bindings.md)
+- [Public developer API](../../docs/project/public-developer-api.md)
 
 ## Build reusable browser package
 
@@ -43,18 +43,14 @@ const hydra = WasmHydra.openDefault();
 const id = hydra.generateId('password');
 hydra.setActiveId(id, 'password');
 
-const card = hydra.createContactCard();
-const contactId = hydra.addContact(card);
-const safetyCode = hydra.contactSafetyCode(contactId);
-hydra.verifyContact(contactId, safetyCode);
-
+const contactId = hydra.addContact(peerContactCardBytes);
 const offer = hydra.initHandshake(contactId);
-const answer = hydra.replyHandshake(offer);
+appSendToPeer(offer);
+const answer = await appWaitForPeerAnswer();
 hydra.finishHandshake(answer);
 
 const envelope = hydra.send(contactId, WasmHydraMessage.text('hello'));
-const data = hydra.receive(envelope);
-console.log(data.text());
+appSendToPeer(envelope);
 ```
 
 ## Public surface rule

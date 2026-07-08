@@ -1,29 +1,28 @@
-# HYDRA-MSG CI helpers
+# HYDRA-MSG scripts
 
-Reusable local/CI scripts for validation, examples, vector checks, and WASM builds.
+Reusable local scripts for checks, examples, vector checks, and browser package builds.
 
 ## Navigation
 
 - [Main README](../../README.md)
-- [QA workspace](../README.md)
+- [Parent workspace](../README.md)
 - [Examples](../../examples/README.md)
-- [WASM/JavaScript bindings](../../crates/hydra-msg-wasm/README.md)
-- [Validation docs](../../docs/validation/release-criteria.md)
+- [Release criteria](../../docs/validation/release-criteria.md)
 
 ## Scripts
 
 | Script | Purpose |
 |---|---|
-| `check-all.ps1` / `check-all.sh` | Full validation gate. |
+| `check-all.ps1` / `check-all.sh` | Full local check gate. |
 | `check-examples.ps1` / `check-examples.sh` | Runnable examples and browser package checks. |
-| `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable WASM web package builder. |
+| `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable web package builder. |
 | `linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
 | `check-rust.sh` | Workspace format, test, and clippy gate. |
 | `check-docs.sh` | Docs/static checks. |
 | `check-locks.sh` | Lock-file alignment checks for offline validation. |
 | `check-vectors.sh` | Vector generator and candidate manifest verification. |
 
-## Full validation
+## Full local check
 
 Unix:
 
@@ -38,7 +37,7 @@ PowerShell:
 .\qa\ci\check-all.ps1
 ```
 
-## Example validation
+## Example checks
 
 Unix:
 
@@ -62,7 +61,7 @@ Skip WASM package checks while debugging native examples:
 .\qa\ci\check-examples.ps1 -SkipWasm
 ```
 
-## Reusable WASM web package
+## Reusable web package
 
 Unix:
 
@@ -81,9 +80,3 @@ Output:
 ```text
 target/hydra-msg-wasm/web/
 ```
-
-Example validation builds example-local `web/pkg/` directories only when running `check-examples`.
-
-## Offline note
-
-Vector checks use the isolated vector-tool lock file with `--offline`. `check-locks.sh` verifies vector-tool package versions are present in the main workspace lock so a normal workspace build primes the local Cargo cache for vector validation.

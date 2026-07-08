@@ -1,15 +1,15 @@
 # HYDRA-MSG examples
 
-`examples/` contains runnable examples over the public `hydra-msg` facade.
+`examples/` contains runnable examples over the public `hydra-msg` SDK.
 
-Examples demonstrate how app code moves opaque HYDRA bytes over different carriers. Protocol authority stays in the crates and specs.
+Examples show how app code moves opaque HYDRA bytes over different carriers. Protocol authority stays in `crates/` and `docs/spec/`.
 
 ## Navigation
 
 - [Main README](../README.md)
-- [Rust SDK facade](../crates/hydra-msg/README.md)
-- [WASM/JavaScript bindings](../crates/hydra-msg-wasm/README.md)
-- [QA and validation](../qa/README.md)
+- [How HYDRA messaging works](../docs/project/message-flow/README.md)
+- [Crates](../crates/README.md)
+- [Public developer API](../docs/project/public-developer-api.md)
 - [Carrier example rules](../docs/project/carrier-examples.md)
 
 ## Example list
@@ -50,9 +50,9 @@ PowerShell:
 
 Use `--skip-wasm` on Unix or `-SkipWasm` on PowerShell for native-only example checks.
 
-## Reusable WASM package
+## Reusable browser package
 
-The real WASM component lives in `crates/hydra-msg-wasm`.
+The real browser/mobile component lives in `crates/hydra-msg-wasm`.
 
 Build reusable web output for your own app:
 

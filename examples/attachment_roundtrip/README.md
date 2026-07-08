@@ -6,9 +6,10 @@ Shows text plus file and byte attachments through the public send/receive API.
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [Rust SDK facade](../../crates/hydra-msg/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
+- [Public developer API](../../docs/project/public-developer-api.md)
 
-## Code shape
+## Shape
 
 ```rust
 let envelope = hydra.send(

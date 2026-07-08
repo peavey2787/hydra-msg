@@ -1,5 +1,12 @@
 # HYDRA-MSG Public Developer API
 
+## Navigation
+
+- [Main README](../../README.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Crates](../../crates/README.md)
+- [Examples](../../examples/README.md)
+
 Status: target API for the `hydra-msg` facade crate.
 
 Goal: make HYDRA stupid-simple for app developers. A developer should be able to open HYDRA, create or restore an identity, add contacts, handshake, send messages, receive messages, use lobbies, back up data, and run basic diagnostics without seeing cryptographic internals, wire-format details, padding classes, chunks, ratchets, sessions, or transport logic.

@@ -1,18 +1,18 @@
 # hydra-msg
 
-`hydra-msg` is the Rust SDK facade for HYDRA-MSG.
+`hydra-msg` is the main Rust SDK for HYDRA-MSG apps.
 
-Apps should start here instead of depending directly on crypto, envelope, session, group, carrier, or demo code.
+Apps should start here instead of depending directly on crypto, envelope, session, group, carrier, or example code.
 
 ## Navigation
 
 - [Main README](../../README.md)
 - [Crates](../README.md)
-- [WASM/JavaScript bindings](../hydra-msg-wasm/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../../docs/project/public-developer-api.md)
 
-## Small working shape
+## Small app shape
 
 ```rust
 use hydra_msg::{Hydra, HydraMessage};
@@ -22,15 +22,18 @@ let my_id = hydra.generate_id("password")?;
 hydra.set_active_id(my_id, "password")?;
 
 let peer = hydra.add_contact(peer_contact_card)?;
-let answer = peer_device.reply_handshake(hydra.init_handshake(peer.id())?)?;
+let offer = hydra.init_handshake(peer.id())?;
+app_send_to_peer(offer.as_bytes())?;
+let answer = app_wait_for_peer_answer()?;
 hydra.finish_handshake(answer)?;
 
 let envelope = hydra.send(peer.id(), HydraMessage::text("hello"))?;
-let data = peer_device.receive(envelope)?;
-println!("{}", data.text()?);
+app_send_to_peer(envelope.as_bytes())?;
 ```
 
-For a complete runnable version, use:
+For the full two-device explanation, see [How HYDRA messaging works](../../docs/project/message-flow/README.md).
+
+For runnable code, use:
 
 ```bash
 cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
@@ -40,10 +43,10 @@ cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
 
 Carriers such as WebRTC, files, HTTP, QR codes, relays, libp2p, Kaspa pointers, and mailboxes only move opaque bytes produced by this crate.
 
-HYDRA identity, contact trust, handshakes, sessions, encryption, decryption, attachments, lobbies, backup, and local storage stay inside the facade.
+HYDRA identity, contact trust, handshakes, sessions, encryption, decryption, attachments, lobbies, backup, and local storage stay inside the SDK.
 
 ## Native storage
 
 `Hydra::open(path)` creates or loads a native filesystem store at `path`.
 
-Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are persisted by the facade. Backups are encrypted and authenticated with the backup password.
+Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are persisted by the SDK. Backups are encrypted and authenticated with the backup password.

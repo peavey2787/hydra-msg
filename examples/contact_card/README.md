@@ -1,12 +1,13 @@
 # HYDRA contact card
 
-Shows the contact-card workflow using the public `hydra-msg` facade.
+Shows the contact-card workflow using the public `hydra-msg` SDK.
 
 ## Navigation
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [Rust SDK facade](../../crates/hydra-msg/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
+- [Public developer API](../../docs/project/public-developer-api.md)
 
 ## Run
 

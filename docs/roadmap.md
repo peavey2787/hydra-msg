@@ -1,5 +1,12 @@
 # HYDRA-MSG Stupid-Simple API Refactor Roadmap
 
+## Navigation
+
+- [Main README](../README.md)
+- [How HYDRA messaging works](project/message-flow/README.md)
+- [Crates](../crates/README.md)
+- [Examples](../examples/README.md)
+
 The goal is to make HYDRA stupid-simple for app developers.
 
 A developer should be able to:
@@ -415,7 +422,7 @@ Target sentence:
 - Kept the active workspace focused on `crates/hydra-*`, `hydra-msg`, `hydra-msg-wasm`, `hydra-msg-cli`, and the active facade/carrier examples.
 - Replaced the previous app-focused QA gate with the current P13 manual validation gate under `docs/project/production-qa-gate.md`.
 - Added `docs/project/release-readiness.md` as the P12 cleanup and P13 handoff artifact.
-- Added `docs/project/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, older low-end tablet, and a 64 KiB larger-message run.
+- Added `docs/project/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition, and a 64 KiB larger-message run.
 - Updated root `README.md` with a benchmark snapshot and accurate pre-P13 release-status caveats.
 - Removed stale out-of-scope phase wording from demo app reference CSS comments.
 - Confirmed the public API remained trimmed: no config/profile/builder layer, no advanced public API, no protocol-info/suite APIs, no session import/export, no public chunk APIs, no checkpoint/lobby-state/predicate APIs.
@@ -444,3 +451,13 @@ Target sentence:
 - Kept example-specific WASM output under each example's `web/pkg/` directory only for example validation and manual example runs.
 - Documented that `crates/hydra-msg-wasm` remains the source of truth for browser/mobile bindings.
 - P13 is still manual and not marked complete.
+
+
+### 2026-07-08 — README navigation cleanup
+
+- Rewrote the main `README.md` as a concise app-developer entry point.
+- Replaced the one-process roundtrip snippet with a two-device Bob/Alice app-shape example that explains each step.
+- Added `docs/project/message-flow/README.md` with diagrams and contact/session flow notes.
+- Added return navigation to linked project docs, including benchmark notes.
+- Kept docs organized with only `docs/roadmap.md` at the top level.
+- Updated benchmark wording to identify the BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition.

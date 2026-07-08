@@ -6,7 +6,7 @@ Hosts a LAN web page for browser/device WASM benchmarks.
 
 - [Main README](../../README.md)
 - [Examples](../README.md)
-- [WASM/JavaScript bindings](../../crates/hydra-msg-wasm/README.md)
+- [How HYDRA messaging works](../../docs/project/message-flow/README.md)
 - [Benchmark notes](../../docs/project/benchmark-results.md)
 
 ## Build example-local WASM
