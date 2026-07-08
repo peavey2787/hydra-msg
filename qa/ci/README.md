@@ -12,7 +12,7 @@ belongs here so it can be run locally and in CI the same way.
 ```text
 check-all.ps1      # Windows PowerShell full validation gate
 check-all.sh       # Unix shell full validation gate
-linux-permissions.sh # Unix helper that restores execute bits after ZIP extraction
+linux-permissions.sh # Unix helper that restores execute bits and stale worktree metadata after ZIP extraction
 check-examples.ps1 # Windows PowerShell runnable example/browser package gate
 check-examples.sh  # Unix shell runnable example/browser package gate
 check-rust.sh      # workspace fmt/test/clippy gate
@@ -50,7 +50,7 @@ Skip isolated vector checks only when debugging app-only failures:
 
 ## Unix validation gates
 
-After extracting a ZIP on Linux/macOS, restore script permissions once:
+After extracting a ZIP on Linux/macOS, restore script permissions and repair stale Git worktree metadata once:
 
 ```sh
 sh qa/ci/linux-permissions.sh
@@ -75,6 +75,15 @@ Skip WASM package checks while debugging native examples:
 ```
 
 Do not run these scripts with `sudo` unless your Rust toolchain is installed for root.
+
+If Git ever resolves the repo to a trashed or old path, rerun:
+
+```sh
+sh qa/ci/linux-permissions.sh
+git rev-parse --show-toplevel
+```
+
+The printed root should match the directory where the ZIP was extracted.
 
 ## Evidence rule
 

@@ -1,8 +1,10 @@
 #!/usr/bin/env sh
 set -eu
 
-repository=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-manifest="$repository/qa/tools/vector-gen/Cargo.toml"
+. "$(dirname -- "$0")/repo-root.sh"
+hydra_enter_repo_root
+
+manifest="$HYDRA_REPO_ROOT/qa/tools/vector-gen/Cargo.toml"
 
 if [ "${1:-}" = "--check-format" ]; then
   cargo fmt --manifest-path "$manifest" -- --check

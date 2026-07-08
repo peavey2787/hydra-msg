@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-repository=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-cd "$repository"
+. "$(dirname -- "$0")/repo-root.sh"
+hydra_enter_repo_root
 
 required_paths="docs/spec docs/impl docs/validation docs/project qa/ci qa/tools/vector-gen qa/vectors/candidate"
 for path in $required_paths; do

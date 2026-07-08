@@ -4,23 +4,26 @@ set -eu
 # Restore Unix execute permissions for repository shell scripts after ZIP extraction.
 # Run from anywhere inside the repo with:
 #   sh qa/ci/linux-permissions.sh
+#
+# This script also repairs stale git core.worktree metadata that can appear when
+# a ZIP is extracted over a folder that was moved to Trash by a file manager.
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
+. "$(dirname -- "$0")/repo-root.sh"
+hydra_enter_repo_root
 
 printf 'HYDRA-MSG Linux permission setup\n'
-printf 'Repo root: %s\n' "$repo_root"
+printf 'Repo root: %s\n' "$HYDRA_REPO_ROOT"
 
 count=0
 while IFS= read -r script_path; do
   chmod +x "$script_path"
   count=$((count + 1))
-  rel=${script_path#"$repo_root/"}
+  rel=${script_path#"$HYDRA_REPO_ROOT/"}
   printf '  +x %s\n' "$rel"
 done <<EOF_FIND
-$(find "$repo_root" \
-  -path "$repo_root/.git" -prune -o \
-  -path "$repo_root/target" -prune -o \
+$(find "$HYDRA_REPO_ROOT" \
+  -path "$HYDRA_REPO_ROOT/.git" -prune -o \
+  -path "$HYDRA_REPO_ROOT/target" -prune -o \
   -type f -name '*.sh' -print | sort)
 EOF_FIND
 

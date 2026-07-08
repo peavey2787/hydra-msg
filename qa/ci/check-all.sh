@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-repository=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-cd "$repository"
+. "$(dirname -- "$0")/repo-root.sh"
+hydra_enter_repo_root
 
 qa/ci/check-rust.sh
 qa/ci/check-docs.sh
