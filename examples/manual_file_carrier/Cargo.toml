@@ -1,0 +1,11 @@
+[package]
+name = "manual_file_carrier"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hydra-msg = { path = "../../crates/hydra-msg" }
+
+[lints]
+workspace = true

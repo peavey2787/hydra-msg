@@ -31,6 +31,8 @@ examples/             active copy-paste developer examples
   attachment_roundtrip text + file + in-memory byte attachment flow
   lobby_roundtrip     lobby invite + recipient-tagged lobby send/receive flow
   mobile_perf_web     LAN web host for server and browser/device WASM benchmarks
+  manual_file_carrier files on disk as a manual opaque-byte carrier
+  webrtc_manual_carrier WebRTC DataChannel carrier after manual contact-card exchange
   hydra-app-core    old app-domain demo crate kept as reference
   hydra-app         old CLI/local browser GUI demo crate kept as reference
 
@@ -85,6 +87,8 @@ cargo run --manifest-path examples/contact_card/Cargo.toml
 cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml
 cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
+cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
+cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
 ```
 
 Build the browser/mobile WASM benchmark package before running `mobile_perf_web`:
@@ -95,6 +99,15 @@ cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0
 ```
 
 Then open the LAN URL on a phone/tablet/browser and run the browser/device HYDRA WASM benchmark.
+
+For the WebRTC carrier example, build its WASM package first:
+
+```powershell
+examples\webrtc_manual_carrier\scripts\build-wasm.ps1
+cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
+```
+
+That example requires manual/out-of-band contact-card exchange before WebRTC carries any HYDRA handshake bytes or encrypted envelopes.
 
 ## Developer CLI
 
@@ -111,6 +124,8 @@ cargo run -p hydra-msg-cli -- doctor
 ```
 
 See `docs/project/hydra-msg-cli.md`.
+
+Carrier ownership and carrier example rules are documented in `docs/project/carrier-examples.md`.
 
 ## Demo app status
 

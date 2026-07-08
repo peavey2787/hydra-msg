@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HYDRA WebRTC Manual Carrier</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; line-height: 1.45; }
+    h1, h2 { line-height: 1.1; }
+    section { border: 1px solid #8885; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
+    textarea, input { width: 100%; box-sizing: border-box; font: inherit; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    textarea { min-height: 7rem; }
+    button { font-size: 1rem; padding: .65rem .9rem; margin: .25rem .25rem .25rem 0; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .note { color: #666; }
+    .ok { color: #008a22; font-weight: 700; }
+    .warn { color: #b26a00; font-weight: 700; }
+    .bad { color: #b00020; font-weight: 700; }
+    pre { background: #111; color: #eee; padding: 1rem; overflow: auto; border-radius: 8px; min-height: 8rem; }
+    code { background: #8882; padding: .1rem .25rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>HYDRA WebRTC Manual Carrier</h1>
+  <p class="note">
+    This page demonstrates WebRTC as a carrier only. Contact cards are exchanged manually and out-of-band before WebRTC carries HYDRA handshake bytes or encrypted envelopes.
+  </p>
+
+  <section>
+    <h2>1. Local identity and contact card</h2>
+    <button id="init-hydra">Create local HYDRA identity/contact card</button>
+    <p>Status: <span id="hydra-status" class="warn">not initialized</span></p>
+    <label>Your contact card. Copy this to the other device manually.</label>
+    <textarea id="local-card" readonly placeholder="Your contact card appears here."></textarea>
+  </section>
+
+  <section>
+    <h2>2. Import peer contact card manually</h2>
+    <p class="note">Paste the peer's card here only after receiving it out-of-band. Do not use this page's WebRTC channel for contact-card exchange.</p>
+    <textarea id="peer-card" placeholder="Paste peer contact card here"></textarea>
+    <button id="import-peer">Import peer contact card</button>
+    <button id="verify-peer">Verify imported contact</button>
+    <p>Peer contact id: <code id="peer-id">none</code></p>
+    <p>Safety code: <code id="safety-code">none</code></p>
+    <p>Contact status: <span id="contact-status" class="warn">no peer imported</span></p>
+  </section>
+
+  <section>
+    <h2>3. Open WebRTC DataChannel using manual SDP copy/paste</h2>
+    <p class="note">This is WebRTC signaling, not HYDRA contact exchange. Use it after both peers have imported and verified contact cards.</p>
+    <div class="grid">
+      <div>
+        <h3>Initiator</h3>
+        <button id="create-rtc-offer">Create WebRTC offer</button>
+        <label>Copy this WebRTC offer to responder.</label>
+        <textarea id="rtc-offer-out" readonly></textarea>
+        <label>Paste responder's WebRTC answer.</label>
+        <textarea id="rtc-answer-in"></textarea>
+        <button id="accept-rtc-answer">Accept WebRTC answer</button>
+      </div>
+      <div>
+        <h3>Responder</h3>
+        <label>Paste initiator's WebRTC offer.</label>
+        <textarea id="rtc-offer-in"></textarea>
+        <button id="create-rtc-answer">Create WebRTC answer</button>
+        <label>Copy this WebRTC answer to initiator.</label>
+        <textarea id="rtc-answer-out" readonly></textarea>
+      </div>
+    </div>
+    <p>WebRTC status: <span id="rtc-status" class="warn">not connected</span></p>
+  </section>
+
+  <section>
+    <h2>4. HYDRA handshake over WebRTC</h2>
+    <p class="note">Only start this after contact cards are imported/verified and WebRTC says connected.</p>
+    <button id="send-hydra-offer">Initiator: send HYDRA handshake offer over WebRTC</button>
+    <p>HYDRA session status: <span id="session-status" class="warn">not established</span></p>
+  </section>
+
+  <section>
+    <h2>5. Send encrypted HYDRA messages over WebRTC</h2>
+    <input id="message-text" placeholder="Message text" value="hello over WebRTC carrier" />
+    <button id="send-message">Send encrypted HYDRA message</button>
+    <pre id="log"></pre>
+  </section>
+
+  <script type="module">
+    const logEl = document.getElementById('log');
+    const hydraStatus = document.getElementById('hydra-status');
+    const contactStatus = document.getElementById('contact-status');
+    const rtcStatus = document.getElementById('rtc-status');
+    const sessionStatus = document.getElementById('session-status');
+
+    let mod;
+    let hydra;
+    let peerId = null;
+    let peerVerified = false;
+    let pc = null;
+    let dc = null;
+    let isInitiator = false;
+    let sessionReady = false;
+
+    function log(message) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${message}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setText(id, text) {
+      document.getElementById(id).textContent = text;
+    }
+
+    function textValue(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function setStatus(el, text, kind = 'warn') {
+      el.textContent = text;
+      el.className = kind;
+    }
+
+    function bytesToBase64(bytes) {
+      let binary = '';
+      const chunkSize = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+      }
+      return btoa(binary);
+    }
+
+    function base64ToBytes(text) {
+      const cleaned = text.replace(/\s+/g, '');
+      const binary = atob(cleaned);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    function requireHydraReady() {
+      if (!hydra) throw new Error('Create local HYDRA identity first.');
+      if (!peerId) throw new Error('Import peer contact card first.');
+      if (!peerVerified) throw new Error('Verify imported contact first.');
+    }
+
+    function requireRtcReady() {
+      if (!dc || dc.readyState !== 'open') throw new Error('WebRTC DataChannel is not open.');
+    }
+
+    async function loadHydra() {
+      if (!mod) {
+        mod = await import('/pkg/hydra_msg_wasm.js');
+        await mod.default();
+      }
+    }
+
+    document.getElementById('init-hydra').addEventListener('click', async () => {
+      try {
+        await loadHydra();
+        hydra = mod.WasmHydra.openDefault();
+        const password = 'demo-password-change-me';
+        const id = hydra.generateId(password);
+        hydra.setActiveId(id, password);
+        const card = hydra.createContactCard();
+        document.getElementById('local-card').value = bytesToBase64(card);
+        setStatus(hydraStatus, `ready: ${id}`, 'ok');
+        log('Created local HYDRA identity and contact card. Exchange the contact card manually.');
+      } catch (error) {
+        setStatus(hydraStatus, String(error), 'bad');
+        log(`HYDRA init failed: ${error}`);
+      }
+    });
+
+    document.getElementById('import-peer').addEventListener('click', () => {
+      try {
+        if (!hydra) throw new Error('Create local identity first.');
+        peerId = hydra.addContact(base64ToBytes(textValue('peer-card')));
+        const safety = hydra.contactSafetyCode(peerId);
+        setText('peer-id', peerId);
+        setText('safety-code', safety);
+        peerVerified = false;
+        setStatus(contactStatus, 'peer imported; compare safety code, then verify', 'warn');
+        log(`Imported peer contact ${peerId}. Safety code: ${safety}`);
+      } catch (error) {
+        setStatus(contactStatus, String(error), 'bad');
+        log(`Import failed: ${error}`);
+      }
+    });
+
+    document.getElementById('verify-peer').addEventListener('click', () => {
+      try {
+        if (!hydra || !peerId) throw new Error('Import peer contact first.');
+        const safety = hydra.contactSafetyCode(peerId);
+        hydra.verifyContact(peerId, safety);
+        peerVerified = true;
+        setStatus(contactStatus, 'peer verified', 'ok');
+        log('Peer contact verified. WebRTC may now carry HYDRA handshake bytes.');
+      } catch (error) {
+        setStatus(contactStatus, String(error), 'bad');
+        log(`Verify failed: ${error}`);
+      }
+    });
+
+    function createPeerConnection() {
+      const connection = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+      connection.oniceconnectionstatechange = () => {
+        setStatus(rtcStatus, `${connection.iceConnectionState} / ${dc ? dc.readyState : 'no channel'}`, connection.iceConnectionState === 'connected' || connection.iceConnectionState === 'completed' ? 'ok' : 'warn');
+      };
+      connection.ondatachannel = event => {
+        attachDataChannel(event.channel);
+      };
+      return connection;
+    }
+
+    function attachDataChannel(channel) {
+      dc = channel;
+      dc.binaryType = 'arraybuffer';
+      dc.onopen = () => {
+        setStatus(rtcStatus, 'connected', 'ok');
+        log('WebRTC DataChannel opened.');
+      };
+      dc.onclose = () => {
+        setStatus(rtcStatus, 'closed', 'warn');
+        log('WebRTC DataChannel closed.');
+      };
+      dc.onerror = event => log(`WebRTC DataChannel error: ${event}`);
+      dc.onmessage = event => handleCarrierMessage(JSON.parse(event.data));
+    }
+
+    async function waitForIceGatheringComplete(connection) {
+      if (connection.iceGatheringState === 'complete') return;
+      await new Promise(resolve => {
+        const check = () => {
+          if (connection.iceGatheringState === 'complete') {
+            connection.removeEventListener('icegatheringstatechange', check);
+            resolve();
+          }
+        };
+        connection.addEventListener('icegatheringstatechange', check);
+      });
+    }
+
+    document.getElementById('create-rtc-offer').addEventListener('click', async () => {
+      try {
+        requireHydraReady();
+        isInitiator = true;
+        pc = createPeerConnection();
+        attachDataChannel(pc.createDataChannel('hydra-carrier'));
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await waitForIceGatheringComplete(pc);
+        document.getElementById('rtc-offer-out').value = btoa(JSON.stringify(pc.localDescription));
+        log('Created WebRTC offer. Copy it to responder manually.');
+      } catch (error) {
+        log(`Create WebRTC offer failed: ${error}`);
+      }
+    });
+
+    document.getElementById('create-rtc-answer').addEventListener('click', async () => {
+      try {
+        requireHydraReady();
+        isInitiator = false;
+        pc = createPeerConnection();
+        const offer = JSON.parse(atob(textValue('rtc-offer-in')));
+        await pc.setRemoteDescription(offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        await waitForIceGatheringComplete(pc);
+        document.getElementById('rtc-answer-out').value = btoa(JSON.stringify(pc.localDescription));
+        log('Created WebRTC answer. Copy it back to initiator manually.');
+      } catch (error) {
+        log(`Create WebRTC answer failed: ${error}`);
+      }
+    });
+
+    document.getElementById('accept-rtc-answer').addEventListener('click', async () => {
+      try {
+        if (!pc) throw new Error('Create WebRTC offer first.');
+        const answer = JSON.parse(atob(textValue('rtc-answer-in')));
+        await pc.setRemoteDescription(answer);
+        log('Accepted WebRTC answer. Wait for DataChannel open.');
+      } catch (error) {
+        log(`Accept WebRTC answer failed: ${error}`);
+      }
+    });
+
+    document.getElementById('send-hydra-offer').addEventListener('click', () => {
+      try {
+        requireHydraReady();
+        requireRtcReady();
+        if (!isInitiator) throw new Error('Only the WebRTC initiator sends the HYDRA offer in this demo.');
+        const offer = hydra.initHandshake(peerId);
+        dc.send(JSON.stringify({ type: 'hydra-offer', bytes: bytesToBase64(offer) }));
+        log('Sent HYDRA handshake offer over WebRTC carrier.');
+      } catch (error) {
+        log(`Send HYDRA offer failed: ${error}`);
+      }
+    });
+
+    document.getElementById('send-message').addEventListener('click', () => {
+      try {
+        requireHydraReady();
+        requireRtcReady();
+        if (!sessionReady) throw new Error('HYDRA session is not established yet.');
+        const text = document.getElementById('message-text').value;
+        const envelope = hydra.send(peerId, mod.WasmHydraMessage.text(text));
+        dc.send(JSON.stringify({ type: 'hydra-envelope', bytes: bytesToBase64(envelope) }));
+        log(`Sent encrypted HYDRA envelope over WebRTC carrier: ${text}`);
+      } catch (error) {
+        log(`Send message failed: ${error}`);
+      }
+    });
+
+    function handleCarrierMessage(message) {
+      try {
+        requireHydraReady();
+        if (message.type === 'hydra-offer') {
+          const answer = hydra.replyHandshake(base64ToBytes(message.bytes));
+          sessionReady = true;
+          setStatus(sessionStatus, 'established on responder side', 'ok');
+          dc.send(JSON.stringify({ type: 'hydra-answer', bytes: bytesToBase64(answer) }));
+          log('Received HYDRA offer, created session, sent HYDRA answer over WebRTC.');
+        } else if (message.type === 'hydra-answer') {
+          hydra.finishHandshake(base64ToBytes(message.bytes));
+          sessionReady = true;
+          setStatus(sessionStatus, 'established on initiator side', 'ok');
+          log('Received HYDRA answer and finished handshake.');
+        } else if (message.type === 'hydra-envelope') {
+          const data = hydra.receive(base64ToBytes(message.bytes));
+          log(`Received encrypted envelope, decrypted text: ${data.text()}`);
+        } else {
+          log(`Ignored unknown carrier message type: ${message.type}`);
+        }
+      } catch (error) {
+        log(`Carrier message handling failed: ${error}`);
+      }
+    }
+  </script>
+</body>
+</html>

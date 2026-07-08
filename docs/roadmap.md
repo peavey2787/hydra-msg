@@ -59,8 +59,10 @@ examples/
   attachment_roundtrip/ active facade example
   lobby_roundtrip/     active facade example
   mobile_perf_web/     active WASM/browser benchmark host
-  demo/hydra-app-core/ retired demo app reference only
-  demo/hydra-app/      retired demo app reference only
+  manual_file_carrier/ files on disk as a manual opaque-byte carrier
+  webrtc_manual_carrier/ WebRTC DataChannel carrier after manual contact-card exchange
+  hydra-app-core/      demo app reference only
+  hydra-app/           demo app reference only
 ```
 
 ## Target public API summary
@@ -232,7 +234,7 @@ Steps:
 - Ensure no example crate owns public protocol semantics.
 - Update README files and docs references so developers start with `hydra-msg`.
 
-### P10 — Carrier examples
+### P10 — Carrier examples — COMPLETE
 
 Goal: demonstrate that HYDRA does not care how bytes move.
 
@@ -240,9 +242,9 @@ Steps:
 
 - Add a WebRTC example where contact-card exchange is explicitly out-of-band and manual.
 - The WebRTC example may move handshake bytes and encrypted envelopes only after users manually paste/import each other's contact cards.
-- Add a simple HTTP/file/manual carrier example if useful.
+- Add a simple file/manual carrier example showing opaque contact-card, handshake, and envelope bytes moving through files.
 - Keep carrier code outside `hydra-msg`.
-- Document WebRTC, libp2p, relays, QR codes, Kaspa pointers, and mailboxes as carriers, not authorities.
+- Document WebRTC, libp2p, relays, QR codes, Kaspa pointers, files, and mailboxes as carriers, not authorities.
 
 ### P12 — Release-readiness cleanup
 
@@ -392,3 +394,16 @@ Target sentence:
 - Updated roadmap scope: removed the AOL2/relay-node phase as out of scope for `hydra-msg`, clarified that the P10 WebRTC carrier example must use manual out-of-band contact-card exchange, and split manual validation into P13 as its own final phase.
 - No advanced public API was added.
 
+
+
+### 2026-07-08 — P10 complete
+
+- Added `examples/manual_file_carrier` to show that files on disk can carry opaque HYDRA contact-card, handshake, and encrypted-envelope bytes without becoming protocol authority.
+- Added `examples/webrtc_manual_carrier` as a browser WebRTC DataChannel carrier example over the `hydra-msg-wasm` facade.
+- Kept contact-card exchange strictly manual and out-of-band in the WebRTC example. WebRTC is only used after both users import and verify each other's contact cards.
+- Made the WebRTC example use manual SDP copy/paste for signaling, then carry HYDRA handshake offers/answers and encrypted envelopes over the DataChannel.
+- Added build scripts and README docs for the WebRTC carrier example.
+- Added `docs/project/carrier-examples.md` documenting carrier ownership and WebRTC/manual-file carrier behavior.
+- Added the new carrier examples to the active workspace and README example lists.
+- No transport code was added to `hydra-msg`; WebRTC and files remain carriers only.
+- No advanced public API was added.
