@@ -1,5 +1,14 @@
 # HYDRA-MSG envelope classes and serialization
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document defines the byte-exact HYDRA wire records. HYDRA has three
 fixed-size envelope classes. Exact protected content length is hidden inside
 each class; the selected class is public.

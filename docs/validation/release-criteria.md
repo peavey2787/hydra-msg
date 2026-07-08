@@ -1,18 +1,26 @@
 # HYDRA-MSG specification freeze and release criteria
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [Production QA gate](production-qa-gate.md)
+- [Examples](../../examples/README.md)
+
 The specification is frozen only when every mandatory gate below has dated,
 hashed evidence. Prose declaring success is not evidence.
 
 ## 1. Canonical documentation gate
 
 - One canonical document set organized by authority under `docs/spec/`,
-  `docs/impl/`, and `docs/validation/`, with progress control in
-  `docs/roadmap.md`.
+  `docs/impl/`, and `docs/validation/`. Internal roadmap notes are not
+  release evidence.
 - No contradictory protocol draft in the repository.
 - All domain labels, enums, sizes, bounds, encodings, state transitions,
   errors, and security limits defined.
 - Internal links, terminology scan, code fences, and arithmetic checks pass.
-- Only roadmap-completed workspace crates may be treated as reference
+- Only release-candidate workspace crates may be treated as reference
   implementation evidence. Reserved future crate code is not conformance or
   interoperability evidence until its milestone is completed and validated.
 

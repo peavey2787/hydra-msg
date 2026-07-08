@@ -1,5 +1,13 @@
 # HYDRA-MSG persistence and rollback profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 HYDRA defines no persistence for live sessions, sender chains, skipped keys,
 group traffic keys, or TreeKEM private paths.
 

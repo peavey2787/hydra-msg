@@ -5,10 +5,24 @@
 - [Main README](../../README.md)
 - [How HYDRA messaging works](../impl/message-flow/README.md)
 - [Public developer API](public-developer-api.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
 - [Examples](../../examples/README.md)
-- [Roadmap](../roadmap.md)
 
 This document is the project structure map. It explains where files belong so the repository stays organized, consistent, and easy to maintain.
+
+## Spec document index
+
+- [Public developer API](public-developer-api.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Security proof sketch](security-proof-sketch.md)
+- [State machines](state-machines.md)
+- [Envelope serialization](envelope-serialization.md)
+- [Chain-key evolution](chain-key-evolution.md)
+- [TreeKEM profile](tree-kem.md)
+- [Group modes](group-modes.md)
+- [Group rekey](group-rekey.md)
 
 ## Top-level layout
 
@@ -21,7 +35,7 @@ external/    third-party apps, libraries, or vendored external material when nee
 scripts/     automation that is not part of QA
 ```
 
-Only `docs/roadmap.md` belongs directly under `docs/`. All other documentation belongs in one of the grouped docs folders below.
+Only maintainer-internal planning files such as `docs/roadmap.md` belong directly under `docs/`. Public product documentation belongs in one of the grouped docs folders below.
 
 ## `crates/`
 
@@ -36,7 +50,6 @@ crates/hydra-msg-cli   command-line developer utility over the facade
 ```
 
 Lower-level protocol crates live beside them and should stay focused on their own domain: crypto, sessions, groups, serialization, and shared core types.
-
 
 ## `hydra-group` ownership notes
 

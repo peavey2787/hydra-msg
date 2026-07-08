@@ -3,13 +3,14 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Repository structure](../spec/README.md)
-- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [Production QA gate](production-qa-gate.md)
 - [Examples](../../examples/README.md)
 
 Status: P13 manual validation gate.
 
-P13 is intentionally manual. It does not add product features or change the public API. It verifies that the release-candidate worktree produced by the roadmap is clean on a real developer machine with Rust/Cargo/WASM tools installed.
+P13 is intentionally manual. It does not add product features or change the public API. It verifies that the maintainer-selected release-candidate worktree is clean on a real developer machine with Rust/Cargo/WASM tools installed.
 
 ## Required local checks
 

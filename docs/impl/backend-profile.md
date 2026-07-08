@@ -1,5 +1,13 @@
 # HYDRA-MSG cryptographic backend profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 This document defines the backend contract for the reference implementation
 and the independent vector oracle. Backend choice is not negotiated on wire
 and cannot change any HYDRA byte.

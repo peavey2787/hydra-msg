@@ -7,12 +7,11 @@ It gives apps a simple way to create identities, add contacts, establish session
 ## Navigation
 
 - [How HYDRA messaging works](docs/impl/message-flow/README.md)
-- [Repository structure](docs/spec/README.md)
+- [Spec docs and repository structure](docs/spec/README.md)
 - [Crates](crates/README.md)
 - [Examples](examples/README.md)
 - [Public developer API](docs/spec/public-developer-api.md)
 - [Benchmark notes](docs/validation/benchmark-results.md)
-- [Roadmap](docs/roadmap.md)
 
 ## Simple mental model
 
@@ -24,7 +23,7 @@ open local HYDRA store
   -> send encrypted HYDRA envelopes over any app carrier
 ```
 
-A normal HYDRA message is contact/session based. Apps can still create anonymous-feeling flows with one-time identities, temporary contact cards, invite links, QR codes, or relay/mailbox pickup. Internally, HYDRA still needs peer key material and a session so the receiver can decrypt.
+A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
 
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 

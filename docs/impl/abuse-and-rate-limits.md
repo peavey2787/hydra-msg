@@ -1,5 +1,13 @@
 # HYDRA-MSG abuse and resource-limit profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 Availability is not a cryptographic guarantee. Implementations nevertheless
 must bound attacker-controlled work before allocation or public-key operations.
 

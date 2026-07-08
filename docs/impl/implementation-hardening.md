@@ -1,5 +1,13 @@
 # HYDRA-MSG implementation hardening profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 This document defines implementation controls beyond wire correctness.
 
 ## 1. Build and dependency policy

@@ -1,5 +1,14 @@
 # HYDRA-MSG group state and epoch commits
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document defines common group roster, governance, commit, sender-chain,
 replay, and epoch rules. Mode-specific behavior is normative in
 `group-modes.md`; Interactive/Broadcast membership keys are defined in

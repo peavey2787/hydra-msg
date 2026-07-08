@@ -1,5 +1,14 @@
 # HYDRA-MSG security proof sketch and claim map
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document records the intended argument, not a machine-checked proof or
 substitute for independent cryptographic review. Claims inherit the adversary
 and exclusions in `threat-model.md`.

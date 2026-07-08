@@ -1,5 +1,13 @@
 # HYDRA-MSG RNG and entropy profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 All production entropy originates in the operating-system CSPRNG. Application
 PRNGs, timestamps, counters, UUID generators, process IDs, and transport RNGs
 are not entropy sources.

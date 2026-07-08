@@ -3,16 +3,38 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Repository structure](README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
 - [How HYDRA messaging works](../impl/message-flow/README.md)
-- [Crates](../../crates/README.md)
-- [Examples](../../examples/README.md)
 
 Status: target API for the `hydra-msg` facade crate.
 
 Goal: make HYDRA stupid-simple for app developers. A developer should be able to open HYDRA, create or restore an identity, add contacts, handshake, send messages, receive messages, use lobbies, back up data, and run basic diagnostics without seeing cryptographic internals, wire-format details, padding classes, chunks, ratchets, sessions, or transport logic.
 
 HYDRA is transport-agnostic. WebRTC, libp2p, HTTP, QR codes, files, relays, Kaspa pointers, mailboxes, and manual copy/paste are carriers only. They move opaque HYDRA bytes. They are not protocol authority.
+
+Normal send/receive is key/session based. HYDRA can support anonymous chat designs, but the anonymity property comes from how the app provisions identities, contact cards, carriers, and authorization. Use the following wording consistently:
+
+```text
+Anonymous to the other user:
+  Use a one-time HYDRA identity/contact card for that chat.
+
+Unlinkable across chats:
+  Use fresh identities per chat/lobby and do not reuse contact cards, invites, mailbox IDs, or app-account handles.
+
+Anonymous to the server/relay:
+  A relay only needs opaque HYDRA bytes, but it may still see timing, IP addresses, mailbox IDs, request sizes, and routing metadata unless the carrier hides that too.
+
+Anonymous to the network:
+  Requires a Tor/I2P/mixnet/proxy/relay design. HYDRA encryption by itself does not hide network endpoints or traffic patterns.
+
+Anonymous-but-authorized:
+  Requires a separate auth/privacy layer, such as proofs, blind credentials, tokens, or another unlinkable eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
+```
+
+Do not describe the normal message path as inherently anonymous. A normal HYDRA conversation is still based on peer key material, a contact/session record, and decryptable envelopes for the intended recipient.
 
 ## 1. Public API rules
 
@@ -527,7 +549,6 @@ crypto, ratchets, sessions, envelopes, padding, chunks, storage, vaults, group k
 ```
 
 The app developer should never need to see chunks, padding classes, suite selection, protocol details, checkpoint verification, lobby state import/export, or advanced configuration.
-
 
 ## 10. JavaScript / WASM facade
 

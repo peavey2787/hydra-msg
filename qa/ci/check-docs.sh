@@ -37,6 +37,22 @@ for readme in $(find . -name README.md -type f ! -path './.git/*' ! -path './tar
   fi
 done
 
+# Every public product Markdown doc needs a navigation block, not only README files.
+for doc in $(find docs/spec docs/impl docs/validation -name '*.md' -type f | sort); do
+  if ! grep -q '^## Navigation$' "$doc"; then
+    echo "Markdown doc missing Navigation section: $doc" >&2
+    exit 1
+  fi
+  if ! grep -q 'Main README' "$doc"; then
+    echo "Markdown doc missing Main README navigation: $doc" >&2
+    exit 1
+  fi
+  if [ "$doc" != "docs/spec/README.md" ] && ! grep -q 'Spec docs' "$doc"; then
+    echo "Markdown doc missing Spec docs navigation: $doc" >&2
+    exit 1
+  fi
+done
+
 if grep -RInE 'docs/planning' docs crates README.md Cargo.toml; then
   echo "docs/planning reference found" >&2
   exit 1

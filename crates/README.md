@@ -6,9 +6,9 @@
 
 - [Main README](../README.md)
 - [How HYDRA messaging works](../docs/impl/message-flow/README.md)
+- [Spec docs](../docs/spec/README.md)
 - [Examples](../examples/README.md)
 - [Public developer API](../docs/spec/public-developer-api.md)
-- [Roadmap](../docs/roadmap.md)
 
 ## Crate map
 

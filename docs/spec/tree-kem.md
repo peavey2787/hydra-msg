@@ -1,5 +1,14 @@
 # HYDRA-MSG post-quantum TreeKEM profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document defines the membership-key mechanism used by Interactive and
 Broadcast groups. It is a HYDRA-specific TreeKEM profile using ML-KEM-768,
 ML-DSA-65, HKDF-HMAC-SHA3-256, SHA3-512, and ChaCha20-Poly1305.

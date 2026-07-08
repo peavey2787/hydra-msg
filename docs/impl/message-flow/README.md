@@ -3,10 +3,10 @@
 ## Navigation
 
 - [Main README](../../../README.md)
-- [Repository structure](../../spec/README.md)
+- [Spec docs](../../spec/README.md)
 - [Public developer API](../../spec/public-developer-api.md)
+- [Carrier examples](../carrier-examples.md)
 - [Examples](../../../examples/README.md)
-- [Benchmark notes](../../validation/benchmark-results.md)
 
 ## The short version
 
@@ -83,25 +83,27 @@ Internally, the clean model is still:
 peer key material -> contact record -> session -> encrypted envelope
 ```
 
-## Can an app support anonymous-feeling chats?
+## Can an app support anonymous chats?
 
-Yes, at the app layer.
+Yes, but the normal HYDRA message path is still key/session based. The receiver needs peer key material and an active session to decrypt. The app decides whether that key material is a long-lived identity, a one-time identity, a lobby-specific identity, or a credential-backed identity.
 
-Useful patterns:
+Use these distinctions when designing or documenting anonymity:
 
 ```text
-One-time identity:
-  Generate a fresh identity for a single chat or lobby.
+Anonymous to the other user:
+  Use a one-time HYDRA identity/contact card for that chat.
 
-Temporary contact:
-  Add the peer contact for one session, then remove it when the chat ends.
+Unlinkable across chats:
+  Use fresh identities per chat/lobby and do not reuse contact cards, invites, mailbox IDs, or app-account handles.
 
-Invite link or QR:
-  Encode a contact card or invite payload and let the receiver import it.
+Anonymous to the server/relay:
+  A relay only needs opaque HYDRA bytes, but it may still see timing, IP addresses, mailbox IDs, request sizes, and routing metadata unless the carrier hides that too.
 
-Unknown inbox:
-  Accept handshake offers from unknown peers, show them as untrusted requests,
-  and only mark them trusted if the user confirms.
+Anonymous to the network:
+  Requires a Tor/I2P/mixnet/proxy/relay design. HYDRA encryption by itself does not hide network endpoints or traffic patterns.
+
+Anonymous-but-authorized:
+  Requires a separate auth/privacy layer, such as proofs, blind credentials, tokens, or another unlinkable eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
 ```
 
 HYDRA should still treat the peer as a key-bearing contact/session internally. That keeps decryption, replay handling, safety-code checks, and message ownership coherent.

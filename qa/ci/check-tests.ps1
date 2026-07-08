@@ -168,6 +168,21 @@ function Invoke-DocsGate {
         }
     }
 
+    $importantDocs = Get-ChildItem @("docs/spec", "docs/impl", "docs/validation") -Filter *.md -File -Recurse
+    foreach ($doc in $importantDocs) {
+        $content = Get-Content $doc.FullName -Raw
+        if ($content -notmatch "(?m)^## Navigation$") {
+            throw "Markdown doc missing Navigation section: $($doc.FullName)"
+        }
+        if ($content -notmatch "Main README") {
+            throw "Markdown doc missing Main README navigation: $($doc.FullName)"
+        }
+        $specReadme = Join-Path $RepoRoot "docs/spec/README.md"
+        if ($doc.FullName -ne $specReadme -and $content -notmatch "Spec docs") {
+            throw "Markdown doc missing Spec docs navigation: $($doc.FullName)"
+        }
+    }
+
     Assert-NoTextMatch "docs/planning references" @("docs", "crates", "README.md", "Cargo.toml") "docs/planning"
     Assert-NoTextMatch "product doc references under docs/project" @("docs", "crates", "examples", "README.md", "Cargo.toml") "docs/project/(message-flow|public-developer-api|benchmark-results|carrier-examples|hydra-msg-cli|wasm-javascript-bindings|production-qa-gate|release-readiness)"
     Assert-NoTextMatch "crate name references" @("docs", "crates", "README.md", "Cargo.toml") "hydra-types|hydra-wire"

@@ -1,5 +1,14 @@
 # HYDRA-MSG v1 threat model and security claim boundaries
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document is normative. It defines the adversaries, trusted components,
 security goals, compromise consequences, and exclusions for HYDRA-MSG v1. A
 claim in another HYDRA document is valid only under the assumptions stated
@@ -43,8 +52,12 @@ Under the assumptions in Section 4, v1 aims to provide:
 10. Exact content-length hiding within each Lite, Standard, or Full class.
 
 The protocol does not claim information-theoretic security, everlasting
-authentication, anonymity, availability, endpoint security, or guaranteed
-physical memory erasure.
+authentication, deniability, availability, endpoint security, network anonymity,
+relay anonymity, or guaranteed physical memory erasure. Anonymous-to-peer chats
+are an app-layer identity provisioning pattern: use a one-time HYDRA identity
+and contact card for that chat. Unlinkability across chats requires fresh
+identities per chat/lobby plus no contact-card, invite, mailbox, app-account,
+or carrier-metadata reuse.
 
 ## 3. Adversary classes
 

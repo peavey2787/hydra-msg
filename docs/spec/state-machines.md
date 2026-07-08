@@ -1,5 +1,14 @@
 # HYDRA-MSG normative state machines
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document is the consolidated transition authority. A transition not
 listed here is invalid. Every receive transition is provisional until all
 cryptographic, canonical, policy, replay, and padding checks succeed.

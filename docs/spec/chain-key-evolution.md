@@ -1,5 +1,14 @@
 # HYDRA-MSG v1 chain-key evolution
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document expands the normative ratchet requirements in
 `protocol-spec.md`. A symmetric chain protects erased past keys; it does not
 provide post-compromise security until fresh authenticated hybrid entropy is

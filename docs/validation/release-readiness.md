@@ -3,8 +3,9 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Repository structure](../spec/README.md)
-- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [Production QA gate](production-qa-gate.md)
 - [Examples](../../examples/README.md)
 
 Status: P12 cleanup artifact.

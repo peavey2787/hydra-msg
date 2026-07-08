@@ -1,5 +1,13 @@
 # HYDRA-MSG v1 Rust type contract
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 These are logical reference types. Wire encoding is exclusively the
 byte-indexed format in `envelope-serialization.md`; no type in this file may be
 cast, transmuted, or serialized as a native Rust struct.

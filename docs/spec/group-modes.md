@@ -1,5 +1,14 @@
 # HYDRA-MSG group communication modes
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 This document defines the authenticated communication mode stored in every
 group state. A mode determines who may send, the membership-key mechanism,
 per-sender state, permitted content, envelope classes, and scalability bounds.

@@ -1,5 +1,13 @@
 # HYDRA-MSG interoperability profile
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 This document defines cross-implementation behavior not left to host language,
 platform, or transport convention.
 

@@ -1,5 +1,14 @@
 # RFC: HYDRA-MSG v1
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](README.md)
+- [Protocol spec](protocol-spec.md)
+- [Threat model](threat-model.md)
+- [Public developer API](public-developer-api.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+
 ## Hybrid post-quantum secure messaging protocol
 
 Status: design specification. The wire format is frozen only after the required
@@ -22,11 +31,14 @@ HYDRA-MSG provides:
 - authenticated Interactive, Broadcast, and Lite group modes; and
 - bounded replay and out-of-order processing.
 
-HYDRA-MSG does not provide anonymity, availability, deniability, endpoint
+The normal HYDRA-MSG message path is key/session based. v1 does not itself
+provide network anonymity, relay anonymity, availability, deniability, endpoint
 security, protection from traffic timing/volume analysis, or recovery from a
-compromised identity key. The bootstrap records expose both identity public
-keys to a passive observer. An identity-hiding prekey mode is out of scope for
-v1 and MUST NOT be claimed by an implementation.
+compromised identity key. Apps may create anonymous-to-peer or unlinkable chat
+flows with fresh one-time identities and contact cards, but bootstrap records
+still expose the public keys used for that chat to any observer who can see
+those records. An identity-hiding prekey mode is out of scope for v1 and MUST
+NOT be claimed by an implementation.
 
 The normative adversary model, trust assumptions, compromise cases, and claim
 boundaries are defined in `threat-model.md`. Security claims in this document
@@ -826,7 +838,8 @@ senders, or skipped-key windows.
 | Bootstrap identity hiding | No |
 | Public sequence leakage | A 64-bit counter is visible; route tags change per message |
 | Timing, volume, endpoint, or transport-route hiding | No |
-| Deniability or anonymity | No |
+| Peer pseudonymity via one-time identities | App-layer pattern, not a protocol guarantee |
+| Deniability, relay anonymity, or network anonymity | No |
 
 Security depends on correct implementation, trustworthy endpoints, CSPRNG
 quality, identity verification, bounded state handling, and prompt key erasure.

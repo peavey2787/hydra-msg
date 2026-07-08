@@ -1,5 +1,13 @@
 # HYDRA-MSG documentation test vectors
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [Production QA gate](production-qa-gate.md)
+- [Examples](../../examples/README.md)
+
 Status: not frozen. Symmetric, class, and serialization values below are
 normative. ML-KEM/ML-DSA/TreeKEM vectors require complete deterministic
 outputs reproduced by the two pinned backends in `backend-profile.md` before

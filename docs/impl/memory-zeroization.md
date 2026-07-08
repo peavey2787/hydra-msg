@@ -1,5 +1,13 @@
 # HYDRA-MSG v1 secret-memory lifecycle
 
+## Navigation
+
+- [Main README](../../README.md)
+- [Spec docs](../spec/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
+
 This document defines best-effort secret minimization and erasure. It does not
 claim that software can guarantee physical RAM destruction: compilers,
 runtimes, allocators, kernels, crash facilities, hibernation, DMA devices, and

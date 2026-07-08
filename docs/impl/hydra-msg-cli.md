@@ -3,9 +3,10 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Repository structure](../spec/README.md)
-- [How HYDRA messaging works](message-flow/README.md)
+- [Spec docs](../spec/README.md)
 - [Public developer API](../spec/public-developer-api.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Examples](../../examples/README.md)
 
 Status: P7 developer utility over `hydra-msg`.
 
