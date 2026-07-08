@@ -1,0 +1,1 @@
+{"artifacts":[{"length":64,"name":"outer_header","sha3_256":"c6f71b734e3575657d78b4e447d8a1198ca28a8f90035ce0102444b9361720e4"}],"backend":"hydra-envelope","cleanup":"no secret material","entropy":[],"expected_state":"serialization operation only","result":"canonical Full protected outer header reproduced","schema":1,"vector_id":"TV-HDR-000"}

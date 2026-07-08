@@ -1,0 +1,186 @@
+# -----------------------------------------------------------------------------
+# Rust build outputs
+# -----------------------------------------------------------------------------
+/target/
+/target-*/
+/debug/
+/release/
+
+# Cargo temporary/output artifacts
+**/*.rs.bk
+*.rlib
+*.rmeta
+*.profraw
+
+# Keep Cargo.lock for this repo.
+# This is important for reproducible validation.
+!Cargo.lock
+
+# -----------------------------------------------------------------------------
+# Full-validation / local test artifacts
+# -----------------------------------------------------------------------------
+/full-validation/
+/target/full-validation/
+/validation-output/
+/validation-logs/
+/test-output/
+/test-results/
+
+*.long-type-*.txt
+
+# -----------------------------------------------------------------------------
+# Coverage / profiling
+# -----------------------------------------------------------------------------
+/coverage/
+/tarpaulin-report.html
+/cobertura.xml
+/lcov.info
+/*.profdata
+/*.profraw
+
+# -----------------------------------------------------------------------------
+# Local runtime state
+# -----------------------------------------------------------------------------
+/data/
+/state/
+/storage/
+/db/
+/tmp/
+/temp/
+/cache/
+/logs/
+
+*.log
+*.pid
+*.sock
+
+
+# HYDRA local app data / identity vaults
+# This directory can contain encrypted identity databases, vault metadata,
+# local secrets, peer state, test identities, and recovery artifacts.
+/hydra-msg-data/
+hydra-msg-data/
+
+# -----------------------------------------------------------------------------
+# Local node / identity / secret material
+# -----------------------------------------------------------------------------
+# Do not commit real node identities, private keys, local configs, or backups.
+*.key
+*.keys
+*.pem
+*.der
+*.p12
+*.pfx
+*.seed
+*.secret
+*.secrets
+*.backup
+*.bak
+
+identity.json
+identity.key
+peer-id.txt
+node-key*
+swarm-key*
+private-key*
+secret-key*
+
+# Keep examples/templates/docs.
+!*.example
+!*.example.*
+!examples/**
+!docs/**
+
+# -----------------------------------------------------------------------------
+# Local config files
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+config.local.*
+*.local.json
+*.local.toml
+*.local.yaml
+*.local.yml
+
+node-config.json
+node-config.local.json
+
+# Keep example config files.
+!examples/*.json
+!examples/*.toml
+!examples/*.yaml
+!examples/*.yml
+!examples/**/*.json
+!examples/**/*.toml
+!examples/**/*.yaml
+!examples/**/*.yml
+
+# -----------------------------------------------------------------------------
+# Generated archives / patches / release bundles
+# -----------------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+*.patch
+
+# -----------------------------------------------------------------------------
+# Dependency/vendor policy
+# -----------------------------------------------------------------------------
+# Do NOT ignore external/. This repo may intentionally patch crates locally.
+!/external/
+!/external/**
+
+# -----------------------------------------------------------------------------
+# IDE/editor files
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# -----------------------------------------------------------------------------
+# Windows files
+# -----------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# PowerShell transcripts / local history
+PowerShell_transcript*.txt
+*.ps1xml
+
+# -----------------------------------------------------------------------------
+# macOS files
+# -----------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# -----------------------------------------------------------------------------
+# Linux files
+# -----------------------------------------------------------------------------
+.directory
+.Trash-*
+.nfs*
+
+# -----------------------------------------------------------------------------
+# Misc generated files
+# -----------------------------------------------------------------------------
+*.tmp
+*.temp
+*.orig
+*.rej
+*.old
+*.new

@@ -1,0 +1,12 @@
+[package]
+name = "hydra-app"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+getrandom = { version = "=0.4.3", features = ["sys_rng"] }
+hydra-app-core = { path = "../hydra-app-core" }
+hydra-crypto = { path = "../../crates/hydra-crypto" }
+rand_core = "=0.10.1"
+

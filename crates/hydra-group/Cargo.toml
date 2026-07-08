@@ -1,0 +1,14 @@
+[package]
+name = "hydra-group"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hydra-core = { path = "../hydra-core" }
+hydra-crypto = { path = "../hydra-crypto" }
+hydra-envelope = { path = "../hydra-envelope" }
+ml-kem = { version = "=0.3.2", default-features = false, features = ["alloc", "zeroize"] }
+
+[lints]
+workspace = true

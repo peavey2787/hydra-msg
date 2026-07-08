@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/hydra-core",
+    "crates/hydra-crypto",
+    "crates/hydra-envelope",
+    "crates/hydra-session",
+    "crates/hydra-group",
+    "crates/hydra-msg",
+    "crates/hydra-msg-wasm",
+    "crates/hydra-msg-cli",
+    "examples/handshake_roundtrip",
+    "examples/contact_card",
+    "examples/attachment_roundtrip",
+    "examples/lobby_roundtrip",
+    "examples/mobile_perf_web",
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+repository = "https://example.invalid/hydra-msg"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+missing_panics_doc = "allow"
+missing_errors_doc = "allow"

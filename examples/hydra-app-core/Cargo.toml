@@ -1,0 +1,58 @@
+[package]
+name = "hydra-app-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[features]
+default = []
+test-support = []
+
+[dependencies]
+getrandom = { version = "=0.4.3", features = ["sys_rng"] }
+hydra-core = { path = "../../crates/hydra-core" }
+hydra-crypto = { path = "../../crates/hydra-crypto" }
+hydra-group = { path = "../../crates/hydra-group" }
+hydra-session = { path = "../../crates/hydra-session" }
+rand_core = "=0.10.1"
+scrypt = "=0.11.0"
+zeroize = "=1.9.0"
+
+
+[[example]]
+name = "create_identity"
+
+[[example]]
+name = "start_session_send_receive"
+required-features = ["test-support"]
+
+[[example]]
+name = "group_create_join"
+
+[[example]]
+name = "identity_store"
+
+[[example]]
+name = "message_store"
+
+[[example]]
+name = "transport_relay"
+
+[[example]]
+name = "recovery_export_import"
+
+[[example]]
+name = "device_linking"
+
+[[example]]
+name = "attachment_handling"
+
+[[example]]
+name = "abuse_failure_tests"
+
+[[example]]
+name = "live_state_store"
+required-features = ["test-support"]
+
+[[example]]
+name = "signed_backup_history"

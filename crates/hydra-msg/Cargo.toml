@@ -1,0 +1,17 @@
+[package]
+name = "hydra-msg"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+getrandom = { version = "=0.4.3", features = ["sys_rng"] }
+hydra-core = { path = "../hydra-core" }
+hydra-crypto = { path = "../hydra-crypto" }
+hydra-envelope = { path = "../hydra-envelope" }
+hydra-group = { path = "../hydra-group" }
+hydra-session = { path = "../hydra-session" }
+rand_core = "=0.10.1"
+
+[lints]
+workspace = true

@@ -1,0 +1,11 @@
+[package]
+name = "hydra-msg-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hydra-msg = { path = "../hydra-msg" }
+
+[lints]
+workspace = true

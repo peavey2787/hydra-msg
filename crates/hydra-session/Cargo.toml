@@ -1,0 +1,16 @@
+[package]
+name = "hydra-session"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+test-support = []
+
+[dependencies]
+hydra-core = { path = "../hydra-core" }
+hydra-crypto = { path = "../hydra-crypto" }
+hydra-envelope = { path = "../hydra-envelope" }
+
+[lints]
+workspace = true

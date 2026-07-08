@@ -1,0 +1,12 @@
+[package]
+name = "hydra-msg-example-lobby-roundtrip"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+hydra-msg = { path = "../../crates/hydra-msg" }
+
+[lints]
+workspace = true
