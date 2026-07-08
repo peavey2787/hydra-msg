@@ -225,12 +225,13 @@ This roadmap succeeds when:
 
 ## Progress report
 
-### 2026-07-08 — Current SRP roadmap created
+### 2026-07-08 — P0 baseline and guardrails complete
 
-Status: planned, not implemented.
+Status: P0 complete; P1 not started.
 
 - Replaced the prior active roadmap with this `hydra-group` SRP size roadmap.
 - Kept rules/guidelines at the top, phases/steps in the middle, and progress report below.
+- Recorded the baseline map in [`docs/project/audit/hydra-group-srp-baseline.md`](project/audit/hydra-group-srp-baseline.md).
 - Confirmed current target file sizes:
 
 ```text
@@ -239,8 +240,11 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-- No source modules were moved.
-- No implementation work was started.
-- Production-ready status: no. This SRP work, full validation, security review, and final vector/interoperability confirmation remain.
+- Recorded current `hydra-group` public exports from `crates/hydra-group/src/lib.rs`.
+- Mapped top-level types/functions from `canonical.rs`, `state.rs`, and `commit.rs` to target SRP modules.
+- Mapped existing local unit tests to target modules where ownership is clear.
+- Defined the practical size target: most new Rust files under 400 lines, with documented exceptions only when a cohesive concern must be larger.
+- No source modules were moved in P0.
+- Production-ready status: no. P1 through P5, full validation, security review, and final vector/interoperability confirmation remain.
 - Enterprise-grade status: no. The largest group files still need the planned ownership split and review.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
