@@ -1,7 +1,7 @@
 use super::{
-    ContactId, HydraAttachment, HydraAttachmentSource, HydraContact, HydraEnvelope, HydraLobby,
-    HydraLobbyPolicy, HydraMessage, HydraMsgError, HydraResult, IdentityId, IdentityRecord,
-    LobbyId, MessageId, StoredMessage, ANSWER_MAGIC, BACKUP_MAGIC, CONTACT_CARD_MAGIC,
+    ContactId, HydraAttachment, HydraAttachmentSource, HydraContact, HydraLobby, HydraLobbyPolicy,
+    HydraMessage, HydraMsgError, HydraResult, IdentityId, IdentityRecord, LobbyId, MessageId,
+    ReceivedHydraMessage, StoredMessage, ANSWER_MAGIC, BACKUP_MAGIC, CONTACT_CARD_MAGIC,
     ID_EXPORT_MAGIC, LOBBY_INVITE_MAGIC, LOBBY_PAYLOAD_MAGIC, OFFER_MAGIC, PAYLOAD_MAGIC,
 };
 
