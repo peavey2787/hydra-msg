@@ -21,7 +21,6 @@ Accurate status wording:
 
 - Kept the active workspace focused on protocol/product crates and active facade examples.
 - Kept demo app crates outside the active workspace under `examples/` as reference material only.
-- Removed obsolete production-app milestone documents that conflicted with the current `hydra-msg` API roadmap.
 - Removed stale phase wording from demo app CSS comments.
 - Added real-world benchmark notes under `docs/project/benchmark-results.md`.
 - Updated README files to point app developers at `hydra-msg` first.

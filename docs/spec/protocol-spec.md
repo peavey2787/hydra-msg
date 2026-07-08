@@ -14,7 +14,7 @@ HYDRA-MSG provides:
 - mutually authenticated, hybrid X25519 + ML-KEM-768 session establishment;
 - post-quantum confidentiality against store-now-decrypt-later adversaries;
 - post-quantum identity authentication with ML-DSA-65;
-- past-message secrecy after obsolete keys are erased;
+- past-message secrecy after old keys are erased;
 - explicit key confirmation;
 - Lite (4 KiB), Standard (32 KiB), and Full (144 KiB) fixed-size records with
   encrypted message type, identities, group metadata, exact content length,
@@ -815,7 +815,7 @@ senders, or skipped-key windows.
 | Classical fallback | X25519 component, assuming the combiner and X25519 remain secure |
 | Identity authentication | ML-DSA-65 plus an external fingerprint trust decision |
 | Explicit key confirmation | RESP authenticator and FINISH |
-| Past-message secrecy | After obsolete keys and skipped keys are erased |
+| Past-message secrecy | After old keys and skipped keys are erased |
 | Future secrecy after compromise | Conditional: signed refresh, fresh unknown component, trusted identity key, and no ongoing endpoint control |
 | Replay protection | Per-direction bounded windows and one-use keys |
 | 1:1 sender authentication | Live channel authentication against outsiders; not transferable proof |

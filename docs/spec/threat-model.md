@@ -10,7 +10,7 @@ here.
 HYDRA protects:
 
 - 1:1 and group application plaintext;
-- live and retired handshake, refresh, chain, message, AEAD, and group secrets;
+- live and previously used handshake, refresh, chain, message, AEAD, and group secrets;
 - device identity signing keys;
 - peer and group sender authentication state;
 - group roster, governance, epoch, and commit-chain integrity;
@@ -33,7 +33,7 @@ Under the assumptions in Section 4, v1 aims to provide:
    hold.
 4. Store-now-decrypt-later resistance from the ML-KEM-768 component.
 5. Explicit handshake and refresh key confirmation.
-6. Past-message secrecy after obsolete chain/message/skipped keys and the
+6. Past-message secrecy after old chain/message/skipped keys and the
    chain-generating handshake secret are erased.
 7. Conditional recovery from a chain-state snapshot after an identity-signed
    hybrid refresh with fresh uncompromised entropy.
@@ -265,7 +265,7 @@ Availability is not guaranteed. Implementations must bound:
   skipped keys;
 - envelope-class buffers, TreeKEM paths/fragments, group members, signatures,
   policies, and welcomes; and
-- queued immutable retransmissions and retired-secret buffers.
+- queued immutable retransmissions and scratch cleanup buffers.
 
 Resource rejection occurs before expensive cryptography when safe and exposes
 no secret-dependent peer-visible distinction. Puzzles, payments, account

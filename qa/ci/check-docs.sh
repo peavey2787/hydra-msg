@@ -18,12 +18,12 @@ if grep -RInE 'docs/planning' docs crates README.md Cargo.toml; then
 fi
 
 if grep -RInE 'hydra-types|hydra-wire' docs crates README.md Cargo.toml; then
-  echo "retired crate name reference found" >&2
+  echo "crate name reference found" >&2
   exit 1
 fi
 
 if grep -RInE 'Kyber|Dilithium|XChaCha20' docs/spec docs/impl docs/validation crates; then
-  echo "deprecated primitive terminology found" >&2
+  echo "primitive terminology found" >&2
   exit 1
 fi
 

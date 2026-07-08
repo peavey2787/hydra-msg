@@ -162,7 +162,7 @@ logs, or backups.
 
 ## 7. Security interpretation
 
-Assuming HKDF-Expand behaves as a PRF and obsolete secrets are erased:
+Assuming HKDF-Expand behaves as a PRF and old secrets are erased:
 
 ```text
 knowledge of chain_key[n] does not reveal chain_key[n-1] or message_key[n-1]

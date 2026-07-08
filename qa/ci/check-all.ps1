@@ -89,8 +89,8 @@ function Invoke-DocsGate {
     }
 
     Assert-NoTextMatch "stale docs/planning references" @("docs", "crates", "README.md", "Cargo.toml") "docs/planning"
-    Assert-NoTextMatch "retired crate name references" @("docs", "crates", "README.md", "Cargo.toml") "hydra-types|hydra-wire"
-    Assert-NoTextMatch "deprecated primitive terminology" @("docs/spec", "docs/impl", "docs/validation", "crates") "Kyber|Dilithium|XChaCha20"
+    Assert-NoTextMatch "crate name references" @("docs", "crates", "README.md", "Cargo.toml") "hydra-types|hydra-wire"
+    Assert-NoTextMatch "primitive terminology" @("docs/spec", "docs/impl", "docs/validation", "crates") "Kyber|Dilithium|XChaCha20"
     Assert-NoTextMatch "source TODO/unimplemented markers" @("crates") "todo!|unimplemented!|TODO|FIXME"
 
     $emptyScripts = Get-ChildItem "qa/ci" -File |

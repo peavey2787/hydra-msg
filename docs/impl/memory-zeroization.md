@@ -10,8 +10,8 @@ hardware copies may retain data outside the process's control.
 The strategy reduces exposure to:
 
 - accidental logging, formatting, serialization, and cloning;
-- ordinary allocator reuse after secret retirement;
-- process memory inspection after obsolete keys have been erased;
+- ordinary allocator reuse after secrets are no longer needed;
+- process memory inspection after erased keys are no longer available;
 - swap, core-dump, and hibernation exposure where the OS controls are
   available; and
 - secret remnants in explicitly managed cryptographic scratch buffers.
@@ -33,7 +33,7 @@ portable cryptographic guarantee and can enlarge the secret footprint.
 3. Pass secrets by reference or move; never duplicate them for convenience.
 4. Use vetted backend APIs that accept caller-owned output/scratch buffers
    when possible.
-5. Zeroize obsolete buffers with operations intended not to be optimized away.
+5. Zeroize secret buffers that are no longer needed with operations intended not to be optimized away.
 6. Erase temporaries on every success, error, cancellation, panic boundary,
    timeout, and shutdown path.
 7. Never let a background scrubber borrow or mutate active protocol state.
@@ -98,7 +98,7 @@ Lite/Standard/Full class capacity. Shrinking or reallocating a secret vector is
 forbidden because the old allocation may retain bytes. Secret-bearing
 containers are preallocated only after class and protocol bounds validate.
 
-## 5. Active and retired ownership
+## 5. Active-state replacement
 
 Active state is mutated only by the protocol transaction that owns it. When a
 key advances, use move/replace semantics:
@@ -107,12 +107,12 @@ key advances, use move/replace semantics:
 derive next state in zeroizing temporary storage
 authenticate and validate
 atomically swap next state into the owner
-move old state into a local retired value
-zeroize and drop the retired value before returning
+move old state into a local value
+zeroize and drop that local value before returning
 ```
 
-Ordinary fixed-size retired keys SHOULD be zeroized synchronously. A background
-retired-secret queue is allowed only for unusually large backend scratch
+Ordinary fixed-size old keys SHOULD be zeroized synchronously. A background
+cleanup queue is allowed only for unusually large backend scratch
 allocations and only if:
 
 - ownership is moved, never cloned;
@@ -121,7 +121,7 @@ allocations and only if:
 - the worker has no reference to live session/group state; and
 - shutdown drains and wipes the queue.
 
-Timing of secret retirement is not exposed to remote peers.
+Timing of secret cleanup is not exposed to remote peers.
 
 ## 6. Transaction cleanup
 
@@ -203,7 +203,7 @@ Graceful shutdown:
 1. Stop accepting new work.
 2. Cancel and join protocol transactions.
 3. Close sessions/groups and erase live state.
-4. Drain/wipe any retired scratch queue.
+4. Drain/wipe any scratch cleanup queue.
 5. Erase backend arenas and cached one-time keys.
 6. Release locked mappings.
 7. Exit without serializing live secrets.

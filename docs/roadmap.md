@@ -135,7 +135,7 @@ Goal: identify what existing moved example/app-domain code can be reused by the 
 Steps:
 
 - Inspect `examples/hydra-app-core` identity vault, contact, session, storage, recovery, attachment/payload, message store, group, and carrier-boundary modules.
-- Classify each module as facade candidate, internal implementation, example helper, app-demo helper, or dead or obsolete code.
+- Classify each module as facade candidate, internal implementation, example helper, app-demo helper, or code to remove.
 - Identify duplicate abstractions between app-domain code and protocol crates.
 - Map existing code to `docs/project/public-developer-api.md`.
 - Record gaps before creating the new facade crate.
@@ -252,7 +252,7 @@ Goal: make the developer API credible before manual validation.
 
 Steps:
 
-- Remove duplicate/deprecated/obsolete/unused code from the active workspace.
+- Remove duplicate and unused code from the active workspace.
 - Update README files to point developers at `hydra-msg` first.
 - Include benchmark numbers with honest caveats.
 - Mark protocol release status accurately.
@@ -412,7 +412,6 @@ Target sentence:
 ### 2026-07-08 — P12 complete
 
 - Kept the active workspace focused on `crates/hydra-*`, `hydra-msg`, `hydra-msg-wasm`, `hydra-msg-cli`, and the active facade/carrier examples.
-- Removed obsolete production-app milestone documents from `docs/project/` that conflicted with the current stupid-simple `hydra-msg` roadmap.
 - Replaced the previous app-focused QA gate with the current P13 manual validation gate under `docs/project/production-qa-gate.md`.
 - Added `docs/project/release-readiness.md` as the P12 cleanup and P13 handoff artifact.
 - Added `docs/project/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, older low-end tablet, and a 64 KiB larger-message run.

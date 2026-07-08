@@ -293,7 +293,7 @@ candidate_tree_hash[64]
 ```
 
 Updated nodes are strictly increasing by index and contain exactly the
-committer direct path plus any keys retired by a removal; no unchanged node
+committer direct path plus any keys erased after a removal; no unchanged node
 may be included. Path ciphertexts are strictly ordered by
 `(parent_node_index, target_node_index)`. Counts must equal the recomputed path
 and filtered resolutions, fit the Section 14 bounds, and use checked

@@ -13,7 +13,7 @@ pub struct MessageIndex(pub u64);
 ///
 /// Production app code should wrap protocol secrets in validated app/backend
 /// containers that provide stronger cleanup, page-locking where available,
-/// and retired-secret handling.
+/// and cleanup handling.
 pub struct Secret32(pub [u8; 32]);
 
 impl Secret32 {
