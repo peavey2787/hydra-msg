@@ -7,7 +7,7 @@ It gives apps a simple way to create identities, add contacts, establish session
 ## Navigation
 
 - [How HYDRA messaging works](docs/impl/message-flow/README.md)
-- [Spec docs and repository structure](docs/spec/README.md)
+- [Spec docs and repo structure](docs/spec/README.md)
 - [Crates](crates/README.md)
 - [Examples](examples/README.md)
 - [Public developer API](docs/spec/public-developer-api.md)

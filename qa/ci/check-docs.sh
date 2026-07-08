@@ -26,6 +26,61 @@ if find docs/project -type f ! -path 'docs/project/audit/*' | grep .; then
   exit 1
 fi
 
+navigation_block() {
+  awk '
+    /^## Navigation$/ { in_nav = 1; print; next }
+    in_nav && /^## / { exit }
+    in_nav { print }
+  ' "$1"
+}
+
+require_nav_label() {
+  file=$1
+  nav=$2
+  label=$3
+  if ! printf '%s\n' "$nav" | grep -Fq "[$label]"; then
+    echo "navigation missing $label: $file" >&2
+    exit 1
+  fi
+}
+
+forbidden_nav_label() {
+  file=$1
+  nav=$2
+  label=$3
+  if printf '%s\n' "$nav" | grep -Fq "[$label]"; then
+    echo "navigation has wrong nav-family entry $label: $file" >&2
+    exit 1
+  fi
+}
+
+# The root README owns the public/project navigation only.
+main_nav=$(navigation_block README.md)
+for label in \
+  "How HYDRA messaging works" \
+  "Spec docs and repo structure" \
+  "Crates" \
+  "Examples" \
+  "Public developer API" \
+  "Benchmark notes"
+do
+  require_nav_label "README.md" "$main_nav" "$label"
+done
+for label in \
+  "Roadmap" \
+  "Protocol spec" \
+  "Threat model" \
+  "Security proof sketch" \
+  "State machines" \
+  "Envelope serialization" \
+  "Chain-key evolution" \
+  "TreeKEM profile" \
+  "Group modes" \
+  "Group rekey"
+do
+  forbidden_nav_label "README.md" "$main_nav" "$label"
+done
+
 # Every nested README must offer a path back to the main README.
 for readme in $(find . -name README.md -type f ! -path './.git/*' ! -path './target/*'); do
   if [ "$readme" = "./README.md" ]; then
@@ -37,20 +92,43 @@ for readme in $(find . -name README.md -type f ! -path './.git/*' ! -path './tar
   fi
 done
 
-# Every public product Markdown doc needs a navigation block, not only README files.
+# Every public product Markdown doc needs the spec-side navigation block, not the root README nav.
 for doc in $(find docs/spec docs/impl docs/validation -name '*.md' -type f | sort); do
   if ! grep -q '^## Navigation$' "$doc"; then
     echo "Markdown doc missing Navigation section: $doc" >&2
     exit 1
   fi
-  if ! grep -q 'Main README' "$doc"; then
-    echo "Markdown doc missing Main README navigation: $doc" >&2
-    exit 1
-  fi
-  if [ "$doc" != "docs/spec/README.md" ] && ! grep -q 'Spec docs' "$doc"; then
-    echo "Markdown doc missing Spec docs navigation: $doc" >&2
-    exit 1
-  fi
+
+  doc_nav=$(navigation_block "$doc")
+  for label in \
+    "Main README" \
+    "Spec document index" \
+    "Protocol spec" \
+    "Threat model" \
+    "Security proof sketch" \
+    "State machines" \
+    "Envelope serialization" \
+    "Chain-key evolution" \
+    "TreeKEM profile" \
+    "Group modes" \
+    "Group rekey"
+  do
+    require_nav_label "$doc" "$doc_nav" "$label"
+  done
+
+  for label in \
+    "How HYDRA messaging works" \
+    "Spec docs and repo structure" \
+    "Crates" \
+    "Examples" \
+    "Public developer API" \
+    "Benchmark notes" \
+    "Carrier examples" \
+    "Production QA gate" \
+    "Roadmap"
+  do
+    forbidden_nav_label "$doc" "$doc_nav" "$label"
+  done
 done
 
 if grep -RInE 'docs/planning' docs crates README.md Cargo.toml; then

@@ -71,6 +71,50 @@ function Assert-PathExists {
     }
 }
 
+function Get-NavigationBlock {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $lines = Get-Content $Path
+    $inNav = $false
+    $navLines = New-Object System.Collections.Generic.List[string]
+    foreach ($line in $lines) {
+        if ($line -eq "## Navigation") {
+            $inNav = $true
+            $navLines.Add($line)
+            continue
+        }
+        if ($inNav -and $line.StartsWith("## ")) {
+            break
+        }
+        if ($inNav) {
+            $navLines.Add($line)
+        }
+    }
+    return ($navLines -join "`n")
+}
+
+function Assert-NavLabel {
+    param(
+        [Parameter(Mandatory = $true)][string]$File,
+        [Parameter(Mandatory = $true)][string]$Nav,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+    if (!$Nav.Contains("[$Label]")) {
+        throw "navigation missing $Label: $File"
+    }
+}
+
+function Assert-NoNavLabel {
+    param(
+        [Parameter(Mandatory = $true)][string]$File,
+        [Parameter(Mandatory = $true)][string]$Nav,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+    if ($Nav.Contains("[$Label]")) {
+        throw "navigation has wrong nav-family entry $Label: $File"
+    }
+}
+
 function Get-LockPairs {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -157,8 +201,34 @@ function Invoke-DocsGate {
         throw "non-audit file found under docs/project"
     }
 
+    $mainNav = Get-NavigationBlock "README.md"
+    foreach ($label in @(
+        "How HYDRA messaging works",
+        "Spec docs and repo structure",
+        "Crates",
+        "Examples",
+        "Public developer API",
+        "Benchmark notes"
+    )) {
+        Assert-NavLabel "README.md" $mainNav $label
+    }
+    foreach ($label in @(
+        "Roadmap",
+        "Protocol spec",
+        "Threat model",
+        "Security proof sketch",
+        "State machines",
+        "Envelope serialization",
+        "Chain-key evolution",
+        "TreeKEM profile",
+        "Group modes",
+        "Group rekey"
+    )) {
+        Assert-NoNavLabel "README.md" $mainNav $label
+    }
+
     $readmes = Get-ChildItem . -Filter README.md -File -Recurse |
-        Where-Object { $_.FullName -notmatch "[\\/]\.git[\\/]" -and $_.FullName -notmatch "[\\/]target[\\/]" }
+        Where-Object { $_.FullName -notmatch "[\/]\.git[\/]" -and $_.FullName -notmatch "[\/]target[\/]" }
     foreach ($readme in $readmes) {
         if ($readme.FullName -eq (Join-Path $RepoRoot "README.md")) {
             continue
@@ -174,12 +244,36 @@ function Invoke-DocsGate {
         if ($content -notmatch "(?m)^## Navigation$") {
             throw "Markdown doc missing Navigation section: $($doc.FullName)"
         }
-        if ($content -notmatch "Main README") {
-            throw "Markdown doc missing Main README navigation: $($doc.FullName)"
+
+        $docNav = Get-NavigationBlock $doc.FullName
+        foreach ($label in @(
+            "Main README",
+            "Spec document index",
+            "Protocol spec",
+            "Threat model",
+            "Security proof sketch",
+            "State machines",
+            "Envelope serialization",
+            "Chain-key evolution",
+            "TreeKEM profile",
+            "Group modes",
+            "Group rekey"
+        )) {
+            Assert-NavLabel $doc.FullName $docNav $label
         }
-        $specReadme = Join-Path $RepoRoot "docs/spec/README.md"
-        if ($doc.FullName -ne $specReadme -and $content -notmatch "Spec docs") {
-            throw "Markdown doc missing Spec docs navigation: $($doc.FullName)"
+
+        foreach ($label in @(
+            "How HYDRA messaging works",
+            "Spec docs and repo structure",
+            "Crates",
+            "Examples",
+            "Public developer API",
+            "Benchmark notes",
+            "Carrier examples",
+            "Production QA gate",
+            "Roadmap"
+        )) {
+            Assert-NoNavLabel $doc.FullName $docNav $label
         }
     }
 

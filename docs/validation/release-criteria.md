@@ -3,10 +3,16 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec docs](../spec/README.md)
-- [Public developer API](../spec/public-developer-api.md)
-- [Production QA gate](production-qa-gate.md)
-- [Examples](../../examples/README.md)
+- [Spec document index](../spec/README.md)
+- [Protocol spec](../spec/protocol-spec.md)
+- [Threat model](../spec/threat-model.md)
+- [Security proof sketch](../spec/security-proof-sketch.md)
+- [State machines](../spec/state-machines.md)
+- [Envelope serialization](../spec/envelope-serialization.md)
+- [Chain-key evolution](../spec/chain-key-evolution.md)
+- [TreeKEM profile](../spec/tree-kem.md)
+- [Group modes](../spec/group-modes.md)
+- [Group rekey](../spec/group-rekey.md)
 
 The specification is frozen only when every mandatory gate below has dated,
 hashed evidence. Prose declaring success is not evidence.

@@ -3,10 +3,16 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec docs](../spec/README.md)
-- [Public developer API](../spec/public-developer-api.md)
-- [How HYDRA messaging works](message-flow/README.md)
-- [Examples](../../examples/README.md)
+- [Spec document index](../spec/README.md)
+- [Protocol spec](../spec/protocol-spec.md)
+- [Threat model](../spec/threat-model.md)
+- [Security proof sketch](../spec/security-proof-sketch.md)
+- [State machines](../spec/state-machines.md)
+- [Envelope serialization](../spec/envelope-serialization.md)
+- [Chain-key evolution](../spec/chain-key-evolution.md)
+- [TreeKEM profile](../spec/tree-kem.md)
+- [Group modes](../spec/group-modes.md)
+- [Group rekey](../spec/group-rekey.md)
 
 This document defines best-effort secret minimization and erasure. It does not
 claim that software can guarantee physical RAM destruction: compilers,

@@ -3,17 +3,7 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [How HYDRA messaging works](../impl/message-flow/README.md)
-- [Public developer API](public-developer-api.md)
-- [Protocol spec](protocol-spec.md)
-- [Threat model](threat-model.md)
-- [Examples](../../examples/README.md)
-
-This document is the project structure map. It explains where files belong so the repository stays organized, consistent, and easy to maintain.
-
-## Spec document index
-
-- [Public developer API](public-developer-api.md)
+- [Spec document index](#spec-document-index)
 - [Protocol spec](protocol-spec.md)
 - [Threat model](threat-model.md)
 - [Security proof sketch](security-proof-sketch.md)
@@ -23,6 +13,12 @@ This document is the project structure map. It explains where files belong so th
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+
+This document is the project structure map. It explains where files belong so the repository stays organized, consistent, and easy to maintain.
+
+## Spec document index
+
+The Navigation section above is the canonical spec-side index for protocol specs and repository structure. Public API entry points stay on the main README navigation.
 
 ## Top-level layout
 

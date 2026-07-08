@@ -3,10 +3,16 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec docs](../spec/README.md)
-- [Public developer API](../spec/public-developer-api.md)
-- [Production QA gate](production-qa-gate.md)
-- [Examples](../../examples/README.md)
+- [Spec document index](../spec/README.md)
+- [Protocol spec](../spec/protocol-spec.md)
+- [Threat model](../spec/threat-model.md)
+- [Security proof sketch](../spec/security-proof-sketch.md)
+- [State machines](../spec/state-machines.md)
+- [Envelope serialization](../spec/envelope-serialization.md)
+- [Chain-key evolution](../spec/chain-key-evolution.md)
+- [TreeKEM profile](../spec/tree-kem.md)
+- [Group modes](../spec/group-modes.md)
+- [Group rekey](../spec/group-rekey.md)
 
 These numbers came from real browser/WASM runs reported during HYDRA-MSG development. They are useful evidence that the `hydra-msg` message path is viable on modern mobile hardware, but they are not a substitute for the final validation gate.
 

@@ -5,8 +5,9 @@ set -eu
 hydra_enter_repo_root
 
 roots="README.md docs qa crates examples"
+files=$(mktemp)
 links=$(mktemp)
-trap 'rm -f "$links"' EXIT
+trap 'rm -f "$files" "$links"' EXIT
 
 for root in $roots; do
   [ -e "$root" ] || continue
@@ -15,17 +16,28 @@ for root in $roots; do
   else
     find "$root" -name '*.md' -type f ! -path '*/target/*' ! -path '*/.git/*'
   fi
-done | sort -u | while IFS= read -r file; do
-  grep -oE '\[[^][]+\]\([^)]*\)' "$file" 2>/dev/null | while IFS= read -r raw; do
-    target=$(printf '%s' "$raw" | sed -E 's/^[^\(]*\(([^)]*)\)$/\1/')
+done | sort -u > "$files"
+
+: > "$links"
+while IFS= read -r file || [ -n "$file" ]; do
+  [ -n "$file" ] || continue
+  grep -oE '\[[^][]+\]\([^)]*\)' "$file" 2>/dev/null | while IFS= read -r raw || [ -n "$raw" ]; do
+    target=${raw#*\(}
+    target=${target%\)}
     printf '%s|%s\n' "$file" "$target"
-  done
-done > "$links"
+  done >> "$links" || true
+done < "$files"
 
 failure=0
 while IFS='|' read -r file target || [ -n "$file" ]; do
   [ -n "$file" ] || continue
-  target=$(printf '%s' "$target" | sed -E 's/[[:space:]]+"[^"]*"$//; s/[[:space:]]+'"'"'[^'"'"']*'"'"'$//')
+
+  # Drop optional Markdown titles after the URL: [x](path "title") or [x](path 'title').
+  case "$target" in
+    *' "'*) target=${target%%' "'*} ;;
+    *" '"*) target=${target%%" '"*} ;;
+  esac
+
   case "$target" in
     ''|'#'*|http://*|https://*|mailto:*|tel:*) continue ;;
   esac

@@ -3,11 +3,16 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec docs](README.md)
+- [Spec document index](README.md)
 - [Protocol spec](protocol-spec.md)
 - [Threat model](threat-model.md)
-- [Public developer API](public-developer-api.md)
-- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Security proof sketch](security-proof-sketch.md)
+- [State machines](state-machines.md)
+- [Envelope serialization](envelope-serialization.md)
+- [Chain-key evolution](chain-key-evolution.md)
+- [TreeKEM profile](tree-kem.md)
+- [Group modes](group-modes.md)
+- [Group rekey](group-rekey.md)
 
 This document expands the normative ratchet requirements in
 `protocol-spec.md`. A symmetric chain protects erased past keys; it does not
