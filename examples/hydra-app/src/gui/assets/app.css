@@ -114,7 +114,7 @@ select { width: 100%; border: 1px solid rgba(255,255,255,.12); border-radius: 14
 .settings-summary article strong { font-size: clamp(18px, 4vw, 28px); overflow-wrap: anywhere; }
 #config-output { margin-top: 18px; }
 
-/* P11 mobile-first polish and accessibility pass */
+/* Mobile-first polish and accessibility helpers */
 html { scroll-behavior: smooth; }
 body { line-height: 1.5; }
 body, button, input, textarea, select { -webkit-font-smoothing: antialiased; }

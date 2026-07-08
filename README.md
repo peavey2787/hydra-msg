@@ -4,7 +4,7 @@ HYDRA-MSG is a Rust/WASM post-quantum encrypted messaging SDK. The current refac
 
 > Make HYDRA stupid-simple for app developers.
 
-App developers should start with `crates/hydra-msg`, not the lower-level protocol crates and not the retired demo app.
+App developers should start with `crates/hydra-msg`, not the lower-level protocol crates and not the demo reference crates.
 
 ## Status
 
@@ -33,8 +33,8 @@ examples/             active copy-paste developer examples
   mobile_perf_web     LAN web host for server and browser/device WASM benchmarks
   manual_file_carrier files on disk as a manual opaque-byte carrier
   webrtc_manual_carrier WebRTC DataChannel carrier after manual contact-card exchange
-  hydra-app-core    old app-domain demo crate kept as reference
-  hydra-app         old CLI/local browser GUI demo crate kept as reference
+  hydra-app-core      app-domain demo reference, outside active workspace
+  hydra-app           CLI/local browser GUI demo reference, outside active workspace
 
 docs/project/         roadmap, public API target, audits, WASM/CLI docs
 docs/spec/            protocol authority
@@ -109,6 +109,31 @@ cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml --
 
 That example requires manual/out-of-band contact-card exchange before WebRTC carries any HYDRA handshake bytes or encrypted envelopes.
 
+
+## Real-world benchmark snapshot
+
+Informal Rust/WASM browser benchmark runs reported during the refactor are promising:
+
+```text
+Samsung Galaxy S20 Ultra, browser WASM, 1 KiB payload:
+  handshake avg:     10.0 ms
+  send+receive avg:   0.0775 ms
+
+ASUS TUF Ryzen 7 A16 laptop, browser WASM, 1 KiB payload:
+  handshake avg:      5.7333 ms
+  send+receive avg:   0.0521 ms
+
+Desktop PC, browser WASM, 1 KiB payload:
+  handshake avg:      4.6633 ms
+  send+receive avg:   0.0412 ms
+
+Older low-end tablet, browser WASM, 1 KiB payload:
+  handshake avg:    162.5 ms
+  send+receive avg:   1.27 ms
+```
+
+See `docs/project/benchmark-results.md` for the full table and caveats. These are user-reported real-world results, not the final P13 validation record.
+
 ## Developer CLI
 
 The new CLI is `hydra-msg-cli`, a thin utility over the public facade:
@@ -129,7 +154,7 @@ Carrier ownership and carrier example rules are documented in `docs/project/carr
 
 ## Demo app status
 
-The old `hydra-app-core` and `hydra-app` crates are retired from the active workspace and kept under `examples/` only as reference material while useful flows are rewritten against `hydra-msg`.
+`examples/hydra-app-core` and `examples/hydra-app` are demo reference crates kept outside the active workspace while useful flows are rewritten against `hydra-msg`.
 
 They are not protocol authority, not the public API, and not part of the active release path.
 

@@ -15,9 +15,9 @@
 | `hydra-msg-wasm` | Browser/mobile WASM bindings over `hydra-msg`. | Thin JS-friendly wrapper over the facade. |
 | `hydra-msg-cli` | Developer CLI over `hydra-msg`. | Thin terminal helper, not protocol authority. |
 
-## Retired demo app crates
+## Demo reference crates
 
-The old demo app crates are retired from the active workspace and kept only as reference material under:
+The demo app crates are outside the active workspace and kept only as reference material under:
 
 ```text
 examples/hydra-app-core

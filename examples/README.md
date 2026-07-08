@@ -57,7 +57,7 @@ Contact cards are exchanged manually and out-of-band. WebRTC only carries HYDRA 
 
 ## Demo reference material
 
-The old `hydra-app-core` and `hydra-app` demo crates are kept under:
+The `hydra-app-core` and `hydra-app` demo crates are kept under:
 
 ```text
 examples/hydra-app-core

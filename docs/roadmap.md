@@ -222,14 +222,14 @@ Steps:
 - Do not expose checkpoint APIs, AOL2 state APIs, predicate APIs, lobby-state import/export, or advanced group/lobby controls.
 - Add lobby send/receive examples and tests.
 
-### P9 — Retire demo app crates — COMPLETE
+### P9 — Remove demo app crates from active workspace — COMPLETE
 
 Goal: remove naming confusion after the facade API exists.
 
 Steps:
 
-- Retire the old `hydra-app-core` and `hydra-app` demo crates from the active workspace.
-- Keep the old demo code only as reference material under `examples/`.
+- Remove `hydra-app-core` and `hydra-app` demo crates from the active workspace.
+- Keep the demo code only as reference material under `examples/`.
 - Preserve useful flows through the new `hydra-msg` examples and `hydra-msg-cli`, not through the demo app.
 - Ensure no example crate owns public protocol semantics.
 - Update README files and docs references so developers start with `hydra-msg`.
@@ -246,7 +246,7 @@ Steps:
 - Keep carrier code outside `hydra-msg`.
 - Document WebRTC, libp2p, relays, QR codes, Kaspa pointers, files, and mailboxes as carriers, not authorities.
 
-### P12 — Release-readiness cleanup
+### P12 — Release-readiness cleanup — COMPLETE
 
 Goal: make the developer API credible before manual validation.
 
@@ -256,7 +256,7 @@ Steps:
 - Update README files to point developers at `hydra-msg` first.
 - Include benchmark numbers with honest caveats.
 - Mark protocol release status accurately.
-- Publish only when the simple API is stable enough to avoid immediate churn.
+- Publish only after P13 manual validation is clean and the simple API is stable enough to avoid immediate churn.
 
 ### P13 — Manual validation gate
 
@@ -386,9 +386,9 @@ Target sentence:
 
 ### 2026-07-08 — P9 complete
 
-- Retired `hydra-app-core` and `hydra-app` from the active workspace.
-- Moved the retired demo crates under `examples/` as reference material only.
-- Updated their relative crate paths and removed workspace-inherited package metadata so the archived code remains understandable if inspected manually.
+- Removed `hydra-app-core` and `hydra-app` from the active workspace.
+- Kept the demo crates under `examples/` as reference material only.
+- Updated their relative crate paths and removed workspace-inherited package metadata so the reference code remains understandable if inspected manually.
 - Removed demo app crates from root workspace members so active workspace validation focuses on protocol/product crates and new facade examples.
 - Rewrote root `README.md`, `examples/README.md`, and `crates/README.md` so developers start with `hydra-msg`, `hydra-msg-wasm`, `hydra-msg-cli`, and the active facade examples.
 - Updated roadmap scope: removed the AOL2/relay-node phase as out of scope for `hydra-msg`, clarified that the P10 WebRTC carrier example must use manual out-of-band contact-card exchange, and split manual validation into P13 as its own final phase.
@@ -407,3 +407,16 @@ Target sentence:
 - Added the new carrier examples to the active workspace and README example lists.
 - No transport code was added to `hydra-msg`; WebRTC and files remain carriers only.
 - No advanced public API was added.
+
+
+### 2026-07-08 — P12 complete
+
+- Kept the active workspace focused on `crates/hydra-*`, `hydra-msg`, `hydra-msg-wasm`, `hydra-msg-cli`, and the active facade/carrier examples.
+- Removed obsolete production-app milestone documents from `docs/project/` that conflicted with the current stupid-simple `hydra-msg` roadmap.
+- Replaced the previous app-focused QA gate with the current P13 manual validation gate under `docs/project/production-qa-gate.md`.
+- Added `docs/project/release-readiness.md` as the P12 cleanup and P13 handoff artifact.
+- Added `docs/project/benchmark-results.md` with the real-world benchmark numbers reported from desktop PC, ASUS TUF Ryzen 7 A16 laptop, Samsung Galaxy S20 Ultra, older low-end tablet, and a 64 KiB larger-message run.
+- Updated root `README.md` with a benchmark snapshot and accurate pre-P13 release-status caveats.
+- Removed stale out-of-scope phase wording from demo app reference CSS comments.
+- Confirmed the public API remained trimmed: no config/profile/builder layer, no advanced public API, no protocol-info/suite APIs, no session import/export, no public chunk APIs, no checkpoint/lobby-state/predicate APIs.
+- Did not run format, tests, clippy, examples, WASM builds, or docs checks; those remain P13 and must be run manually by the maintainer.
