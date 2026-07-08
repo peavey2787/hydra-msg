@@ -9,4 +9,4 @@ if ! command -v wasm-pack >/dev/null 2>&1; then
 fi
 
 wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/webrtc_manual_carrier/web/pkg
-echo "Built WebRTC manual carrier WASM package."
+echo "Built WebRTC manual carrier example-local WASM package: examples/webrtc_manual_carrier/web/pkg"

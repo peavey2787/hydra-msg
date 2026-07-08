@@ -9,7 +9,7 @@ contact card should WebRTC carry HYDRA handshake bytes and encrypted envelopes.
 
 ## Build WASM
 
-From the repo root:
+From the repo root, build the example-local WASM package:
 
 ```powershell
 examples\webrtc_manual_carrier\scripts\build-wasm.ps1
@@ -20,6 +20,8 @@ or:
 ```bash
 examples/webrtc_manual_carrier/scripts/build-wasm.sh
 ```
+
+For a reusable web package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
 
 ## Run
 

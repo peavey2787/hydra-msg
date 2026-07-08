@@ -10,12 +10,14 @@ belongs here so it can be run locally and in CI the same way.
 ## Available checks
 
 ```text
-check-all.ps1      # Windows PowerShell full validation gate
-check-all.sh       # Unix shell full validation gate
+check-all.ps1       # Windows PowerShell full validation gate
+check-all.sh        # Unix shell full validation gate
+build-wasm-web.ps1  # Windows reusable WASM web package builder
+build-wasm-web.sh   # Unix reusable WASM web package builder
 linux-permissions.sh # Unix helper that restores execute bits and stale worktree metadata after ZIP extraction
-check-examples.ps1 # Windows PowerShell runnable example/browser package gate
-check-examples.sh  # Unix shell runnable example/browser package gate
-check-rust.sh      # workspace fmt/test/clippy gate
+check-examples.ps1  # Windows PowerShell runnable example/browser package gate
+check-examples.sh   # Unix shell runnable example/browser package gate
+check-rust.sh       # workspace fmt/test/clippy gate
 check-docs.sh      # docs/path/stale-term/source-marker gate
 check-locks.sh     # lock-file alignment checks for offline validation
 check-vectors.sh   # vector generator + candidate manifest verification
@@ -85,6 +87,29 @@ git rev-parse --show-toplevel
 ```
 
 The printed root should match the directory where the ZIP was extracted.
+
+
+## Reusable WASM web package
+
+Build the reusable browser/mobile package from the repo root:
+
+```powershell
+.\qa\ci\build-wasm-web.ps1
+```
+
+Unix:
+
+```sh
+./qa/ci/build-wasm-web.sh
+```
+
+Output:
+
+```text
+target/hydra-msg-wasm/web/
+```
+
+Example validation still builds example-local `web/pkg/` directories only when running `check-examples`.
 
 ## Evidence rule
 

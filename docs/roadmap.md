@@ -436,3 +436,11 @@ Target sentence:
 - Kept the public `hydra-msg` API unchanged while reducing mixed-concern code in the facade file.
 - Added `docs/project/audit/source-hygiene-audit.md` documenting the audit findings and remaining release blockers.
 - P13 is still manual and not marked complete.
+
+### 2026-07-08 — WASM web build output aligned
+
+- Added `qa/ci/build-wasm-web.sh` and `qa/ci/build-wasm-web.ps1` as the official reusable browser/mobile WASM package builders.
+- Set reusable WASM output to `target/hydra-msg-wasm/web/`.
+- Kept example-specific WASM output under each example's `web/pkg/` directory only for example validation and manual example runs.
+- Documented that `crates/hydra-msg-wasm` remains the source of truth for browser/mobile bindings.
+- P13 is still manual and not marked complete.

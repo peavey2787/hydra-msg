@@ -53,15 +53,34 @@ for (let i = 0; i < data.attachmentCount(); i += 1) {
 
 ## Build
 
-From the repo root:
+The source of truth is always:
 
-```bash
-wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
+```text
+crates/hydra-msg-wasm
 ```
 
-Then run the LAN benchmark host:
+Build the reusable web package from the repo root:
 
 ```bash
+./qa/ci/build-wasm-web.sh
+```
+
+PowerShell:
+
+```powershell
+.\qa\ci\build-wasm-web.ps1
+```
+
+The reusable package is written to:
+
+```text
+target/hydra-msg-wasm/web/
+```
+
+Example hosts build their own `web/pkg/` output only when testing examples:
+
+```bash
+examples/mobile_perf_web/scripts/build-wasm.sh
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 

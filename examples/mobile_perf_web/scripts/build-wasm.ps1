@@ -10,4 +10,4 @@ if (-not (Get-Command wasm-pack -ErrorAction SilentlyContinue)) {
 }
 
 wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
-Write-Host "Built mobile benchmark WASM package." -ForegroundColor Green
+Write-Host "Built mobile benchmark example-local WASM package: examples/mobile_perf_web/web/pkg" -ForegroundColor Green

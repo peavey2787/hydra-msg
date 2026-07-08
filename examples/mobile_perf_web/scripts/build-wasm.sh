@@ -9,4 +9,4 @@ if ! command -v wasm-pack >/dev/null 2>&1; then
 fi
 
 wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
-echo "Built mobile benchmark WASM package."
+echo "Built mobile benchmark example-local WASM package: examples/mobile_perf_web/web/pkg"

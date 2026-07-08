@@ -91,16 +91,32 @@ cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
 ```
 
-Build the browser/mobile WASM benchmark package before running `mobile_perf_web`:
+Build the reusable browser/mobile WASM package when you want files for your own web app:
 
 ```powershell
-wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
+.\qa\ci\build-wasm-web.ps1
+```
+
+Unix:
+
+```bash
+./qa/ci/build-wasm-web.sh
+```
+
+The reusable package is written to:
+
+```text
+target/hydra-msg-wasm/web/
+```
+
+Example hosts build their own `web/pkg/` output only when testing those examples. For the mobile browser benchmark:
+
+```powershell
+examples\mobile_perf_web\scripts\build-wasm.ps1
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 
-Then open the LAN URL on a phone/tablet/browser and run the browser/device HYDRA WASM benchmark.
-
-For the WebRTC carrier example, build its WASM package first:
+For the WebRTC carrier example:
 
 ```powershell
 examples\webrtc_manual_carrier\scripts\build-wasm.ps1

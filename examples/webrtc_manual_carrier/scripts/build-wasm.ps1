@@ -10,4 +10,4 @@ if (-not (Get-Command wasm-pack -ErrorAction SilentlyContinue)) {
 }
 
 wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/webrtc_manual_carrier/web/pkg
-Write-Host "Built WebRTC manual carrier WASM package." -ForegroundColor Green
+Write-Host "Built WebRTC manual carrier example-local WASM package: examples/webrtc_manual_carrier/web/pkg" -ForegroundColor Green

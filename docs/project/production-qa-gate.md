@@ -34,7 +34,21 @@ Unix shell:
 qa/ci/check-examples.sh
 ```
 
-The example script runs the native examples, checks the browser host examples, and builds the WASM packages. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+The example script runs the native examples, checks the browser host examples, and builds example-local WASM packages. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+
+Build the reusable web package separately when validating app-facing WASM output:
+
+```powershell
+.\qa\ci\build-wasm-web.ps1
+```
+
+Unix shell:
+
+```bash
+./qa/ci/build-wasm-web.sh
+```
+
+That package is written to `target/hydra-msg-wasm/web/`.
 
 The WebRTC carrier example still requires a manual browser run to confirm manual contact-card exchange and DataChannel message flow:
 
@@ -56,7 +70,8 @@ P13 passes only when:
 - workspace tests pass;
 - clippy passes with `-D warnings`;
 - active examples run;
-- WASM package builds;
+- reusable WASM web package builds;
+- example-local WASM packages build during example validation;
 - WebRTC carrier host serves and manual contact-card exchange works;
 - no runtime `hydra-msg-data/` or local identity material is staged;
 - benchmark numbers are recorded or updated in `docs/project/benchmark-results.md` if they materially differ.

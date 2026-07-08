@@ -5,10 +5,10 @@ Hosts a tiny LAN web page that can run two benchmarks:
 1. **Server-side facade benchmark** — calls `hydra.benchmark()` on the machine hosting this page.
 2. **Browser/device WASM benchmark** — calls the `hydra-msg-wasm` binding on the phone/tablet/browser that opened the page.
 
-Build the WASM package first:
+Build the example-local WASM package first:
 
 ```bash
-wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
+examples/mobile_perf_web/scripts/build-wasm.sh
 ```
 
 Or:
@@ -16,6 +16,8 @@ Or:
 ```powershell
 examples\mobile_perf_web\scripts\build-wasm.ps1
 ```
+
+For a reusable web package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
 
 Run the LAN host from the repo root:
 

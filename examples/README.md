@@ -41,14 +41,28 @@ Unix:
 qa/ci/check-examples.sh
 ```
 
-The script runs the native examples, checks the browser host examples, and builds WASM packages with `wasm-pack`. For native-only example checks, use `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+The script runs the native examples, checks the browser host examples, and builds example-local WASM packages with `wasm-pack`. For native-only example checks, use `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+
+## Reusable WASM web package
+
+The real WASM component lives in `crates/hydra-msg-wasm`. Build the reusable package for your own web app from the repo root:
+
+```bash
+./qa/ci/build-wasm-web.sh
+```
+
+Output:
+
+```text
+target/hydra-msg-wasm/web/
+```
 
 ## Browser/mobile WASM facade benchmark
 
-Build the WASM binding package and run the LAN benchmark host:
+Build the example-local WASM package and run the LAN benchmark host:
 
 ```bash
-wasm-pack build crates/hydra-msg-wasm --target web --release --out-dir ../../examples/mobile_perf_web/web/pkg
+examples/mobile_perf_web/scripts/build-wasm.sh
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 
