@@ -3,16 +3,12 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec document index](README.md)
-- [Protocol spec](protocol-spec.md)
-- [Threat model](threat-model.md)
-- [Security proof sketch](security-proof-sketch.md)
-- [State machines](state-machines.md)
-- [Envelope serialization](envelope-serialization.md)
-- [Chain-key evolution](chain-key-evolution.md)
-- [TreeKEM profile](tree-kem.md)
-- [Group modes](group-modes.md)
-- [Group rekey](group-rekey.md)
+- [How HYDRA messaging works](../impl/message-flow/README.md)
+- [Spec docs and repo structure](README.md)
+- [Crates](../../crates/README.md)
+- [Examples](../../examples/README.md)
+- [Public developer API](public-developer-api.md)
+- [Benchmark notes](../validation/benchmark-results.md)
 
 Status: target API for the `hydra-msg` facade crate.
 

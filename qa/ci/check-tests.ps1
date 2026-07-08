@@ -238,14 +238,59 @@ function Invoke-DocsGate {
         }
     }
 
-    $importantDocs = Get-ChildItem @("docs/spec", "docs/impl", "docs/validation") -Filter *.md -File -Recurse
-    foreach ($doc in $importantDocs) {
-        $content = Get-Content $doc.FullName -Raw
-        if ($content -notmatch "(?m)^## Navigation$") {
-            throw "Markdown doc missing Navigation section: $($doc.FullName)"
-        }
+    function Test-MainNavDoc {
+        param([Parameter(Mandatory = $true)][string]$Path)
+        $normalized = $Path.Replace('\', '/')
+        return (
+            $normalized.StartsWith("crates/") -or
+            $normalized.StartsWith("examples/") -or
+            $normalized -eq "docs/impl/message-flow/README.md" -or
+            $normalized -eq "docs/impl/carrier-examples.md" -or
+            $normalized -eq "docs/impl/hydra-msg-cli.md" -or
+            $normalized -eq "docs/impl/wasm-javascript-bindings.md" -or
+            $normalized -eq "docs/spec/public-developer-api.md" -or
+            $normalized -eq "docs/validation/benchmark-results.md"
+        )
+    }
 
-        $docNav = Get-NavigationBlock $doc.FullName
+    function Assert-MainNavFamily {
+        param(
+            [Parameter(Mandatory = $true)][string]$File,
+            [Parameter(Mandatory = $true)][string]$Nav
+        )
+        foreach ($label in @(
+            "Main README",
+            "How HYDRA messaging works",
+            "Spec docs and repo structure",
+            "Crates",
+            "Examples",
+            "Public developer API",
+            "Benchmark notes"
+        )) {
+            Assert-NavLabel $File $Nav $label
+        }
+        foreach ($label in @(
+            "Roadmap",
+            "Spec document index",
+            "Protocol spec",
+            "Threat model",
+            "Security proof sketch",
+            "State machines",
+            "Envelope serialization",
+            "Chain-key evolution",
+            "TreeKEM profile",
+            "Group modes",
+            "Group rekey"
+        )) {
+            Assert-NoNavLabel $File $Nav $label
+        }
+    }
+
+    function Assert-SpecNavFamily {
+        param(
+            [Parameter(Mandatory = $true)][string]$File,
+            [Parameter(Mandatory = $true)][string]$Nav
+        )
         foreach ($label in @(
             "Main README",
             "Spec document index",
@@ -259,9 +304,8 @@ function Invoke-DocsGate {
             "Group modes",
             "Group rekey"
         )) {
-            Assert-NavLabel $doc.FullName $docNav $label
+            Assert-NavLabel $File $Nav $label
         }
-
         foreach ($label in @(
             "How HYDRA messaging works",
             "Spec docs and repo structure",
@@ -273,7 +317,27 @@ function Invoke-DocsGate {
             "Production QA gate",
             "Roadmap"
         )) {
-            Assert-NoNavLabel $doc.FullName $docNav $label
+            Assert-NoNavLabel $File $Nav $label
+        }
+    }
+
+    $importantDocs = @()
+    foreach ($root in @("crates", "examples", "docs/spec", "docs/impl", "docs/validation")) {
+        $importantDocs += Get-ChildItem $root -Filter *.md -File -Recurse
+    }
+    foreach ($doc in $importantDocs) {
+        $content = Get-Content $doc.FullName -Raw
+        if ($content -notmatch "(?m)^## Navigation$") {
+            throw "Markdown doc missing Navigation section: $($doc.FullName)"
+        }
+
+        $relative = Resolve-Path -Relative $doc.FullName
+        $relative = ($relative -replace '^[.][\\/]', '').Replace('\', '/')
+        $docNav = Get-NavigationBlock $doc.FullName
+        if (Test-MainNavDoc $relative) {
+            Assert-MainNavFamily $doc.FullName $docNav
+        } else {
+            Assert-SpecNavFamily $doc.FullName $docNav
         }
     }
 

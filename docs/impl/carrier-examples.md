@@ -3,16 +3,12 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
+- [How HYDRA messaging works](message-flow/README.md)
+- [Spec docs and repo structure](../spec/README.md)
+- [Crates](../../crates/README.md)
+- [Examples](../../examples/README.md)
+- [Public developer API](../spec/public-developer-api.md)
+- [Benchmark notes](../validation/benchmark-results.md)
 
 HYDRA carriers move opaque bytes. They are not protocol authority.
 

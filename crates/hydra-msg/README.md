@@ -7,10 +7,12 @@ Apps should start here instead of depending directly on crypto, envelope, sessio
 ## Navigation
 
 - [Main README](../../README.md)
-- [Crates](../README.md)
 - [How HYDRA messaging works](../../docs/impl/message-flow/README.md)
+- [Spec docs and repo structure](../../docs/spec/README.md)
+- [Crates](../README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../../docs/spec/public-developer-api.md)
+- [Benchmark notes](../../docs/validation/benchmark-results.md)
 
 ## Small app shape
 

@@ -92,14 +92,52 @@ for readme in $(find . -name README.md -type f ! -path './.git/*' ! -path './tar
   fi
 done
 
-# Every public product Markdown doc needs the spec-side navigation block, not the root README nav.
-for doc in $(find docs/spec docs/impl docs/validation -name '*.md' -type f | sort); do
-  if ! grep -q '^## Navigation$' "$doc"; then
-    echo "Markdown doc missing Navigation section: $doc" >&2
-    exit 1
-  fi
+is_main_nav_doc() {
+  case "$1" in
+    crates/*|examples/*|docs/impl/message-flow/README.md|docs/impl/carrier-examples.md|docs/impl/hydra-msg-cli.md|docs/impl/wasm-javascript-bindings.md|docs/spec/public-developer-api.md|docs/validation/benchmark-results.md)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
 
-  doc_nav=$(navigation_block "$doc")
+require_main_nav_family() {
+  file=$1
+  nav=$2
+  for label in \
+    "Main README" \
+    "How HYDRA messaging works" \
+    "Spec docs and repo structure" \
+    "Crates" \
+    "Examples" \
+    "Public developer API" \
+    "Benchmark notes"
+  do
+    require_nav_label "$file" "$nav" "$label"
+  done
+
+  for label in \
+    "Roadmap" \
+    "Spec document index" \
+    "Protocol spec" \
+    "Threat model" \
+    "Security proof sketch" \
+    "State machines" \
+    "Envelope serialization" \
+    "Chain-key evolution" \
+    "TreeKEM profile" \
+    "Group modes" \
+    "Group rekey"
+  do
+    forbidden_nav_label "$file" "$nav" "$label"
+  done
+}
+
+require_spec_nav_family() {
+  file=$1
+  nav=$2
   for label in \
     "Main README" \
     "Spec document index" \
@@ -113,7 +151,7 @@ for doc in $(find docs/spec docs/impl docs/validation -name '*.md' -type f | sor
     "Group modes" \
     "Group rekey"
   do
-    require_nav_label "$doc" "$doc_nav" "$label"
+    require_nav_label "$file" "$nav" "$label"
   done
 
   for label in \
@@ -127,8 +165,25 @@ for doc in $(find docs/spec docs/impl docs/validation -name '*.md' -type f | sor
     "Production QA gate" \
     "Roadmap"
   do
-    forbidden_nav_label "$doc" "$doc_nav" "$label"
+    forbidden_nav_label "$file" "$nav" "$label"
   done
+}
+
+# Main-nav docs are the root README nav entries and their children.
+# Spec-nav docs are the spec index entries and their children. The spec index
+# itself is the only root README entry that intentionally uses the spec family.
+for doc in $(find crates examples docs/spec docs/impl docs/validation -name '*.md' -type f | sort); do
+  if ! grep -q '^## Navigation$' "$doc"; then
+    echo "Markdown doc missing Navigation section: $doc" >&2
+    exit 1
+  fi
+
+  doc_nav=$(navigation_block "$doc")
+  if is_main_nav_doc "$doc"; then
+    require_main_nav_family "$doc" "$doc_nav"
+  else
+    require_spec_nav_family "$doc" "$doc_nav"
+  fi
 done
 
 if grep -RInE 'docs/planning' docs crates README.md Cargo.toml; then
