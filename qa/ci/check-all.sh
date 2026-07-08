@@ -5,6 +5,7 @@ set -eu
 hydra_enter_repo_root
 
 qa/ci/check-rust.sh
+qa/ci/check-rust-file-sizes.sh
 qa/ci/check-docs.sh
 qa/ci/check-locks.sh
 qa/ci/check-vectors.sh

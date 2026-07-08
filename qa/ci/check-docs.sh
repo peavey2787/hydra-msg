@@ -69,4 +69,6 @@ for script in qa/ci/*.sh; do
   fi
 done
 
+qa/ci/check-markdown-links.sh
+
 echo "docs checks passed"

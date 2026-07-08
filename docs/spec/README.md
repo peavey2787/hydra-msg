@@ -37,6 +37,19 @@ crates/hydra-msg-cli   command-line developer utility over the facade
 
 Lower-level protocol crates live beside them and should stay focused on their own domain: crypto, sessions, groups, serialization, and shared core types.
 
+
+## `hydra-group` ownership notes
+
+`crates/hydra-group` owns group membership, group state, group messages, commit transitions, canonical group encodings, group validation, and group test-vector behavior. The active SRP split keeps high-churn protocol mechanics in focused module folders instead of mixed-concern monoliths:
+
+```text
+crates/hydra-group/src/canonical/  canonical encodings, validation helpers, hashes, and confirmation tags by encoding family
+crates/hydra-group/src/state/      live group state, private membership state, sender chains, replay state, snapshots, and roster views
+crates/hydra-group/src/commit.rs   temporary P3 roadmap exception until commit preparation/application/install responsibilities are split
+```
+
+New `hydra-group` source files should usually stay under 400 lines. Any file that must exceed that threshold needs a documented exception in `qa/ci/rust-size-allowlist.txt`, including a max line ceiling and a specific ownership reason. This is a drift guard, not a substitute for SRP: remove allow-list entries when a file is split below the threshold.
+
 ## `docs/`
 
 `docs/` is split by purpose:

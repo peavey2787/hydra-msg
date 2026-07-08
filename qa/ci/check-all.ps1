@@ -182,6 +182,8 @@ function Invoke-DocsGate {
         throw "empty QA script found"
     }
 
+    Invoke-Step "Markdown link checks" { .\qa\ci\check-markdown-links.ps1 }
+
     Write-Host "docs/path/stale-term checks passed." -ForegroundColor Green
 }
 
@@ -194,6 +196,7 @@ Invoke-Step "cargo test --workspace" { cargo test --workspace }
 Invoke-Step "cargo clippy --workspace --all-targets -- -D warnings" {
     cargo clippy --workspace --all-targets -- -D warnings
 }
+Invoke-Step "rust file size ownership checks" { .\qa\ci\check-rust-file-sizes.ps1 }
 Invoke-DocsGate
 Invoke-LockGate
 

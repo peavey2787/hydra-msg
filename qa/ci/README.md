@@ -16,7 +16,9 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 | `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable web package builder. |
 | `linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
 | `check-rust.sh` | Workspace format, test, and clippy gate. |
-| `check-docs.sh` | Docs/static checks. |
+| `check-docs.sh` | Docs/static checks, README navigation, and local Markdown link resolution. |
+| `check-rust-file-sizes.ps1` / `check-rust-file-sizes.sh` | `hydra-group` Rust source-size ownership checks with documented exceptions. |
+| `check-markdown-links.ps1` / `check-markdown-links.sh` | Local Markdown link resolver used by docs checks. |
 | `check-locks.sh` | Lock-file alignment checks for offline validation. |
 | `check-vectors.sh` | Vector generator and candidate manifest verification. |
 

@@ -18,7 +18,7 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-Implementation has started and currently covers P0 through P2. P3 through P5 are not started.
+Implementation has started and currently covers P0 through P2 plus the out-of-order P4 ownership/doc guardrails requested against the current P2 tree. P3 and P5 are not started.
 
 ## Rules and guidelines
 
@@ -327,3 +327,30 @@ crates/hydra-group/src/state/snapshot.rs             82 lines
 - Production-ready status: no. P3 through P5, full validation, security review, and final vector/interoperability confirmation remain.
 - Enterprise-grade status: no. The `commit.rs` ownership split remains.
 - Mathematically sound status: not yet proven. The SRP work makes review easier, but proofs, adversarial checks, and external cryptography review remain separate validation work.
+
+### 2026-07-08 — P4 docs and ownership checks complete
+
+Status: P4 complete against the current P2 tree; P3 is still not started.
+
+- Updated `docs/spec/README.md` with clearer `hydra-group` ownership notes for the canonical split, state split, and temporary unsplit `commit.rs` P3 exception.
+- Added `qa/ci/check-rust-file-sizes.sh` and `qa/ci/check-rust-file-sizes.ps1` to report `hydra-group` Rust files above the 400-line SRP threshold.
+- Added `qa/ci/rust-size-allowlist.txt` so every file above the threshold needs a documented ownership reason and a max-line ceiling.
+- Added `qa/ci/check-markdown-links.sh` and `qa/ci/check-markdown-links.ps1` to resolve local Markdown links.
+- Wired the new source-size check into `qa/ci/check-all.sh` and `qa/ci/check-all.ps1`.
+- Wired the Markdown link check into `qa/ci/check-docs.sh` and the PowerShell docs gate.
+- Updated `qa/ci/README.md` so the new QA checks are discoverable.
+- Confirmed README navigation remains enforced by the existing docs gate.
+
+Validation run in this environment:
+
+```text
+PASS sh qa/ci/linux-permissions.sh
+PASS ./qa/ci/check-rust-file-sizes.sh
+PASS ./qa/ci/check-docs.sh
+NOT RUN ./qa/ci/check-all.sh fully: cargo is not installed in this sandbox, so the Rust gate stopped at qa/ci/check-rust.sh with `cargo: not found`.
+```
+
+- Production-ready status: no. P3, P5, full Rust/vector/example/WASM validation, security review, and final vector/interoperability confirmation remain.
+- Enterprise-grade status: no. The `commit.rs` ownership split remains, and size exceptions still document unsplit cohesive modules.
+- Mathematically sound status: not yet proven. P4 adds drift guardrails; it does not replace proof review, adversarial review, or external cryptography review.
+
