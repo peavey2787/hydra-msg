@@ -1,13 +1,13 @@
-use crate::{codec::*, Hydra, HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_MAGIC};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::STATE_FILE_NAME;
+use crate::{codec::*, Hydra, HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_MAGIC};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
+#[cfg(not(target_arch = "wasm32"))]
+use std::fs;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-#[cfg(not(target_arch = "wasm32"))]
-use std::fs;
 
 /// Local storage summary.
 #[derive(Clone, Debug, PartialEq, Eq)]

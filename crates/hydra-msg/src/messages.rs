@@ -1,10 +1,9 @@
 use crate::{
-    codec::*, ContactId, Hydra, HydraEnvelope, HydraMsgError, HydraResult, LobbyId,
-    MESSAGES_MAGIC,
+    codec::*, ContactId, Hydra, HydraEnvelope, HydraMsgError, HydraResult, LobbyId, MESSAGES_MAGIC,
 };
-use std::path::Path;
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;
+use std::path::Path;
 
 /// HYDRA local message id.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]

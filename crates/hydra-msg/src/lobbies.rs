@@ -1,6 +1,6 @@
 use crate::{
-    codec::*, ContactId, Hydra, HydraEnvelope, HydraMessage, HydraMsgError, HydraResult,
-    MessageId, ReceivedHydraMessage,
+    codec::*, ContactId, Hydra, HydraEnvelope, HydraMessage, HydraMsgError, HydraResult, MessageId,
+    ReceivedHydraMessage,
 };
 use hydra_core::HASH_SIZE;
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
