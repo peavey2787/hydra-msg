@@ -8,9 +8,9 @@
 #![forbid(unsafe_code)]
 
 use hydra_msg::{
-    ContactId, HandshakeAnswer, HandshakeOffer, Hydra, HydraAttachment, HydraBenchmarkReport,
-    HydraEnvelope, HydraLobbyEnvelope, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId,
-    MessageId, ReceivedHydraMessage,
+    ContactId, HandshakeAnswer, HandshakeOffer, Hydra, HydraBenchmarkReport, HydraEnvelope,
+    HydraLobbyEnvelope, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId, MessageId,
+    ReceivedHydraMessage,
 };
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -474,13 +474,16 @@ impl WasmHydra {
         lobby_id_hex: &str,
         message: &WasmHydraMessage,
     ) -> Result<Array, JsValue> {
-        Ok(self
+        let envelopes = self
             .inner
             .send_lobby(lobby_id(lobby_id_hex)?, message.inner.clone())
-            .map_err(to_js_error)?
-            .into_iter()
-            .map(|inner| WasmHydraLobbyEnvelope { inner }.into())
-            .collect())
+            .map_err(to_js_error)?;
+        let array = Array::new();
+        for inner in envelopes {
+            let value: JsValue = WasmHydraLobbyEnvelope { inner }.into();
+            array.push(&value);
+        }
+        Ok(array)
     }
 
     #[wasm_bindgen(js_name = receiveLobby)]
