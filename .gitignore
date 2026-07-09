@@ -54,6 +54,12 @@
 *.pid
 *.sock
 
+# Example runtime artifacts must stay under target/ or docs/project/.
+/hydra-live-state*.hydralive
+/hydra-live-state*.hydralive.*
+/hydra-live-state*.rollback.log
+/hydra-live-state*.rollback.mirror.log
+
 
 # HYDRA local app data / identity vaults
 # This directory can contain encrypted identity databases, vault metadata,
@@ -87,7 +93,6 @@ secret-key*
 
 # Keep examples/templates/docs.
 !*.example
-!*.example.*
 !examples/**
 !docs/**
 

@@ -186,6 +186,17 @@ for doc in $(find crates examples docs/spec docs/impl docs/validation -name '*.m
   fi
 done
 
+
+if grep -RInE '\[Roadmap\]|docs/roadmap\.md' README.md crates examples docs/spec docs/impl docs/validation Cargo.toml; then
+  echo "public roadmap reference found" >&2
+  exit 1
+fi
+
+if grep -RInE 'stupid[-]simple|stupid[ ]simple' README.md crates examples docs Cargo.toml; then
+  echo "deprecated simple-API wording found" >&2
+  exit 1
+fi
+
 if grep -RInE 'docs/planning' docs crates README.md Cargo.toml; then
   echo "docs/planning reference found" >&2
   exit 1

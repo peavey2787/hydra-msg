@@ -12,7 +12,7 @@
 
 Status: target API for the `hydra-msg` facade crate.
 
-Goal: make HYDRA stupid-simple for app developers. A developer should be able to open HYDRA, create or restore an identity, add contacts, handshake, send messages, receive messages, use lobbies, back up data, and run basic diagnostics without seeing cryptographic internals, wire-format details, padding classes, chunks, ratchets, sessions, or transport logic.
+Goal: make HYDRA simple for app developers. A developer should be able to open HYDRA, create or restore an identity, add contacts, handshake, send messages, receive messages, use lobbies, back up data, and run basic diagnostics without seeing cryptographic internals, wire-format details, padding classes, chunks, ratchets, sessions, or transport logic.
 
 HYDRA is transport-agnostic. WebRTC, libp2p, HTTP, QR codes, files, relays, Kaspa pointers, mailboxes, and manual copy/paste are carriers only. They move opaque HYDRA bytes. They are not protocol authority.
 
@@ -555,7 +555,7 @@ The app developer should never need to see chunks, padding classes, suite select
 
 ## 10. JavaScript / WASM facade
 
-The WASM binding mirrors the same stupid-simple API shape from `crates/hydra-msg-wasm`.
+The WASM binding mirrors the same simple API shape from `crates/hydra-msg-wasm`.
 
 ```javascript
 import init, { WasmHydra, WasmHydraMessage } from './pkg/hydra_msg_wasm.js';

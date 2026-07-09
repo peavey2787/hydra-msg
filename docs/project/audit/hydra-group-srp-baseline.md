@@ -2,7 +2,7 @@
 
 Status: P0 baseline and guardrails for the `hydra-group` SRP size roadmap.
 
-Purpose: record the current ownership map before source movement begins. This file is assistant working material under `docs/project/audit/`; the active plan remains `docs/roadmap.md`.
+Purpose: record the current ownership map before source movement begins. This file is assistant working material under `docs/project/audit/`; planning notes are maintainer-only and may be replaced as work changes.
 
 ## Baseline line counts
 
@@ -12,7 +12,7 @@ crates/hydra-group/src/state.rs       1003 lines
 crates/hydra-group/src/canonical.rs    858 lines
 ```
 
-Practical size target for the planned split: most new Rust files should stay under 400 lines. If a cohesive module must exceed that target, the reason must be recorded in `docs/roadmap.md` progress notes before the phase is marked complete.
+Practical size target for the planned split: most new Rust files should stay under 400 lines. If a cohesive module must exceed that target, the reason must be recorded in `docs/project/audit/` before the phase is marked complete.
 
 ## Public export baseline
 

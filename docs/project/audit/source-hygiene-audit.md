@@ -2,7 +2,7 @@
 
 Status: current cleanup audit after the P13 script-prep fixes.
 
-This pass checked the repository against the project-specific rules in `docs/roadmap.md`, `crates/README.md`, `examples/README.md`, and `docs/spec/public-developer-api.md`.
+This pass checked the repository against the project-specific rules in `crates/README.md`, `examples/README.md`, and `docs/spec/public-developer-api.md`.
 
 ## Rules checked
 

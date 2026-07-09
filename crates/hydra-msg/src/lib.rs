@@ -1,4 +1,4 @@
-//! Stupid-simple public HYDRA-MSG facade.
+//! Simple public HYDRA-MSG facade.
 //!
 //! This crate is the app developer entry point. It intentionally hides crypto,
 //! envelope, ratchet, chunking, and wire-format internals behind a small API.

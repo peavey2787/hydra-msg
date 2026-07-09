@@ -63,7 +63,7 @@ Examples:
   cargo run -p hydra-msg-cli -- bench ./hydra-msg-data
   cargo run -p hydra-msg-cli -- doctor ./hydra-msg-data
 
-This CLI is only a developer tool over the stupid-simple hydra-msg facade.
+This CLI is only a developer tool over the simple hydra-msg facade.
 It is not protocol authority and it does not add a public advanced API.
 "#
     );

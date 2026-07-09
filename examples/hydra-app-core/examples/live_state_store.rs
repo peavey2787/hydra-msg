@@ -3,7 +3,9 @@ use hydra_app_core::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let path = std::path::PathBuf::from("hydra-live-state.example.hydralive");
+    let dir = std::path::PathBuf::from("target/examples/hydra-app-core/live_state_store");
+    std::fs::create_dir_all(&dir)?;
+    let path = dir.join("hydra-live-state.example.hydralive");
     let password = b"replace with a user supplied high-entropy password";
 
     let alice = AppIdentity::generate()?;
@@ -33,5 +35,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     std::fs::remove_file(&path).ok();
     std::fs::remove_file(path.with_extension("hydralive.checkpoint")).ok();
+    std::fs::remove_file(path.with_extension("hydralive.rollback.log")).ok();
+    std::fs::remove_file(path.with_extension("hydralive.rollback.mirror.log")).ok();
+    std::fs::remove_dir_all(&dir).ok();
     Ok(())
 }

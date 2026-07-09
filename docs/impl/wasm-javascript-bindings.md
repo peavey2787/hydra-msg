@@ -12,7 +12,7 @@
 
 Status: P6 binding target and implementation notes.
 
-Goal: make the same stupid-simple HYDRA API usable from browser/mobile apps without exposing crypto/session/wire internals.
+Goal: make the same simple HYDRA API usable from browser/mobile apps without exposing crypto/session/wire internals.
 
 ## Rules
 

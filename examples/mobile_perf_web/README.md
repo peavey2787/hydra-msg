@@ -36,8 +36,34 @@ For a reusable package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci
 
 ## Run
 
+From the repo root, build the example-local WASM package first:
+
+```bash
+examples/mobile_perf_web/scripts/build-wasm.sh
+```
+
+Then start the host:
+
 ```bash
 cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
 ```
 
-Open the LAN URL from another device and run the browser/device benchmark.
+Open it on the same machine with:
+
+```text
+http://127.0.0.1:8788
+```
+
+For a phone or another LAN device, find your laptop IP and open that address:
+
+```bash
+hostname -I
+```
+
+Example:
+
+```text
+http://192.168.1.50:8788
+```
+
+Use the page buttons to run either the server-side facade benchmark or the browser/device WASM benchmark.

@@ -1,4 +1,4 @@
-//! WASM/JavaScript bindings for the stupid-simple `hydra-msg` facade.
+//! WASM/JavaScript bindings for the simple `hydra-msg` facade.
 //!
 //! This crate intentionally mirrors the public Rust facade without exposing
 //! protocol internals, suites, chunking, session export/import, or builders.

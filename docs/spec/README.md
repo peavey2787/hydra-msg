@@ -31,7 +31,7 @@ external/    third-party apps, libraries, or vendored external material when nee
 scripts/     automation that is not part of QA
 ```
 
-Only maintainer-internal planning files such as `docs/roadmap.md` belong directly under `docs/`. Public product documentation belongs in one of the grouped docs folders below.
+Public product documentation belongs in one of the grouped docs folders below. Maintainer-only planning material is kept out of public navigation.
 
 ## `crates/`
 

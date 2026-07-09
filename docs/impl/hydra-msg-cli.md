@@ -12,7 +12,7 @@
 
 Status: P7 developer utility over `hydra-msg`.
 
-`hydra-msg-cli` is a thin command-line helper for trying the stupid-simple
+`hydra-msg-cli` is a thin command-line helper for trying the simple
 facade API from a terminal. It is not protocol authority and it does not add any
 advanced public API. Every command is intentionally a wrapper around the public
 `hydra-msg` facade.

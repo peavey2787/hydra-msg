@@ -4,7 +4,7 @@ Status: P2 implementation artifact.
 
 This document records the audit required before creating `crates/hydra-msg`.
 The moved demo crates are now examples, and this audit decides what existing
-code may be reused behind the future stupid-simple public facade.
+code may be reused behind the future simple public facade.
 
 The public API contract remains:
 

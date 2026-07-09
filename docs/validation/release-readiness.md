@@ -20,7 +20,7 @@ P12 makes the developer-facing repository credible before the maintainer-run P13
 
 ## Release status
 
-HYDRA-MSG is currently a release-candidate worktree for the stupid-simple `hydra-msg` developer API.
+HYDRA-MSG is currently a release-candidate worktree for the simple `hydra-msg` developer API.
 
 Accurate status wording:
 
