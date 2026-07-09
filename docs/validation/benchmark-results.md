@@ -21,7 +21,7 @@ These numbers came from real browser/WASM runs reported during HYDRA-MSG develop
 - Message timings are batched internally and reported as per-operation averages.
 - The final validation gate still needs to run format, tests, clippy, examples, docs checks, and fresh benchmark captures on the release candidate.
 - Any facade-handshake benchmark captured before the authenticated hybrid facade handshake landed is stale for that path. Regenerate facade handshake numbers after the signed ML-DSA, ephemeral X25519, ephemeral ML-KEM, and answer-confirmation path is in the release candidate.
-- Any facade benchmark that includes local persistence should be regenerated after `state-v2.hydra` encryption-at-rest, because normal facade writes now AEAD-seal state when a state password is configured.
+- Any facade benchmark that includes local persistence or identity unlock/generation should be regenerated after `state-v2.hydra` encryption-at-rest and scrypt password KDF hardening, because normal facade writes and password checks now include memory-hard derivation work.
 
 ## 1 KiB payload browser/WASM results
 

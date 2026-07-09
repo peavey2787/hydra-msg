@@ -1,7 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{STATE_FILE_NAME, STATE_ROLLBACK_FILE_NAME};
-use crate::{codec::*, Hydra, HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_SNAPSHOT_MAGIC};
-use hydra_crypto::{CryptoBackend, RustCryptoBackend};
+use crate::{codec::*, Hydra, HydraMsgError, HydraResult, STATE_SNAPSHOT_MAGIC};
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;
 use std::{
@@ -27,7 +26,19 @@ impl Hydra {
         let data_dir = data_dir.as_ref().to_path_buf();
         #[cfg(not(target_arch = "wasm32"))]
         fs::create_dir_all(&data_dir)?;
-        let mut hydra = Self::empty(data_dir, state_key(state_password.as_ref()));
+        #[cfg(not(target_arch = "wasm32"))]
+        let state_kdf = {
+            let path = data_dir.join(STATE_FILE_NAME);
+            if path.exists() {
+                parse_state_v2_kdf(&fs::read(&path)?)?
+            } else {
+                new_storage_kdf()?
+            }
+        };
+        #[cfg(target_arch = "wasm32")]
+        let state_kdf = new_storage_kdf()?;
+        let state_key = state_key(state_password.as_ref(), &state_kdf)?;
+        let mut hydra = Self::empty(data_dir, state_key, state_kdf);
         hydra.load_state()?;
         Ok(hydra)
     }
@@ -43,16 +54,8 @@ impl Hydra {
 
     pub fn export_backup(&self, password: impl AsRef<str>) -> HydraResult<Vec<u8>> {
         let snapshot = self.encode_state_snapshot()?;
-        let nonce = random_array::<12>()?;
-        let key = backup_key(password.as_ref());
-        let ciphertext = RustCryptoBackend::aead_seal(&key, &nonce, BACKUP_MAGIC, &snapshot)?;
-        let mut out = Vec::new();
-        out.extend_from_slice(BACKUP_MAGIC);
-        out.extend_from_slice(hex_encode(&nonce).as_bytes());
-        out.push(b'\n');
-        out.extend_from_slice(hex_encode(&ciphertext).as_bytes());
-        out.push(b'\n');
-        Ok(out)
+        let kdf = new_storage_kdf()?;
+        encode_backup(&snapshot, password.as_ref(), &kdf, random_array::<12>()?)
     }
 
     pub fn import_backup(
@@ -67,7 +70,7 @@ impl Hydra {
     }
 
     pub fn verify_backup(&self, bytes: impl AsRef<[u8]>) -> HydraResult<()> {
-        parse_backup_outer(bytes.as_ref()).map(|_| ())
+        parse_backup_outer(bytes.as_ref())
     }
 
     #[must_use]
@@ -84,7 +87,11 @@ impl Hydra {
         }
     }
 
-    fn empty(data_dir: PathBuf, state_key: hydra_crypto::SecretBytes<32>) -> Self {
+    fn empty(
+        data_dir: PathBuf,
+        state_key: hydra_crypto::SecretBytes<32>,
+        state_kdf: PasswordKdfRecord,
+    ) -> Self {
         Self {
             data_dir,
             identities: HashMap::new(),
@@ -96,6 +103,7 @@ impl Hydra {
             next_message_id: 1,
             lobbies: HashMap::new(),
             state_key,
+            state_kdf,
             state_generation: 0,
         }
     }
@@ -144,6 +152,7 @@ impl Hydra {
             let encrypted = encode_encrypted_state_v2(
                 &snapshot,
                 &self.state_key,
+                &self.state_kdf,
                 random_array::<12>()?,
             )?;
             write_atomic(&self.state_path(), &encrypted)?;

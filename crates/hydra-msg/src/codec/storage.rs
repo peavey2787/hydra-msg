@@ -1,57 +1,62 @@
-use super::{exact_array_from_vec, hex_decode, hex_encode};
+use super::{
+    decode_kdf_fields, derive_password_key, encode_kdf_fields, exact_array_from_vec, hex_decode,
+    hex_encode, required_field, PasswordKdfRecord,
+};
 use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_V2_MAGIC};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 
-pub(crate) const STATE_V2_KDF_PROFILE: &str = "hkdf-sha3-256-v1";
+const STATE_KEY_LABEL: &[u8] = b"HYDRA-MSG/v3/facade/state-key";
+const BACKUP_KEY_LABEL: &[u8] = b"HYDRA-MSG/v2/facade/backup-key";
 
-pub(crate) fn backup_key(password: &str) -> SecretBytes<32> {
-    let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/v1/facade/backup-key");
-    input.extend_from_slice(password.as_bytes());
-    RustCryptoBackend::hkdf_extract(b"HYDRA-MSG/v1/facade/backup", &input)
+pub(crate) fn new_storage_kdf() -> HydraResult<PasswordKdfRecord> {
+    PasswordKdfRecord::new_interactive()
 }
 
-pub(crate) fn state_key(password: &str) -> SecretBytes<32> {
-    let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/v2/facade/state-key");
-    input.extend_from_slice(password.as_bytes());
-    RustCryptoBackend::hkdf_extract(b"HYDRA-MSG/v2/facade/state", &input)
+pub(crate) fn state_key(password: &str, kdf: &PasswordKdfRecord) -> HydraResult<SecretBytes<32>> {
+    derive_password_key(STATE_KEY_LABEL, password, kdf)
 }
 
-pub(crate) fn parse_backup_outer(bytes: &[u8]) -> HydraResult<([u8; 12], Vec<u8>)> {
-    if !bytes.starts_with(BACKUP_MAGIC) {
-        return Err(HydraMsgError::InvalidEncoding("backup magic"));
-    }
-    let text = std::str::from_utf8(&bytes[BACKUP_MAGIC.len()..])
-        .map_err(|_| HydraMsgError::InvalidEncoding("backup utf-8"))?;
-    let mut lines = text.lines();
-    let nonce = exact_array_from_vec(hex_decode(
-        lines
-            .next()
-            .ok_or(HydraMsgError::InvalidEncoding("backup nonce"))?,
-    )?)?;
-    let ciphertext = hex_decode(
-        lines
-            .next()
-            .ok_or(HydraMsgError::InvalidEncoding("backup ciphertext"))?,
-    )?;
-    Ok((nonce, ciphertext))
+pub(crate) fn backup_key(password: &str, kdf: &PasswordKdfRecord) -> HydraResult<SecretBytes<32>> {
+    derive_password_key(BACKUP_KEY_LABEL, password, kdf)
+}
+
+pub(crate) fn encode_backup(
+    snapshot: &[u8],
+    password: &str,
+    kdf: &PasswordKdfRecord,
+    nonce: [u8; 12],
+) -> HydraResult<Vec<u8>> {
+    let key = backup_key(password, kdf)?;
+    let nonce_hex = hex_encode(&nonce);
+    let aad = backup_aad(kdf, &nonce_hex);
+    let ciphertext = RustCryptoBackend::aead_seal(&key, &nonce, aad.as_bytes(), snapshot)?;
+    let mut out = aad.into_bytes();
+    out.extend_from_slice(b"ciphertext\t");
+    out.extend_from_slice(hex_encode(&ciphertext).as_bytes());
+    out.push(b'\n');
+    Ok(out)
+}
+
+pub(crate) fn parse_backup_outer(bytes: &[u8]) -> HydraResult<()> {
+    parse_backup(bytes)?;
+    Ok(())
 }
 
 pub(crate) fn decode_backup(bytes: &[u8], password: &str) -> HydraResult<Vec<u8>> {
-    let (nonce, ciphertext) = parse_backup_outer(bytes)?;
-    let key = backup_key(password);
-    let plaintext = RustCryptoBackend::aead_open(&key, &nonce, BACKUP_MAGIC, &ciphertext)?;
+    let (aad, kdf, nonce, ciphertext) = parse_backup(bytes)?;
+    let key = backup_key(password, &kdf)?;
+    let plaintext = RustCryptoBackend::aead_open(&key, &nonce, aad.as_bytes(), &ciphertext)?;
     Ok((*plaintext).clone())
 }
 
 pub(crate) fn encode_encrypted_state_v2(
     snapshot: &[u8],
     key: &SecretBytes<32>,
+    kdf: &PasswordKdfRecord,
     nonce: [u8; 12],
 ) -> HydraResult<Vec<u8>> {
     let nonce_hex = hex_encode(&nonce);
-    let aad = state_v2_aad(&nonce_hex);
+    let aad = state_v2_aad(kdf, &nonce_hex);
     let ciphertext = RustCryptoBackend::aead_seal(key, &nonce, aad.as_bytes(), snapshot)?;
     let mut out = aad.into_bytes();
     out.extend_from_slice(b"ciphertext\t");
@@ -64,12 +69,39 @@ pub(crate) fn decode_encrypted_state_v2(
     bytes: &[u8],
     key: &SecretBytes<32>,
 ) -> HydraResult<Vec<u8>> {
-    let (aad, nonce, ciphertext) = parse_encrypted_state_v2(bytes)?;
+    let (aad, _, nonce, ciphertext) = parse_encrypted_state_v2(bytes)?;
     let plaintext = RustCryptoBackend::aead_open(key, &nonce, aad.as_bytes(), &ciphertext)?;
     Ok((*plaintext).clone())
 }
 
-fn parse_encrypted_state_v2(bytes: &[u8]) -> HydraResult<(String, [u8; 12], Vec<u8>)> {
+pub(crate) fn parse_state_v2_kdf(bytes: &[u8]) -> HydraResult<PasswordKdfRecord> {
+    let (_, kdf, _, _) = parse_encrypted_state_v2(bytes)?;
+    Ok(kdf)
+}
+
+fn parse_backup(bytes: &[u8]) -> HydraResult<(String, PasswordKdfRecord, [u8; 12], Vec<u8>)> {
+    if !bytes.starts_with(BACKUP_MAGIC) {
+        return Err(HydraMsgError::InvalidEncoding("backup magic"));
+    }
+    let text = std::str::from_utf8(bytes)
+        .map_err(|_| HydraMsgError::InvalidEncoding("backup utf-8"))?;
+    let mut lines = text.lines();
+    let magic = lines
+        .next()
+        .ok_or(HydraMsgError::InvalidEncoding("backup magic line"))?;
+    if magic != "HYDRA-MSG-BACKUP-V1" {
+        return Err(HydraMsgError::InvalidEncoding("backup magic line"));
+    }
+    let kdf = decode_kdf_fields(&mut lines)?;
+    let nonce_hex = required_field(&mut lines, "nonce", "backup nonce")?;
+    let nonce = exact_array_from_vec(hex_decode(nonce_hex)?)?;
+    let ciphertext = hex_decode(required_field(&mut lines, "ciphertext", "backup ciphertext")?)?;
+    Ok((backup_aad(&kdf, nonce_hex), kdf, nonce, ciphertext))
+}
+
+fn parse_encrypted_state_v2(
+    bytes: &[u8],
+) -> HydraResult<(String, PasswordKdfRecord, [u8; 12], Vec<u8>)> {
     if !bytes.starts_with(STATE_V2_MAGIC) {
         return Err(HydraMsgError::InvalidEncoding("state v2 magic"));
     }
@@ -82,47 +114,31 @@ fn parse_encrypted_state_v2(bytes: &[u8]) -> HydraResult<(String, [u8; 12], Vec<
     if magic != "HYDRA-MSG-STATE-V2" {
         return Err(HydraMsgError::InvalidEncoding("state v2 magic line"));
     }
-    let kdf = field_value(
-        lines
-            .next()
-            .ok_or(HydraMsgError::InvalidEncoding("state v2 kdf"))?,
-        "kdf",
-    )?;
-    if kdf != STATE_V2_KDF_PROFILE {
-        return Err(HydraMsgError::Unsupported("state v2 kdf profile"));
-    }
-    let nonce_hex = field_value(
-        lines
-            .next()
-            .ok_or(HydraMsgError::InvalidEncoding("state v2 nonce"))?,
-        "nonce",
-    )?;
+    let kdf = decode_kdf_fields(&mut lines)?;
+    let nonce_hex = required_field(&mut lines, "nonce", "state v2 nonce")?;
     let nonce = exact_array_from_vec(hex_decode(nonce_hex)?)?;
-    let ciphertext = hex_decode(field_value(
-        lines
-            .next()
-            .ok_or(HydraMsgError::InvalidEncoding("state v2 ciphertext"))?,
+    let ciphertext = hex_decode(required_field(
+        &mut lines,
         "ciphertext",
+        "state v2 ciphertext",
     )?)?;
-    Ok((state_v2_aad(nonce_hex), nonce, ciphertext))
+    Ok((state_v2_aad(&kdf, nonce_hex), kdf, nonce, ciphertext))
 }
 
-fn field_value<'a>(line: &'a str, name: &str) -> HydraResult<&'a str> {
-    let (got, value) = line
-        .split_once('\t')
-        .ok_or(HydraMsgError::InvalidEncoding("state v2 field"))?;
-    if got == name {
-        Ok(value)
-    } else {
-        Err(HydraMsgError::InvalidEncoding("state v2 field name"))
-    }
-}
-
-fn state_v2_aad(nonce_hex: &str) -> String {
+fn state_v2_aad(kdf: &PasswordKdfRecord, nonce_hex: &str) -> String {
     format!(
-        "{}kdf\t{}\nnonce\t{}\n",
+        "{}{}nonce\t{}\n",
         std::str::from_utf8(STATE_V2_MAGIC).unwrap_or_default(),
-        STATE_V2_KDF_PROFILE,
+        encode_kdf_fields(kdf),
+        nonce_hex
+    )
+}
+
+fn backup_aad(kdf: &PasswordKdfRecord, nonce_hex: &str) -> String {
+    format!(
+        "{}{}nonce\t{}\n",
+        std::str::from_utf8(BACKUP_MAGIC).unwrap_or_default(),
+        encode_kdf_fields(kdf),
         nonce_hex
     )
 }

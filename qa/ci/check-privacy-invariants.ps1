@@ -13,13 +13,15 @@ $HandshakeFile = "crates/hydra-msg/src/codec/handshake.rs"
 $HandshakeApiFile = "crates/hydra-msg/src/handshake.rs"
 $StorageFile = "crates/hydra-msg/src/storage.rs"
 $StorageCodecFile = "crates/hydra-msg/src/codec/storage.rs"
+$IdentityCodecFile = "crates/hydra-msg/src/codec/identity.rs"
+$KdfCodecFile = "crates/hydra-msg/src/codec/kdf.rs"
 $LibFile = "crates/hydra-msg/src/lib.rs"
 
 if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
     throw "hydra-msg handshake files missing"
 }
-if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $LibFile)) {
-    throw "hydra-msg storage files missing"
+if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $IdentityCodecFile) -or !(Test-Path $KdfCodecFile) -or !(Test-Path $LibFile)) {
+    throw "hydra-msg storage/KDF files missing"
 }
 
 function Assert-SourceText {
@@ -68,13 +70,23 @@ Assert-SourceText $StorageFile "decode_encrypted_state_v2" "normal state is open
 Assert-SourceText $StorageFile "reject_state_rollback" "local replay rollback guard is enforced"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
-Assert-SourceText $StorageCodecFile "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
+Assert-SourceText $StorageCodecFile "parse_state_v2_kdf" "encrypted state reads stored KDF parameters before deriving the state key"
+Assert-SourceText $StorageCodecFile "encode_kdf_fields" "encrypted state stores explicit KDF parameters"
+Assert-SourceText $KdfCodecFile "scrypt::" "memory-hard scrypt KDF implementation is used"
+Assert-SourceText $KdfCodecFile "KDF_ALGORITHM_SCRYPT_V1" "versioned memory-hard KDF algorithm id"
+Assert-SourceText $KdfCodecFile "kdf_log_n" "explicit scrypt log_n parameter is stored"
+Assert-SourceText $KdfCodecFile "kdf_salt" "per-record random KDF salt is stored"
+Assert-SourceText $IdentityCodecFile "PasswordKdfRecord::new_interactive()?" "identity password records use per-record KDF parameters"
+Assert-SourceText $IdentityCodecFile "derive_password_key" "identity seed wrapping uses memory-hard password derivation"
+Assert-NoSourceText $StorageCodecFile "hkdf-sha3-256-v1" "encrypted state must not use the old cheap KDF profile"
+Assert-NoSourceText $StorageCodecFile "hkdf_extract" "encrypted state password key must not use HKDF directly"
+Assert-NoSourceText $IdentityCodecFile "sha3_256(password" "identity password tag must not be direct SHA3 over the password"
 Assert-NoSourceText $LibFile "STATE_V1" "normal local state must not use plaintext v1 constants"
 
 Assert-NoSourceText $StorageFile "load_state_without_password" "state must never open without a state password"
 Assert-NoSourceText $StorageFile "state_key: Option" "state encryption must not be optional"
-Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext migration helpers"
-Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete plaintext migration files"
+Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext compatibility helpers"
+Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete old plaintext files"
 
 $reintroduced = Select-String -Path "crates/hydra-msg/src/*.rs", "crates/hydra-msg/src/codec/*.rs" -Pattern "derive_facade_handshake_material" -ErrorAction SilentlyContinue
 if ($reintroduced) {

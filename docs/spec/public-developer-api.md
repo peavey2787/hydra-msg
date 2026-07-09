@@ -47,7 +47,7 @@ The public facade has these current implementation boundaries:
 | Normal message content | `send` returns opaque encrypted envelope bytes for the app carrier. The receiver must have the matching contact/session state to decrypt. |
 | Backup export | `export_backup` encrypts the state snapshot under the supplied backup password. |
 | Normal local state | `state-v2.hydra` is authenticated-encrypted. `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)` require the state password up front. |
-| Identity passwords | Identity seeds and state files are wrapped with AEAD, but the current facade password derivation is HKDF/SHA3 based and not memory-hard. Treat this as protection against casual disclosure, not enterprise-grade offline brute-force resistance, until Argon2id/scrypt hardening ships. |
+| Identity passwords | Identity seeds, state files, and backups are wrapped with AEAD using per-record scrypt parameters and random salts before key derivation. Weak user passwords can still be brute-forced offline, so applications should enforce strong password policy where appropriate. |
 | Contact cards | Contact cards intentionally expose the local label, public key, contact id/fingerprint, and safety code to whoever receives the card. Reusing the same card can link chats. |
 | Lobby invites | Lobby invites intentionally expose the lobby id, label, max-member policy, and member list encoded into the invite. Reusing invites can link lobby activity. |
 | Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is an app/carrier routing hint for a per-member encrypted copy. It is not anonymous routing and must not be treated as authentication. |
@@ -517,7 +517,6 @@ internal::identity::change_password()
 
 ```rust
 internal::storage::open_store()
-internal::storage::migrate_store()
 internal::storage::write_record()
 internal::storage::read_record()
 internal::storage::delete_record()

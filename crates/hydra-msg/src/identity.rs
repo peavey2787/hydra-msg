@@ -57,6 +57,7 @@ pub(crate) struct IdentityRecord {
     pub(crate) label: String,
     pub(crate) seed: Option<[u8; 32]>,
     pub(crate) public_key: [u8; ML_DSA_65_VK_SIZE],
+    pub(crate) password_kdf: PasswordKdfRecord,
     pub(crate) password_tag: [u8; 32],
     pub(crate) seed_nonce: [u8; 12],
     pub(crate) encrypted_seed: Vec<u8>,

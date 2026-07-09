@@ -13,8 +13,8 @@ Current focus: close the implementation privacy gaps that remain after the authe
 5. **Passwords require memory-hard protection.** Any password-derived storage key must use a modern memory-hard KDF with per-record salt and stored parameters.
 6. **Metadata exposure must be intentional.** Contact cards, lobby invites, member lists, labels, recipient tags, mailbox IDs, and carrier routing hints must either be minimized, one-time scoped, encrypted, or explicitly documented as visible.
 7. **One-time privacy tools must be first-class.** Users and apps need simple APIs for one-time identities, one-time contact cards, one-time lobby invites, and unlinkable mailbox/routing setup.
-8. **Do not break the public facade casually.** Keep the current `hydra-msg` public API stable unless a privacy bug requires an explicit migration or version bump.
-9. **Migrations must be safe and testable.** Any state format change needs versioned decoding, upgrade tests, rollback/failure handling, and no silent data loss.
+8. **Current-version-only implementation.** Do not add compatibility branches for old local formats or old APIs; unsupported formats must fail closed instead of silently opening weaker state.
+9. **Format changes must fail closed.** Any state or identity format change needs versioned encoding, strict decoding, rollback/failure handling, and no silent downgrade path.
 10. **Keep artifacts out of the repo root.** Generated state, logs, audits, scratch output, and validation notes belong under `target/` or `docs/project/audit/` as appropriate.
 11. **Use one official validation path.** `qa/ci/check-all.*` must keep running tests, examples, docs, Markdown links, lock checks, and source-size guardrails.
 12. **Before marking complete, ask:** Is this production-ready? Is it enterprise-grade? Are the privacy boundaries correct? If not, record what remains.
@@ -65,7 +65,7 @@ Steps:
 - Seal message bodies, attachment bytes, identity records, contact records, lobby records, and session material.
 - Authenticate the whole state file, including version and KDF parameters.
 - Keep only the minimum safe plaintext header needed for format detection.
-- Do not add plaintext-state migration or fallback behavior.
+- Do not add plaintext-state compatibility or fallback behavior.
 - Add tests for wrong password, corrupted ciphertext, truncated file, and replayed old file.
 - Update backup/export behavior so backups and normal state use consistent authenticated encryption rules.
 
@@ -79,9 +79,9 @@ Steps:
 - Store per-record random salts and explicit KDF parameters.
 - Add KDF profile names for interactive, mobile, and high-security settings.
 - Use the KDF output only as key material for authenticated encryption or wrapping keys.
-- Re-encrypt current identity records and state files into the new KDF format.
+- Write all current identity records, normal state files, and backups with the new KDF format.
 - Add tests proving identical passwords produce different stored records because salts differ.
-- Add tests for wrong password, changed KDF parameters, fresh import, and re-encryption after password change.
+- Add tests for wrong password, changed KDF parameters, fresh import, and fresh salt generation for repeated passwords.
 - Document that weak user passwords still limit offline resistance.
 
 ### P4 — Contact-card and invite metadata minimization
@@ -151,7 +151,7 @@ This roadmap succeeds when:
 5. Contact cards and lobby invites have documented visible metadata and first-class one-time/unlinkable alternatives.
 6. Lobby recipient tags are documented and tested as routing hints, not anonymous routing.
 7. Anonymous-to-network and anonymous-but-authorized properties are explicitly separated from HYDRA encryption.
-8. Migration tests prove existing users can upgrade without silent data loss.
+8. Unsupported older or malformed local formats fail closed without silent downgrade.
 9. `qa/ci/check-all.*` passes, including tests, examples, docs, Markdown links, lock checks, and file-size guardrails.
 10. A final audit records whether the repo is production-ready and enterprise-grade.
 
@@ -194,9 +194,17 @@ This roadmap succeeds when:
 - Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, and backup restore into encrypted state.
 - Extended privacy-invariant checks so the official `check-all.*` path guards the encrypted state format and does not regress to plaintext normal state.
 
+### Completed in P3
+
+- Updated the roadmap rules to enforce current-version-only implementation and fail-closed format changes before implementation work continued.
+- Added per-record scrypt KDF records with random salts and explicit profile/parameter fields.
+- Applied memory-hard password derivation to normal state keys, backup keys, and identity seed wrapping keys.
+- Stored KDF algorithm, profile, log_n, r, p, and salt in state files, backups, and identity records.
+- Added tests for repeated passwords producing different salts/tags, KDF parameters in state/backup headers, and tampered KDF parameters failing closed.
+- Extended privacy-invariant checks so `check-all.*` rejects direct HKDF/SHA3 password derivation for facade storage/identity protection.
+
 ### Current known gaps
 
-- State/password protection still needs memory-hard KDF hardening until P3 is implemented.
 - Contact cards and lobby invites still expose intentional metadata and need first-class one-time/unlinkable API support.
 - Lobby recipient tags remain routing hints and do not provide anonymous routing.
 - Anonymous-to-network requires a carrier/network layer such as Tor, I2P, mixnet, proxy, or a relay design that hides IP/timing metadata.
@@ -204,11 +212,10 @@ This roadmap succeeds when:
 
 ### Active phase
 
-- P3 memory-hard password KDF migration is ready to start.
+- P4 contact-card and invite metadata minimization is ready to start.
 
 ### Not started
 
-- P3 memory-hard password KDF migration.
 - P4 one-time contact-card and invite metadata minimization.
 - P5 lobby recipient-tag privacy boundary hardening.
 - P6 anonymous-but-authorized design.

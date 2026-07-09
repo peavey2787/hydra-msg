@@ -8,14 +8,16 @@ handshake_file="crates/hydra-msg/src/codec/handshake.rs"
 handshake_api_file="crates/hydra-msg/src/handshake.rs"
 storage_file="crates/hydra-msg/src/storage.rs"
 storage_codec_file="crates/hydra-msg/src/codec/storage.rs"
+identity_codec_file="crates/hydra-msg/src/codec/identity.rs"
+kdf_codec_file="crates/hydra-msg/src/codec/kdf.rs"
 lib_file="crates/hydra-msg/src/lib.rs"
 
 if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
   echo "hydra-msg handshake files missing" >&2
   exit 1
 fi
-if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$lib_file" ]; then
-  echo "hydra-msg storage files missing" >&2
+if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$identity_codec_file" ] || [ ! -f "$kdf_codec_file" ] || [ ! -f "$lib_file" ]; then
+  echo "hydra-msg storage/KDF files missing" >&2
   exit 1
 fi
 
@@ -65,7 +67,17 @@ require_source_text "$storage_file" "decode_encrypted_state_v2" "normal state is
 require_source_text "$storage_file" "reject_state_rollback" "local replay rollback guard is enforced"
 require_source_text "$storage_codec_file" "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
 require_source_text "$storage_codec_file" "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
-require_source_text "$storage_codec_file" "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
+require_source_text "$storage_codec_file" "parse_state_v2_kdf" "encrypted state reads stored KDF parameters before deriving the state key"
+require_source_text "$storage_codec_file" "encode_kdf_fields" "encrypted state stores explicit KDF parameters"
+require_source_text "$kdf_codec_file" "scrypt::" "memory-hard scrypt KDF implementation is used"
+require_source_text "$kdf_codec_file" "KDF_ALGORITHM_SCRYPT_V1" "versioned memory-hard KDF algorithm id"
+require_source_text "$kdf_codec_file" "kdf_log_n" "explicit scrypt log_n parameter is stored"
+require_source_text "$kdf_codec_file" "kdf_salt" "per-record random KDF salt is stored"
+require_source_text "$identity_codec_file" "PasswordKdfRecord::new_interactive()?" "identity password records use per-record KDF parameters"
+require_source_text "$identity_codec_file" "derive_password_key" "identity seed wrapping uses memory-hard password derivation"
+forbidden_source_text "$storage_codec_file" "hkdf-sha3-256-v1" "encrypted state must not use the old cheap KDF profile"
+forbidden_source_text "$storage_codec_file" "hkdf_extract" "encrypted state password key must not use HKDF directly"
+forbidden_source_text "$identity_codec_file" "sha3_256(password" "identity password tag must not be direct SHA3 over the password"
 forbidden_source_text "$lib_file" 'STATE_V1' "normal local state must not use plaintext v1 constants"
 
 if grep -RIn "derive_facade_handshake_material" crates/hydra-msg/src; then
@@ -75,7 +87,7 @@ fi
 
 forbidden_source_text "$storage_file" "load_state_without_password" "state must never open without a state password"
 forbidden_source_text "$storage_file" "state_key: Option" "state encryption must not be optional"
-forbidden_source_text "$storage_file" "state_v1" "current state path must not include plaintext migration helpers"
-forbidden_source_text "$storage_file" "remove_file" "current state path must not delete plaintext migration files"
+forbidden_source_text "$storage_file" "state_v1" "current state path must not include plaintext compatibility helpers"
+forbidden_source_text "$storage_file" "remove_file" "current state path must not delete old plaintext files"
 
 echo "privacy invariant checks passed"

@@ -31,6 +31,7 @@ pub use messages::{
 };
 pub use storage::HydraStorageStatus;
 
+use codec::PasswordKdfRecord;
 use handshake::{PendingOffer, SessionRecord};
 use identity::IdentityRecord;
 use messages::StoredMessage;
@@ -112,6 +113,7 @@ pub struct Hydra {
     pub(crate) next_message_id: u64,
     pub(crate) lobbies: HashMap<LobbyId, HydraLobby>,
     pub(crate) state_key: SecretBytes<32>,
+    pub(crate) state_kdf: PasswordKdfRecord,
     pub(crate) state_generation: u64,
 }
 

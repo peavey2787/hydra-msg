@@ -116,7 +116,7 @@ Current facade boundaries:
 
 ```text
 state-v2.hydra local file: authenticated-encrypted state opened with a required state password
-identity and state passwords: AEAD wrapping, but not memory-hard KDF yet
+identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters
 contact cards: label, public key, contact id/fingerprint, and safety code are visible
 lobby invites: lobby id, label, max-member policy, and member list are visible
 lobby recipient(): per-member routing hint, not anonymous routing or authentication

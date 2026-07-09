@@ -55,9 +55,9 @@ qa/ci/check-privacy-invariants.ps1
 | Anonymous to relay/server | Public docs say relays only need opaque bytes but may see timing/IP/routing metadata. | Carrier boundary, `HydraEnvelope`, lobby recipient hints. | Correctly documented. HYDRA encryption does not hide relay-observable metadata. |
 | Anonymous to network | Public docs say Tor/I2P/mixnet/proxy/relay design is required. | Outside HYDRA facade. | Unsupported by HYDRA encryption alone; must stay documented as carrier/network-layer work. |
 | Anonymous-but-authorized | Public docs say proofs/blind credentials/tokens are separate. | No current facade implementation. | Unsupported until P6. |
-| Local state confidentiality | Public API states `state-v2.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state in P2, with HKDF/SHA3 password derivation remaining cheap until P3. |
-| Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext, but password KDF is not enterprise-grade until P3. |
-| Identity password hardening | Public API now warns password protection is not memory-hard yet. | `codec/identity.rs`, `codec/storage.rs`. | Partial only: AEAD seed wrapping exists, but HKDF/SHA3-only password derivation is cheap against offline attack. P3 owns Argon2id/scrypt migration. |
+| Local state confidentiality | Public API states `state-v2.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state, with P3 adding per-record scrypt password derivation parameters and random salts. |
+| Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext with per-backup scrypt parameters and random salt. |
+| Identity password hardening | Public API states password protection uses per-record scrypt parameters and random salts. | `codec/identity.rs`, `codec/storage.rs`. | Supported for current facade identity records, normal state, and backups through scrypt-derived wrapping keys. Weak passwords remain vulnerable to offline guessing. |
 | Contact card metadata | Public API now states cards expose labels, public keys, ids, and safety code. | `codec/contacts.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
 | Lobby invite metadata | Public API now states invites expose lobby id, label, max members, and member list. | `codec/lobbies.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
 | Lobby recipient tag | Public API now states `HydraLobbyEnvelope.recipient()` is a routing hint, not anonymous routing. | `lobbies.rs`. | Correctly bounded. P5 owns hardening/blinded tag options. |
@@ -120,14 +120,13 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 | Facade handshake static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires ML-DSA signing/verification, X25519 secret input, ML-KEM secret input, answer confirmation, and no reintroduced public transcript-only helper. |
 | Contact handshake and attachment roundtrip | `crates/hydra-msg/src/tests.rs` | Post-handshake facade send/receive carries encrypted envelopes and restores plaintext locally. |
 | Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
-| Native storage persistence test | `crates/hydra-msg/src/tests.rs` | Confirms current plaintext state persistence behavior; this is evidence for the P2 migration target, not a privacy pass. |
+| Encrypted state persistence test | `crates/hydra-msg/src/storage_tests.rs` | Confirms current state persists inside authenticated-encrypted `state-v2.hydra` without plaintext message/contact/attachment leakage. |
 | Lobby recipient-tagged envelope test | `crates/hydra-msg/src/tests.rs` | Confirms the recipient tag is a routing helper on per-member envelopes. |
 | Public docs anonymity wording | README, public API, message-flow docs | Distinguishes anonymous-to-user, unlinkable-across-chats, relay opacity, network anonymity, and anonymous authorization. |
 | Docs/static gate | `qa/ci/check-docs.sh`, `qa/ci/check-tests.ps1` | Blocks public roadmap links and stale privacy wording regressions. |
 
 ## Unsupported properties that must stay marked as future work
 
-- Memory-hard password KDF for identity records, state encryption, and backup keys.
 - First-class one-time contact-card and one-time lobby-invite APIs.
 - Automatic unlinkability protection across chats/lobbies/mailboxes.
 - Anonymous network transport.
@@ -137,12 +136,12 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 
 ## P1 conclusion
 
-P1 closes the known facade-handshake confidentiality verification gap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are storage, password KDFs, metadata minimization, routing privacy, and anonymous authorization:
+P1 closes the known facade-handshake confidentiality verification gap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are metadata minimization, routing privacy, and anonymous authorization:
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;
-- local state at rest is now AEAD-sealed in `state-v2.hydra` when a state password is configured;
-- password-derived protection remains cheap until memory-hard KDF migration;
+- local state at rest is always AEAD-sealed in `state-v2.hydra` with a required state password;
+- password-derived protection now uses scrypt, but weak user passwords remain a risk;
 - metadata in contact cards, lobby invites, and recipient tags is intentional and visible;
 - network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.
 ```

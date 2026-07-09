@@ -122,3 +122,63 @@ fn encrypted_backup_requires_password_and_restores_state() {
     assert_eq!(restored.list_messages(contact.id()).len(), 1);
     restored.set_active_id(id, "id-pw").unwrap();
 }
+
+#[test]
+fn password_kdf_uses_random_salts_for_same_password() {
+    let path_a = "target/hydra-msg-test-kdf-salt-a";
+    let path_b = "target/hydra-msg-test-kdf-salt-b";
+    let _ = fs::remove_dir_all(path_a);
+    let _ = fs::remove_dir_all(path_b);
+
+    let mut a = Hydra::open(path_a, "same-state-password").unwrap();
+    let mut b = Hydra::open(path_b, "same-state-password").unwrap();
+    let a_id = a.generate_id("same-id-password").unwrap();
+    let b_id = b.generate_id("same-id-password").unwrap();
+    a.persist().unwrap();
+    b.persist().unwrap();
+
+    assert_eq!(a.state_kdf.profile, "interactive");
+    assert_eq!(b.state_kdf.profile, "interactive");
+    assert_ne!(a.state_kdf.salt, b.state_kdf.salt);
+
+    let a_record = a.identities.get(&a_id).unwrap();
+    let b_record = b.identities.get(&b_id).unwrap();
+    assert_eq!(a_record.password_kdf.profile, "interactive");
+    assert_eq!(b_record.password_kdf.profile, "interactive");
+    assert_ne!(a_record.password_kdf.salt, b_record.password_kdf.salt);
+    assert_ne!(a_record.password_tag, b_record.password_tag);
+}
+
+#[test]
+fn encrypted_state_and_backup_store_memory_hard_kdf_parameters() {
+    let path = "target/hydra-msg-test-kdf-headers";
+    let mut hydra = fresh(path);
+    hydra.generate_id("id-pw").unwrap();
+    hydra.persist().unwrap();
+
+    let state = fs::read(Path::new(path).join("state-v2.hydra")).unwrap();
+    let text = String::from_utf8_lossy(&state);
+    assert!(text.contains("kdf\tscrypt-v1"));
+    assert!(text.contains("kdf_profile\tinteractive"));
+    assert!(text.contains("kdf_log_n\t14"));
+    assert!(text.contains("kdf_r\t8"));
+    assert!(text.contains("kdf_p\t1"));
+    assert!(text.contains("kdf_salt\t"));
+
+    let backup = hydra.export_backup("backup-pw").unwrap();
+    let backup_text = String::from_utf8_lossy(&backup);
+    assert!(backup_text.contains("kdf\tscrypt-v1"));
+    assert!(backup_text.contains("kdf_profile\tinteractive"));
+    assert!(backup_text.contains("kdf_salt\t"));
+}
+
+#[test]
+fn changed_kdf_parameters_are_rejected() {
+    let path = "target/hydra-msg-test-kdf-parameter-change";
+    make_persisted_state(path);
+    let state_path = Path::new(path).join("state-v2.hydra");
+    let mut text = fs::read_to_string(&state_path).unwrap();
+    text = text.replace("kdf_log_n\t14", "kdf_log_n\t15");
+    fs::write(&state_path, text).unwrap();
+    assert!(Hydra::open(path, "state-pw").is_err());
+}

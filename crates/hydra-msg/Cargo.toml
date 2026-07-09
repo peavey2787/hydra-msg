@@ -12,6 +12,8 @@ hydra-envelope = { path = "../hydra-envelope" }
 hydra-group = { path = "../hydra-group" }
 hydra-session = { path = "../hydra-session" }
 rand_core = "=0.10.1"
+scrypt = "=0.11.0"
+zeroize = "=1.9.0"
 
 [lints]
 workspace = true
