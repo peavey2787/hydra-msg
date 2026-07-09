@@ -459,10 +459,10 @@ fn derive_backup_key(
 ) -> AppResult<SecretBytes<32>> {
     let label = match secret.policy() {
         RecoveryKeyPolicy::UserPassphrase => {
-            b"HYDRA-MSG/app/recovery-backup-passphrase-kdf/v2" as &'static [u8]
+            b"HYDRA-MSG/app/recovery-backup-passphrase-kdf/v1" as &'static [u8]
         }
         RecoveryKeyPolicy::RandomRecoveryKey => {
-            b"HYDRA-MSG/app/recovery-backup-random-key-kdf/v2" as &'static [u8]
+            b"HYDRA-MSG/app/recovery-backup-random-key-kdf/v1" as &'static [u8]
         }
     };
     derive_storage_key(

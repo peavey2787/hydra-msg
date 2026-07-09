@@ -55,7 +55,7 @@ qa/ci/check-privacy-invariants.ps1
 | Anonymous to relay/server | Public docs say relays only need opaque bytes but may see timing/IP/routing metadata. | Carrier boundary, `HydraEnvelope`, lobby recipient hints. | Correctly documented. HYDRA encryption does not hide relay-observable metadata. |
 | Anonymous to network | Public docs say Tor/I2P/mixnet/proxy/relay design is required. | Outside HYDRA facade. | Unsupported by HYDRA encryption alone; must stay documented as carrier/network-layer work. |
 | Anonymous-but-authorized | Public docs say proofs/blind credentials/tokens are separate. | No current facade implementation. | Unsupported until P6. |
-| Local state confidentiality | Public API states `state-v2.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state, with P3 adding per-record scrypt password derivation parameters and random salts. |
+| Local state confidentiality | Public API states `state-v1.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state, with P3 adding per-record scrypt password derivation parameters and random salts. |
 | Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext with per-backup scrypt parameters and random salt. |
 | Identity password hardening | Public API states password protection uses per-record scrypt parameters and random salts. | `codec/identity.rs`, `codec/storage.rs`. | Supported for current facade identity records, normal state, and backups through scrypt-derived wrapping keys. Weak passwords remain vulnerable to offline guessing. |
 | Contact card metadata | Public API states default cards expose the public verification key only, with explicit labeled cards for label sharing. Contact id/fingerprint and safety code are derived locally. | `contacts.rs`, `codec/contacts.rs`. | Supported in P4 with minimized default cards and first-class one-time contact-card helpers. |
@@ -119,10 +119,10 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 | Mismatched answer transcript rejection test | `crates/hydra-msg/src/handshake_tests.rs` | Initiator refuses an answer rebound to another offer nonce/transcript. |
 | Facade handshake static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires ML-DSA signing/verification, X25519 secret input, ML-KEM secret input, answer confirmation, and no reintroduced public transcript-only helper. |
 | Metadata minimization regression tests | `crates/hydra-msg/src/tests.rs` | Default contact cards omit labels/ids/safety strings, default lobby invites omit labels/member lists, and one-time helpers produce fresh ids. |
-| Metadata minimization static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires current v2 minimized card/invite formats and one-time helper APIs. |
+| Metadata minimization static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires current V1 minimized card/invite formats and one-time helper APIs. |
 | Contact handshake and attachment roundtrip | `crates/hydra-msg/src/tests.rs` | Post-handshake facade send/receive carries encrypted envelopes and restores plaintext locally. |
 | Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
-| Encrypted state persistence test | `crates/hydra-msg/src/storage_tests.rs` | Confirms current state persists inside authenticated-encrypted `state-v2.hydra` without plaintext message/contact/attachment leakage. |
+| Encrypted state persistence test | `crates/hydra-msg/src/storage_tests.rs` | Confirms current state persists inside authenticated-encrypted `state-v1.hydra` without plaintext message/contact/attachment leakage. |
 | Lobby recipient-tagged envelope test | `crates/hydra-msg/src/tests.rs` | Confirms the recipient tag is a routing helper on per-member envelopes. |
 | Public docs anonymity wording | README, public API, message-flow docs | Distinguishes anonymous-to-user, unlinkable-across-chats, relay opacity, network anonymity, and anonymous authorization. |
 | Docs/static gate | `qa/ci/check-docs.sh`, `qa/ci/check-tests.ps1` | Blocks public roadmap links and stale privacy wording regressions. |
@@ -142,7 +142,7 @@ P1 closes the known facade-handshake confidentiality verification gap, but does 
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;
-- local state at rest is always AEAD-sealed in `state-v2.hydra` with a required state password;
+- local state at rest is always AEAD-sealed in `state-v1.hydra` with a required state password;
 - password-derived protection now uses scrypt, but weak user passwords remain a risk;
 - metadata in contact cards and lobby invites is minimized by default, expanded only through explicit labeled/member APIs, and recipient tags remain intentional visible routing hints;
 - network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.

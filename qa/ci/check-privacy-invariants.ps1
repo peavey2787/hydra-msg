@@ -69,18 +69,18 @@ Assert-SourceText $HandshakeApiFile "pending.contact_id != ContactId(parsed_answ
 Assert-NoSourceText $HandshakeFile "derive_facade_handshake_material" "removed public transcript-only facade secret derivation helper"
 Assert-NoSourceText $HandshakeFile "public transcript" "facade secret must not be documented as public-transcript derived"
 
-Assert-SourceText $LibFile "STATE_V2_MAGIC" "encrypted local state v2 format constant"
-Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v2.hydra`"" "normal local state file uses encrypted v2 path"
+Assert-SourceText $LibFile "STATE_MAGIC" "encrypted local state format constant"
+Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v1.hydra`"" "normal local state file uses encrypted current path"
 Assert-SourceText $StorageFile "pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>)" "state password is required when opening local state"
-Assert-SourceText $StorageFile "encode_encrypted_state_v2" "normal state is sealed before writing"
-Assert-SourceText $StorageFile "decode_encrypted_state_v2" "normal state is opened with authentication"
+Assert-SourceText $StorageFile "encode_encrypted_state" "normal state is sealed before writing"
+Assert-SourceText $StorageFile "decode_encrypted_state" "normal state is opened with authentication"
 Assert-SourceText $StorageFile "reject_state_rollback" "local replay rollback guard is enforced"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
-Assert-SourceText $StorageCodecFile "parse_state_v2_kdf" "encrypted state reads stored KDF parameters before deriving the state key"
+Assert-SourceText $StorageCodecFile "parse_state_kdf" "encrypted state reads stored KDF parameters before deriving the state key"
 Assert-SourceText $StorageCodecFile "encode_kdf_fields" "encrypted state stores explicit KDF parameters"
 Assert-SourceText $KdfCodecFile "scrypt::" "memory-hard scrypt KDF implementation is used"
-Assert-SourceText $KdfCodecFile "KDF_ALGORITHM_SCRYPT_V1" "versioned memory-hard KDF algorithm id"
+Assert-SourceText $KdfCodecFile "KDF_ALGORITHM_SCRYPT_V1" "current memory-hard KDF algorithm id"
 Assert-SourceText $KdfCodecFile "kdf_log_n" "explicit scrypt log_n parameter is stored"
 Assert-SourceText $KdfCodecFile "kdf_salt" "per-record random KDF salt is stored"
 Assert-SourceText $IdentityCodecFile "PasswordKdfRecord::new_interactive()?" "identity password records use per-record KDF parameters"
@@ -92,7 +92,7 @@ Assert-NoSourceText $LibFile "STATE_V1" "normal local state must not use plainte
 
 Assert-NoSourceText $StorageFile "load_state_without_password" "state must never open without a state password"
 Assert-NoSourceText $StorageFile "state_key: Option" "state encryption must not be optional"
-Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext compatibility helpers"
+Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext alternate-format helpers"
 Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete old plaintext files"
 
 $reintroduced = Select-String -Path "crates/hydra-msg/src/*.rs", "crates/hydra-msg/src/codec/*.rs" -Pattern "derive_facade_handshake_material" -ErrorAction SilentlyContinue
@@ -102,8 +102,8 @@ if ($reintroduced) {
 }
 
 
-Assert-SourceText $LibFile 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V2"' "current minimized contact-card format"
-Assert-SourceText $LibFile 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V2"' "current minimized lobby-invite format"
+Assert-SourceText $LibFile 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V1"' "current minimized contact-card format"
+Assert-SourceText $LibFile 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V1"' "current minimized lobby-invite format"
 Assert-SourceText $ContactFile "pub fn create_labeled_contact_card" "explicit labeled contact-card API"
 Assert-SourceText $ContactFile "pub fn create_one_time_contact_card" "first-class one-time contact-card API"
 Assert-SourceText $ContactFile "identity_record_from_seed(String::new()" "one-time contact cards use empty local label by default"
@@ -116,6 +116,6 @@ Assert-SourceText $LobbyFile "pub fn create_lobby_member_invite" "explicit membe
 Assert-SourceText $LobbyFile "pub fn create_one_time_lobby_invite" "first-class one-time lobby-invite API"
 Assert-SourceText $LobbyCodecFile "include_label: bool" "lobby invite label exposure is explicit"
 Assert-SourceText $LobbyCodecFile "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
-Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder compatibility"
+Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
 
 Write-Host "privacy invariant checks passed" -ForegroundColor Green

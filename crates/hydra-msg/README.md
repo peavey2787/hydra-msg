@@ -51,4 +51,4 @@ HYDRA identity, contact trust, handshakes, sessions, encryption, decryption, att
 
 `Hydra::open(path, state_password)` creates or loads an authenticated-encrypted native filesystem store at `path`.
 
-Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are stored inside `state-v2.hydra`. Backups are encrypted and authenticated with the backup password.
+Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are stored inside `state-v1.hydra`. Backups are encrypted and authenticated with the backup password.

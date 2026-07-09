@@ -30,7 +30,7 @@ impl Hydra {
         let state_kdf = {
             let path = data_dir.join(STATE_FILE_NAME);
             if path.exists() {
-                parse_state_v2_kdf(&fs::read(&path)?)?
+                parse_state_kdf(&fs::read(&path)?)?
             } else {
                 new_storage_kdf()?
             }
@@ -131,7 +131,7 @@ impl Hydra {
                 return Ok(());
             }
             let bytes = fs::read(path)?;
-            let snapshot = decode_encrypted_state_v2(&bytes, &self.state_key)?;
+            let snapshot = decode_encrypted_state(&bytes, &self.state_key)?;
             self.apply_state_snapshot(&snapshot)?;
             self.reject_state_rollback()?;
             self.write_rollback_guard()?;
@@ -149,7 +149,7 @@ impl Hydra {
         {
             self.state_generation = self.state_generation.saturating_add(1);
             let snapshot = self.encode_state_snapshot()?;
-            let encrypted = encode_encrypted_state_v2(
+            let encrypted = encode_encrypted_state(
                 &snapshot,
                 &self.state_key,
                 &self.state_kdf,

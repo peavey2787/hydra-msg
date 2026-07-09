@@ -190,7 +190,7 @@ impl IdentityStore {
     /// Copy this encrypted identity into a new identity-store file using a new
     /// password.
     ///
-    /// This is intended for import/migration workflows. The private seed is
+    /// This is intended for import workflows. The private seed is
     /// re-encrypted directly into the target store and is never returned to the
     /// caller. By default callers should pass `preserve_device_id = false` so an
     /// imported identity becomes a new device rather than a silent clone of an
@@ -427,7 +427,7 @@ fn derive_store_key(
     kdf_policy: StorageKdfPolicy,
 ) -> AppResult<SecretBytes<32>> {
     derive_storage_key(
-        b"HYDRA-MSG/app/identity-store-kdf/v2" as &'static [u8],
+        b"HYDRA-MSG/app/identity-store-kdf/v1" as &'static [u8],
         password,
         salt,
         kdf_policy.kdf_id,

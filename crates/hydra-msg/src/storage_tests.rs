@@ -34,9 +34,9 @@ fn make_persisted_state(path: &str) -> (IdentityId, ContactId, MessageId, LobbyI
 fn encrypted_state_persists_without_plaintext_leakage() {
     let path = "target/hydra-msg-test-encrypted-persistence";
     let (id, contact_id, message_id, lobby_id) = make_persisted_state(path);
-    let state = fs::read(Path::new(path).join("state-v2.hydra")).unwrap();
+    let state = fs::read(Path::new(path).join("state-v1.hydra")).unwrap();
     let text = String::from_utf8_lossy(&state);
-    assert!(text.starts_with("HYDRA-MSG-STATE-V2"));
+    assert!(text.starts_with("HYDRA-MSG-STATE-V1"));
     assert!(!text.contains("persisted"));
     assert!(!text.contains("self-contact"));
     assert!(!text.contains("persisted.bin"));
@@ -64,7 +64,7 @@ fn encrypted_state_rejects_wrong_password_corruption_and_truncation() {
     make_persisted_state(path);
     assert!(Hydra::open(path, "wrong-pw").is_err());
 
-    let state_path = Path::new(path).join("state-v2.hydra");
+    let state_path = Path::new(path).join("state-v1.hydra");
     let original = fs::read(&state_path).unwrap();
 
     let mut corrupted = original.clone();
@@ -84,7 +84,7 @@ fn encrypted_state_rejects_wrong_password_corruption_and_truncation() {
 fn encrypted_state_detects_local_replay_after_newer_commit() {
     let path = "target/hydra-msg-test-encrypted-state-replay";
     let (_, contact_id, _, _) = make_persisted_state(path);
-    let state_path = Path::new(path).join("state-v2.hydra");
+    let state_path = Path::new(path).join("state-v1.hydra");
     let old_state = fs::read(&state_path).unwrap();
 
     let mut hydra = Hydra::open(path, "state-pw").unwrap();
@@ -156,7 +156,7 @@ fn encrypted_state_and_backup_store_memory_hard_kdf_parameters() {
     hydra.generate_id("id-pw").unwrap();
     hydra.persist().unwrap();
 
-    let state = fs::read(Path::new(path).join("state-v2.hydra")).unwrap();
+    let state = fs::read(Path::new(path).join("state-v1.hydra")).unwrap();
     let text = String::from_utf8_lossy(&state);
     assert!(text.contains("kdf\tscrypt-v1"));
     assert!(text.contains("kdf_profile\tinteractive"));
@@ -176,7 +176,7 @@ fn encrypted_state_and_backup_store_memory_hard_kdf_parameters() {
 fn changed_kdf_parameters_are_rejected() {
     let path = "target/hydra-msg-test-kdf-parameter-change";
     make_persisted_state(path);
-    let state_path = Path::new(path).join("state-v2.hydra");
+    let state_path = Path::new(path).join("state-v1.hydra");
     let mut text = fs::read_to_string(&state_path).unwrap();
     text = text.replace("kdf_log_n\t14", "kdf_log_n\t15");
     fs::write(&state_path, text).unwrap();

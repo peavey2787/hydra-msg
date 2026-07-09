@@ -13,8 +13,8 @@ Current focus: close the implementation privacy gaps that remain after the authe
 5. **Passwords require memory-hard protection.** Any password-derived storage key must use a modern memory-hard KDF with per-record salt and stored parameters.
 6. **Metadata exposure must be intentional.** Contact cards, lobby invites, member lists, labels, recipient tags, mailbox IDs, and carrier routing hints must either be minimized, one-time scoped, encrypted, or explicitly documented as visible.
 7. **One-time privacy tools must be first-class.** Users and apps need simple APIs for one-time identities, one-time contact cards, one-time lobby invites, and unlinkable mailbox/routing setup.
-8. **Current-version-only implementation.** Do not add compatibility branches for old local formats or old APIs; unsupported formats must fail closed instead of silently opening weaker state.
-9. **Format changes must fail closed.** Any state or identity format change needs versioned encoding, strict decoding, rollback/failure handling, and no silent downgrade path.
+8. **Current-version-only implementation.** HYDRA-MSG has one current file/API format: V1. Do not add alternate old-format branches or old API paths; unsupported input must fail closed instead of silently opening weaker state.
+9. **Format changes must fail closed.** Any state or identity format change needs current V1 encoding, strict decoding, rollback/failure handling, and no silent downgrade path.
 10. **Keep artifacts out of the repo root.** Generated state, logs, audits, scratch output, and validation notes belong under `target/` or `docs/project/audit/` as appropriate.
 11. **Use one official validation path.** `qa/ci/check-all.*` must keep running tests, examples, docs, Markdown links, lock checks, and source-size guardrails.
 12. **Before marking complete, ask:** Is this production-ready? Is it enterprise-grade? Are the privacy boundaries correct? If not, record what remains.
@@ -56,22 +56,22 @@ Steps:
 
 ### P2 — Encrypted local state at rest
 
-Goal: keep normal local state in the current encrypted `state-v2.hydra` format, with no plaintext-at-rest compatibility path.
+Goal: keep normal local state in the current encrypted `state-v1.hydra` format, with no plaintext-at-rest alternate path.
 
 Steps:
 
-- Design a versioned encrypted state format, tentatively `state-v2.hydra`.
+- Keep the current encrypted state format at `state-v1.hydra`.
 - Separate public header fields from encrypted payload fields.
 - Seal message bodies, attachment bytes, identity records, contact records, lobby records, and session material.
-- Authenticate the whole state file, including version and KDF parameters.
+- Authenticate the whole state file, including the current V1 magic and KDF parameters.
 - Keep only the minimum safe plaintext header needed for format detection.
-- Do not add plaintext-state compatibility or fallback behavior.
+- Do not add plaintext-state alternate or fallback behavior.
 - Add tests for wrong password, corrupted ciphertext, truncated file, and replayed old file.
 - Update backup/export behavior so backups and normal state use consistent authenticated encryption rules.
 
 ### P3 — Enterprise-grade password KDF hardening
 
-Goal: replace cheap password hashing/HKDF-only password protection with a memory-hard KDF and versioned parameters.
+Goal: replace cheap password hashing/HKDF-only password protection with a memory-hard KDF and explicit parameters.
 
 Steps:
 
@@ -185,11 +185,11 @@ This roadmap succeeds when:
 
 ### Completed in P2
 
-- Added versioned encrypted normal state file support as `state-v2.hydra`.
+- Added encrypted normal state file support as the current `state-v1.hydra` format.
 - Replaced optional/additive storage opening with current-version-only APIs: `open(data_dir, state_password)` and `open_default(state_password)`.
 - Removed the no-password open path and removed the opt-in encryption method; state encryption is required from the beginning.
 - Sealed identity records, contact records, message plaintext, attachment bytes, lobby records, and local metadata inside the encrypted state payload.
-- Authenticated the state v2 header, KDF profile, nonce, and ciphertext with AEAD associated data.
+- Authenticated the state header, KDF profile, nonce, and ciphertext with AEAD associated data.
 - Added local rollback guard checks for replayed stale state files on the same data directory.
 - Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, and backup restore into encrypted state.
 - Extended privacy-invariant checks so the official `check-all.*` path guards the encrypted state format and does not regress to plaintext normal state.
@@ -212,15 +212,15 @@ This roadmap succeeds when:
 
 ### Completed in P4
 
-- Changed the current contact-card format to `HYDRA-MSG-CONTACT-V2`.
+- Kept the current contact-card format as `HYDRA-MSG-CONTACT-V1` and minimized its default metadata.
 - Minimized default contact cards to expose the public verification key only.
 - Added explicit `create_labeled_contact_card` for apps that intentionally want to expose a label.
 - Added `create_one_time_contact_card`, which creates a fresh identity, makes it active, and returns a minimized card for unlinkable chat setup.
-- Changed the current lobby-invite format to `HYDRA-MSG-LOBBY-INVITE-V2`.
+- Kept the current lobby-invite format as `HYDRA-MSG-LOBBY-INVITE-V1` and minimized its default metadata.
 - Minimized default lobby invites to expose only lobby id and max-member policy.
 - Added explicit `create_labeled_lobby_invite` and `create_lobby_member_invite` for apps that intentionally want to expose label/member metadata.
 - Added `create_one_time_lobby_invite`, which creates a fresh lobby and minimized invite for unlinkable lobby setup.
-- Removed the placeholder lobby-invite compatibility decoder so unsupported formats fail closed.
+- Removed the placeholder lobby-invite decoder so unsupported input fails closed.
 - Added tests and privacy-invariant checks for default metadata minimization and one-time fresh ids.
 
 ### Active phase

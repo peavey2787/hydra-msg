@@ -66,7 +66,7 @@ fn contact_cards_default_to_minimized_metadata_and_one_time_ids() {
 
     let default_card = alice.create_contact_card().unwrap();
     let default_text = String::from_utf8(default_card.clone()).unwrap();
-    assert!(default_text.contains("HYDRA-MSG-CONTACT-V2"));
+    assert!(default_text.contains("HYDRA-MSG-CONTACT-V1"));
     assert!(default_text.contains("public_key:"));
     assert!(!default_text.contains("label:"));
     assert!(!default_text.contains("id:"));
@@ -228,7 +228,7 @@ fn lobby_invites_default_to_minimized_metadata_and_one_time_ids() {
         .unwrap();
     let invite = alice.create_lobby_invite(lobby.id()).unwrap();
     let invite_text = String::from_utf8(invite.clone().into_bytes()).unwrap();
-    assert!(invite_text.contains("HYDRA-MSG-LOBBY-INVITE-V2"));
+    assert!(invite_text.contains("HYDRA-MSG-LOBBY-INVITE-V1"));
     assert!(invite_text.contains("id:"));
     assert!(invite_text.contains("max_members:"));
     assert!(!invite_text.contains("label:"));

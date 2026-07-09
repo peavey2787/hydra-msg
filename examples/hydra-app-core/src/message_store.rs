@@ -736,7 +736,7 @@ fn derive_store_key(
     kdf_policy: StorageKdfPolicy,
 ) -> AppResult<SecretBytes<32>> {
     derive_storage_key(
-        b"HYDRA-MSG/app/message-store-kdf/v2" as &'static [u8],
+        b"HYDRA-MSG/app/message-store-kdf/v1" as &'static [u8],
         password,
         salt,
         kdf_policy.kdf_id,
