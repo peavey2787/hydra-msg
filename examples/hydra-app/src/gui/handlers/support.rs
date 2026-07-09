@@ -88,10 +88,14 @@ pub(crate) fn remember_seconds_from_form(
                 .parse::<u64>()
                 .map_err(|error| format!("custom remember-me duration must be seconds: {error}"))?;
             if seconds == 0 || seconds > 365 * 24 * 60 * 60 {
-                return Err("custom remember-me duration must be between 1 second and 1 year".to_owned());
+                return Err(
+                    "custom remember-me duration must be between 1 second and 1 year".to_owned(),
+                );
             }
             Ok(Some(seconds))
         }
-        _ => Err("remember-me duration must be session, 24h, 1w, 1m, 1y, forever, or custom".to_owned()),
+        _ => Err(
+            "remember-me duration must be session, 24h, 1w, 1m, 1y, forever, or custom".to_owned(),
+        ),
     }
 }

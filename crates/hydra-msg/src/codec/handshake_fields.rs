@@ -1,8 +1,7 @@
 use super::{exact_array_from_vec, hex_decode};
 use crate::{HydraMsgError, HydraResult, IdentityId};
 use hydra_core::{
-    ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, ML_KEM_768_CT_SIZE, ML_KEM_768_EK_SIZE,
-    X25519_SIZE,
+    ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, ML_KEM_768_CT_SIZE, ML_KEM_768_EK_SIZE, X25519_SIZE,
 };
 
 #[derive(Default)]
@@ -20,7 +19,8 @@ pub(super) struct ParsedFields {
 
 impl ParsedFields {
     pub(super) fn identity_id(&self) -> HydraResult<IdentityId> {
-        self.id.ok_or(HydraMsgError::InvalidEncoding("handshake id"))
+        self.id
+            .ok_or(HydraMsgError::InvalidEncoding("handshake id"))
     }
 
     pub(super) fn public_key(&self) -> HydraResult<[u8; ML_DSA_65_VK_SIZE]> {
@@ -87,10 +87,7 @@ fn set_field(fields: &mut ParsedFields, name: &str, value: &str) -> HydraResult<
             &mut fields.public_key,
             exact_array_from_vec(hex_decode(value)?)?,
         )?,
-        "nonce" => set_once(
-            &mut fields.nonce,
-            exact_array_from_vec(hex_decode(value)?)?,
-        )?,
+        "nonce" => set_once(&mut fields.nonce, exact_array_from_vec(hex_decode(value)?)?)?,
         "offer_nonce" => set_once(
             &mut fields.offer_nonce,
             exact_array_from_vec(hex_decode(value)?)?,

@@ -184,12 +184,8 @@ impl Hydra {
         )?;
         let parsed_answer = decode_handshake_answer(&answer)?;
         verify_answer_signature(&parsed_answer, &parsed_offer)?;
-        let (secret, transcript_hash) = verify_answer_confirmation(
-            &parsed_answer,
-            &parsed_offer,
-            &x25519_shared,
-            &kem_shared,
-        )?;
+        let (secret, transcript_hash) =
+            verify_answer_confirmation(&parsed_answer, &parsed_offer, &x25519_shared, &kem_shared)?;
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
         let state = SessionState::established(
             SessionRole::Responder,

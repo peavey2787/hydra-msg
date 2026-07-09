@@ -97,7 +97,8 @@ pub(crate) fn api_identity_import_backup(
         identity_password.as_bytes(),
         policy,
     )?;
-    let status = unlock_generated_identity(app_state, identity_password.as_bytes(), remember_seconds)?;
+    let status =
+        unlock_generated_identity(app_state, identity_password.as_bytes(), remember_seconds)?;
     Ok(identity_created_with_session_json(
         &identity,
         &status,

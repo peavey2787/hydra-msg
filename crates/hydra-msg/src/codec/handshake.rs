@@ -70,7 +70,11 @@ pub(crate) fn encode_handshake_answer(
     let signature = RustCryptoBackend::mldsa65_sign(signing_key, &digest)?;
     let confirmation_tag =
         answer_confirmation_tag(offer, &core, &signature, x25519_secret, kem_secret);
-    Ok(append_answer_authentication(core, &signature, &confirmation_tag))
+    Ok(append_answer_authentication(
+        core,
+        &signature,
+        &confirmation_tag,
+    ))
 }
 
 pub(crate) fn decode_handshake_offer(bytes: &[u8]) -> HydraResult<ParsedHandshakeOffer> {

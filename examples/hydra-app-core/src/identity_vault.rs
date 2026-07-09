@@ -901,7 +901,6 @@ mod tests {
         fs::remove_dir_all(dir).ok();
     }
 
-
     #[test]
     fn remember_duration_locks_memory_cache_at_absolute_expiration() {
         let dir = temp_dir("remember");

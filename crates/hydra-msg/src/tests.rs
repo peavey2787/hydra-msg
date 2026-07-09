@@ -111,7 +111,6 @@ fn contact_handshake_and_attachment_roundtrip() {
     assert_eq!(received.attachments()[1].bytes(), b"named-bytes");
 }
 
-
 #[test]
 fn authenticated_hybrid_handshake_rejects_tampered_offer_and_answer() {
     let mut alice = fresh("target/hydra-msg-test-handshake-tamper-alice");
@@ -132,7 +131,9 @@ fn authenticated_hybrid_handshake_rejects_tampered_offer_and_answer() {
     let mut tampered_offer = offer.clone().into_bytes();
     let last = tampered_offer.len() - 2;
     tampered_offer[last] ^= 1;
-    assert!(bob.reply_handshake(HandshakeOffer::from_bytes(tampered_offer)).is_err());
+    assert!(bob
+        .reply_handshake(HandshakeOffer::from_bytes(tampered_offer))
+        .is_err());
 
     let answer = bob.reply_handshake(offer).unwrap();
     let mut tampered_answer = answer.into_bytes();
