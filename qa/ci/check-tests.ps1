@@ -222,7 +222,8 @@ function Invoke-DocsGate {
         "Chain-key evolution",
         "TreeKEM profile",
         "Group modes",
-        "Group rekey"
+        "Group rekey",
+        "Anonymous authorization"
     )) {
         Assert-NoNavLabel "README.md" $mainNav $label
     }
@@ -280,7 +281,8 @@ function Invoke-DocsGate {
             "Chain-key evolution",
             "TreeKEM profile",
             "Group modes",
-            "Group rekey"
+            "Group rekey",
+            "Anonymous authorization"
         )) {
             Assert-NoNavLabel $File $Nav $label
         }
@@ -302,7 +304,8 @@ function Invoke-DocsGate {
             "Chain-key evolution",
             "TreeKEM profile",
             "Group modes",
-            "Group rekey"
+            "Group rekey",
+            "Anonymous authorization"
         )) {
             Assert-NavLabel $File $Nav $label
         }

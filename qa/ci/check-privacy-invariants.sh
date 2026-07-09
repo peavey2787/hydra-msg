@@ -16,6 +16,9 @@ contact_codec_file="crates/hydra-msg/src/codec/contacts.rs"
 lobby_file="crates/hydra-msg/src/lobbies.rs"
 lobby_routing_file="crates/hydra-msg/src/lobby_routing.rs"
 lobby_codec_file="crates/hydra-msg/src/codec/lobbies.rs"
+auth_file="crates/hydra-msg/src/anonymous_auth.rs"
+auth_codec_file="crates/hydra-msg/src/codec/auth.rs"
+auth_tests_file="crates/hydra-msg/src/anonymous_auth_tests.rs"
 
 if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
   echo "hydra-msg handshake files missing" >&2
@@ -27,6 +30,10 @@ if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$identi
 fi
 if [ ! -f "$contact_file" ] || [ ! -f "$contact_codec_file" ] || [ ! -f "$lobby_file" ] || [ ! -f "$lobby_routing_file" ] || [ ! -f "$lobby_codec_file" ]; then
   echo "hydra-msg metadata privacy files missing" >&2
+  exit 1
+fi
+if [ ! -f "$auth_file" ] || [ ! -f "$auth_codec_file" ] || [ ! -f "$auth_tests_file" ]; then
+  echo "hydra-msg anonymous authorization files missing" >&2
   exit 1
 fi
 
@@ -119,6 +126,24 @@ require_source_text "$lobby_routing_file" "not anonymous routing" "direct recipi
 require_source_text "$lobby_codec_file" "include_label: bool" "lobby invite label exposure is explicit"
 require_source_text "$lobby_codec_file" "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
 forbidden_source_text "$lobby_codec_file" "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
+
+require_source_text "$lib_file" 'AUTH_TOKEN_MAGIC: &str = "HYDRA-MSG-AUTH-TOKEN"' "current anonymous authorization token format"
+require_source_text "$lib_file" "anonymous_auth_secret: SecretBytes<32>" "anonymous auth issuer secret is state-owned, not contact-owned"
+require_source_text "$lib_file" "anonymous_auth_spent: Vec<HydraAnonymousAuthNullifier>" "spent anonymous auth nullifiers are tracked"
+require_source_text "$auth_file" "pub fn issue_anonymous_auth_token" "anonymous auth token issuance API"
+require_source_text "$auth_file" "pub fn accept_anonymous_auth_token" "anonymous auth token acceptance API"
+require_source_text "$auth_file" "pub fn revoke_anonymous_auth_token" "anonymous auth token revocation API"
+require_source_text "$auth_file" "reject_expired_policy" "anonymous auth expiry is checked"
+require_source_text "$auth_file" "reject_spent_anonymous_auth_nullifier" "anonymous auth replay/double-spend is rejected"
+require_source_text "$auth_codec_file" "RustCryptoBackend::hmac_sha3_256" "anonymous auth tokens are issuer-secret authenticated"
+require_source_text "$auth_codec_file" "HYDRA-MSG/facade/anonymous-auth/nullifier" "anonymous auth nullifiers are domain-separated"
+require_source_text "$storage_file" "anonymous_auth_secret" "anonymous auth issuer secret is stored inside encrypted state snapshot"
+require_source_text "$storage_file" "anonymous_auth_spent" "anonymous auth spent nullifiers are stored inside encrypted state snapshot"
+require_source_text "$auth_tests_file" "assert_ne!(token_a.as_bytes(), token_b.as_bytes())" "same policy issues unlinkable fresh tokens"
+require_source_text "$auth_tests_file" "anonymous_auth_token_from_other_issuer_is_not_valid" "tokens from other issuers are rejected"
+forbidden_source_text "$auth_codec_file" "contact_id" "anonymous auth token codec must not encode contact ids"
+forbidden_source_text "$auth_codec_file" "identity_id" "anonymous auth token codec must not encode identity ids"
+forbidden_source_text "$auth_codec_file" "session_id" "anonymous auth token codec must not encode session ids"
 
 if grep -RInE "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" \
   crates/hydra-msg examples/hydra-app examples/hydra-app-core README.md crates/hydra-msg/README.md \

@@ -32,7 +32,7 @@ Anonymous to the network:
   Requires a Tor/I2P/mixnet/proxy/relay design. HYDRA encryption by itself does not hide network endpoints or traffic patterns.
 
 Anonymous-but-authorized:
-  Requires a separate auth/privacy layer, such as proofs, blind credentials, tokens, or another unlinkable eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
+  The current facade has a one-time bearer-token stopgap for scope/action checks. Stronger unlinkable issuance/redemption requires blind credentials, zero-knowledge proofs, or another dedicated eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
 ```
 
 Do not describe the normal message path as inherently anonymous. A normal HYDRA conversation is still based on peer key material, a contact/session record, and decryptable envelopes for the intended recipient.
@@ -51,6 +51,7 @@ The public facade has these current implementation boundaries:
 | Contact cards | Default contact cards expose the active identity public verification key only. The contact id/fingerprint and safety code are derived locally from that key. `create_labeled_contact_card` intentionally adds a label. Reusing the same identity/card can link chats. |
 | Lobby invites | Default lobby invites expose only the lobby id and max-member policy. `create_labeled_lobby_invite` intentionally adds the label, and `create_lobby_member_invite` intentionally adds the member list. Reusing the same lobby/invite can link activity. |
 | Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is a direct app-local routing hint for a per-member encrypted copy. `HydraLobbyEnvelope.routing_hint()` is a randomized opaque hint for carriers that can route through mailbox aliases. Neither is anonymous routing by itself, and neither must be treated as authentication. |
+| Anonymous authorization | `issue_anonymous_auth_token`, `accept_anonymous_auth_token`, and `revoke_anonymous_auth_token` provide a bounded one-time bearer-token stopgap for scope/action authorization without exposing contact or identity ids. This is not blind issuance or network anonymity. See [Anonymous authorization](anonymous-authorization.md). |
 
 For unlinkable app designs today, use `create_one_time_contact_card` for fresh chat identities and `create_one_time_lobby_invite` for fresh lobby invites, then pair those with carrier/mailbox identifiers that are not reused across chats.
 
@@ -309,7 +310,29 @@ Purpose: create/join lobbies, create minimized or explicitly metadata-bearing in
 
 Do not add checkpoint, AOL2 state, predicate, or lobby-state import/export APIs to `hydra-msg`. Those belong above HYDRA in Kaspakinesis/AOL2-specific layers.
 
-## 8. Backup / restore
+## 8. Anonymous authorization
+
+```rust
+let policy = HydraAnonymousAuthPolicy::new("private-lobby", "join")
+    .with_expiry(expires_at_unix_seconds);
+let token = hydra.issue_anonymous_auth_token(policy)?;
+let nullifier = hydra.anonymous_auth_nullifier(&token)?;
+let grant = hydra.accept_anonymous_auth_token(
+    token,
+    "private-lobby",
+    "join",
+    now_unix_seconds,
+)?;
+hydra.revoke_anonymous_auth_token(token_to_revoke, "private-lobby", "join")?;
+```
+
+Purpose: provide a bounded one-time authorization token that is separate from HYDRA contact identity and message encryption. Tokens authorize a scope/action pair, optionally expire, and produce verifier-side nullifiers so accepted or revoked tokens cannot be reused by the same verifier.
+
+Privacy boundary: this is a bearer-token stopgap, not blind issuance. It does not reveal contact ids, identity ids, lobby member ids, session ids, or message ids, and repeated issuance for the same scope/action produces fresh token bytes and fresh nullifiers. It can still be correlated by whoever sees issuance and redemption metadata, network metadata, app account handles, reused scopes, or reused mailbox/relay identifiers.
+
+Apps that need anonymous-but-authorized access stronger than bearer tokens need a separate blind-credential or proof layer. See [Anonymous authorization](anonymous-authorization.md).
+
+## 9. Backup / restore
 
 ```rust
 hydra.export_backup(password)?;
@@ -319,7 +342,7 @@ hydra.verify_backup(bytes)?;
 
 The backup can internally include identities, contacts, messages, lobbies, and local settings. The public API stays simple.
 
-## 9. Diagnostics
+## 10. Diagnostics
 
 ```rust
 hydra.storage_status()?;
@@ -328,7 +351,7 @@ hydra.benchmark()?;
 
 These are the only required public diagnostics for the current facade.
 
-## 10. Complete public API list
+## 11. Complete public API list
 
 ```rust
 // Open
@@ -403,6 +426,12 @@ hydra.receive_lobby(envelope)
 hydra.rekey_lobby(lobby_id)
 hydra.close_lobby(lobby_id)
 
+// Anonymous authorization
+hydra.issue_anonymous_auth_token(policy)
+hydra.anonymous_auth_nullifier(token)
+hydra.accept_anonymous_auth_token(token, expected_scope, expected_action, now_unix_seconds)
+hydra.revoke_anonymous_auth_token(token, expected_scope, expected_action)
+
 // Backup / restore
 hydra.export_backup(password)
 hydra.import_backup(bytes, password)
@@ -413,7 +442,7 @@ hydra.storage_status()
 hydra.benchmark()
 ```
 
-## 11. Internal-only API areas
+## 12. Internal-only API areas
 
 These are implementation areas, not normal public developer APIs.
 

@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 Status: not frozen. Symmetric, class, and serialization values below are
 normative. ML-KEM/ML-DSA/TreeKEM vectors require complete deterministic

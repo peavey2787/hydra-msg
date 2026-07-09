@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document is the consolidated transition authority. A transition not
 listed here is invalid. Every receive transition is provisional until all

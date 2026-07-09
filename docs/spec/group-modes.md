@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document defines the authenticated communication mode stored in every
 group state. A mode determines who may send, the membership-key mechanism,

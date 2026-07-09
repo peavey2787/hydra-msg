@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 This document defines cross-implementation behavior not left to host language,
 platform, or transport convention.

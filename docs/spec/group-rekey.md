@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document defines common group roster, governance, commit, sender-chain,
 replay, and epoch rules. Mode-specific behavior is normative in

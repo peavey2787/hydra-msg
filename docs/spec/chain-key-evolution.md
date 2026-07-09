@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document expands the normative ratchet requirements in
 `protocol-spec.md`. A symmetric chain protects erased past keys; it does not

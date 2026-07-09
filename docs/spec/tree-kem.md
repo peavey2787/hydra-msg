@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document defines the membership-key mechanism used by Interactive and
 Broadcast groups. It is a HYDRA-specific TreeKEM profile using ML-KEM-768,

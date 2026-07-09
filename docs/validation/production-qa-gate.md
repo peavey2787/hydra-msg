@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 Status: P13 manual validation gate.
 
@@ -104,4 +105,4 @@ P13 passes only when:
 - no runtime `hydra-msg-data/` or local identity material is staged;
 - benchmark numbers are recorded or updated in `docs/validation/benchmark-results.md` if they materially differ.
 
-Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit, external interoperability certification, network anonymity or anonymous-but-authorized access control unless those properties have separate implementation evidence.
+Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit, external interoperability certification, network anonymity, blind-credential privacy, or zero-knowledge anonymous authorization unless those properties have separate implementation evidence.

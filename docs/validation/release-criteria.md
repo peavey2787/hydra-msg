@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 The specification is frozen only when every mandatory gate below has dated,
 hashed evidence. Prose declaring success is not evidence.

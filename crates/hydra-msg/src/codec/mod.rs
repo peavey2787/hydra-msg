@@ -1,3 +1,4 @@
+mod auth;
 mod contacts;
 mod handshake;
 mod handshake_fields;
@@ -8,6 +9,7 @@ mod messages;
 mod storage;
 mod util;
 
+pub(crate) use auth::*;
 pub(crate) use contacts::*;
 pub(crate) use handshake::*;
 pub(crate) use identity::*;

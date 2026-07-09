@@ -208,7 +208,7 @@ This roadmap succeeds when:
 - Contact-card and lobby-invite cleanup after one-time use remains an app/UX responsibility.
 - Lobby recipient tags now have explicit boundary tests. Direct `recipient()` hints remain visible routing metadata, while `routing_hint()` gives carriers a randomized per-copy alias when the app can avoid sending direct contact ids.
 - Anonymous-to-network requires a carrier/network layer such as Tor, I2P, mixnet, proxy, or a relay design that hides IP/timing metadata.
-- Anonymous-but-authorized requires a separate auth/privacy layer such as proofs, blind credentials, or unlinkable tokens.
+- P6 adds a one-time bearer-token stopgap for anonymous authorization. Strong blind issuance, zero-knowledge eligibility proofs, and enterprise anonymous-credential review remain future work.
 
 ### Completed in P4
 
@@ -233,11 +233,21 @@ This roadmap succeeds when:
 - Added tests proving a per-member lobby envelope sent to the wrong recipient session does not decrypt.
 - Added privacy-invariant checks for randomized routing hints and recipient-boundary APIs.
 
+### Completed in P6
+
+- Added `docs/spec/anonymous-authorization.md` as the spec note for the anonymous-but-authorized boundary.
+- Chose a bounded bearer-token stopgap for the first implementation while documenting that blind credentials and zero-knowledge proofs remain the stronger future layer.
+- Added `HydraAnonymousAuthPolicy`, `HydraAnonymousAuthToken`, `HydraAnonymousAuthNullifier`, and `HydraAnonymousAuthGrant` to the public facade.
+- Added `issue_anonymous_auth_token`, `anonymous_auth_nullifier`, `accept_anonymous_auth_token`, and `revoke_anonymous_auth_token`.
+- Kept anonymous authorization separate from contact identity, lobby membership, message encryption, and carrier/network anonymity.
+- Stored the anonymous authorization issuer secret and spent nullifiers inside encrypted local state.
+- Added replay/double-spend, expiry, revocation, issuer mismatch, and unlinkability regression tests.
+- Extended privacy-invariant checks so `check-all.*` guards the anonymous authorization boundary.
+
 ### Active phase
 
-- P6 anonymous-but-authorized design is ready to start.
+- P7 final validation and production-readiness audit is ready to start.
 
 ### Not started
 
-- P6 anonymous-but-authorized design.
 - P7 final validation and production-readiness audit.

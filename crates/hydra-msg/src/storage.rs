@@ -38,7 +38,7 @@ impl Hydra {
         #[cfg(target_arch = "wasm32")]
         let state_kdf = new_storage_kdf()?;
         let state_key = state_key(state_password.as_ref(), &state_kdf)?;
-        let mut hydra = Self::empty(data_dir, state_key, state_kdf);
+        let mut hydra = Self::empty(data_dir, state_key, state_kdf)?;
         hydra.load_state()?;
         Ok(hydra)
     }
@@ -91,8 +91,8 @@ impl Hydra {
         data_dir: PathBuf,
         state_key: hydra_crypto::SecretBytes<32>,
         state_kdf: PasswordKdfRecord,
-    ) -> Self {
-        Self {
+    ) -> HydraResult<Self> {
+        Ok(Self {
             data_dir,
             identities: HashMap::new(),
             active_id: None,
@@ -102,10 +102,12 @@ impl Hydra {
             messages: Vec::new(),
             next_message_id: 1,
             lobbies: HashMap::new(),
+            anonymous_auth_secret: hydra_crypto::SecretBytes::from_array(random_array::<32>()?),
+            anonymous_auth_spent: Vec::new(),
             state_key,
             state_kdf,
             state_generation: 0,
-        }
+        })
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -166,6 +168,22 @@ impl Hydra {
         out.extend_from_slice(STATE_SNAPSHOT_MAGIC);
         out.extend_from_slice(format!("state_generation\t{}\n", self.state_generation).as_bytes());
         out.extend_from_slice(format!("next_message_id\t{}\n", self.next_message_id).as_bytes());
+        out.extend_from_slice(
+            format!(
+                "anonymous_auth_secret\t{}\n",
+                encode_anonymous_auth_secret(&self.anonymous_auth_secret)
+            )
+            .as_bytes(),
+        );
+        for nullifier in &self.anonymous_auth_spent {
+            out.extend_from_slice(
+                format!(
+                    "anonymous_auth_spent\t{}\n",
+                    encode_anonymous_auth_spent(*nullifier)
+                )
+                .as_bytes(),
+            );
+        }
         for record in self.identities.values() {
             out.extend_from_slice(encode_identity_line(record).as_bytes());
             out.push(b'\n');
@@ -198,6 +216,8 @@ impl Hydra {
         self.sessions.clear();
         self.messages.clear();
         self.lobbies.clear();
+        self.anonymous_auth_spent.clear();
+        let mut saw_anonymous_auth_secret = false;
         self.next_message_id = 1;
         self.state_generation = 0;
         for line in text.lines().skip(1) {
@@ -220,6 +240,20 @@ impl Hydra {
                             .map_err(|_| HydraMsgError::InvalidEncoding("state next_message_id"))?;
                     }
                 }
+                Some("anonymous_auth_secret") => {
+                    if let Some(value) = parts.next() {
+                        self.anonymous_auth_secret = decode_anonymous_auth_secret(value)?;
+                        saw_anonymous_auth_secret = true;
+                    }
+                }
+                Some("anonymous_auth_spent") => {
+                    if let Some(value) = parts.next() {
+                        let nullifier = decode_anonymous_auth_spent(value)?;
+                        if !self.anonymous_auth_spent.contains(&nullifier) {
+                            self.anonymous_auth_spent.push(nullifier);
+                        }
+                    }
+                }
                 Some("identity") => {
                     let record = decode_identity_line(line)?;
                     self.identities.insert(record.id, record);
@@ -239,6 +273,11 @@ impl Hydra {
                 }
                 _ => return Err(HydraMsgError::InvalidEncoding("state record kind")),
             }
+        }
+        if !saw_anonymous_auth_secret {
+            return Err(HydraMsgError::InvalidEncoding(
+                "state anonymous auth secret",
+            ));
         }
         Ok(())
     }

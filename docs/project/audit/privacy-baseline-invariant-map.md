@@ -1,6 +1,6 @@
 # Privacy baseline and invariant map
 
-Status: P1 facade handshake confidentiality verification complete.
+Status: P6 anonymous authorization stopgap complete.
 
 This audit defines the current privacy claims, their implementation owners, and the unsupported properties that must stay marked as future work until later privacy-hardening phases implement them. It is maintainer/assistant working evidence, not public release documentation.
 
@@ -11,6 +11,7 @@ Audited public documentation:
 ```text
 README.md
 docs/spec/README.md
+docs/spec/anonymous-authorization.md
 docs/spec/protocol-spec.md
 docs/spec/public-developer-api.md
 docs/spec/threat-model.md
@@ -25,12 +26,14 @@ docs/validation/release-readiness.md
 Audited facade implementation areas:
 
 ```text
+crates/hydra-msg/src/anonymous_auth.rs
 crates/hydra-msg/src/identity.rs
 crates/hydra-msg/src/contacts.rs
 crates/hydra-msg/src/handshake.rs
 crates/hydra-msg/src/messages.rs
 crates/hydra-msg/src/lobbies.rs
 crates/hydra-msg/src/storage.rs
+crates/hydra-msg/src/codec/auth.rs
 crates/hydra-msg/src/codec/identity.rs
 crates/hydra-msg/src/codec/contacts.rs
 crates/hydra-msg/src/codec/handshake.rs
@@ -54,7 +57,7 @@ qa/ci/check-privacy-invariants.ps1
 | Unlinkable across chats | Public docs say use fresh identities/cards/invites/mailboxes/app handles. | Identity/contact/lobby invite APIs. | Possible only by app discipline today. First-class unlinkability helpers remain P4/P5 work. |
 | Anonymous to relay/server | Public docs say relays only need opaque bytes but may see timing/IP/routing metadata. | Carrier boundary, `HydraEnvelope`, lobby recipient hints. | Correctly documented. HYDRA encryption does not hide relay-observable metadata. |
 | Anonymous to network | Public docs say Tor/I2P/mixnet/proxy/relay design is required. | Outside HYDRA facade. | Unsupported by HYDRA encryption alone; must stay documented as carrier/network-layer work. |
-| Anonymous-but-authorized | Public docs say proofs/blind credentials/tokens are separate. | No current facade implementation. | Unsupported until P6. |
+| Anonymous-but-authorized | Public docs describe a current one-time bearer-token stopgap and clearly separate it from blind credentials, proofs, and network anonymity. | `anonymous_auth.rs`, `codec/auth.rs`, encrypted state nullifier storage. | Supported as a bounded one-time bearer-token authorization layer. Strong blind issuance and zero-knowledge eligibility remain future work. |
 | Local state confidentiality | Public API states `state.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state, with P3 adding per-record scrypt password derivation parameters and random salts. |
 | Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext with per-backup scrypt parameters and random salt. |
 | Identity password hardening | Public API states password protection uses per-record scrypt parameters and random salts. | `codec/identity.rs`, `codec/storage.rs`. | Supported for current facade identity records, normal state, and backups through scrypt-derived wrapping keys. Weak passwords remain vulnerable to offline guessing. |
@@ -106,9 +109,9 @@ Invariant: HYDRA encryption must not be documented as hiding endpoints or traffi
 
 Meaning: a user proves eligibility to a lobby, mailbox, relay, or paid/rate-limited service without revealing a stable HYDRA identity.
 
-Current implementation path: none. Plain contact cards authenticate keys; they are not unlinkable authorization credentials.
+Current implementation path: `issue_anonymous_auth_token` mints one-time scope/action bearer tokens under a verifier-local issuer secret. `accept_anonymous_auth_token` verifies the tag, checks scope/action/expiry, records a nullifier in encrypted local state, and rejects replay/double-spend for the same verifier. `revoke_anonymous_auth_token` marks a token nullifier as spent before acceptance.
 
-Invariant: authorization tokens/proofs must stay separate from message encryption and contact identity.
+Invariant: authorization tokens/proofs must stay separate from message encryption and contact identity. Tokens must not encode contact ids, identity ids, lobby member ids, session ids, or message ids.
 
 ## Existing evidence and tests
 
@@ -124,26 +127,28 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 | Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
 | Encrypted state persistence test | `crates/hydra-msg/src/storage_tests.rs` | Confirms current state persists inside authenticated-encrypted `state.hydra` without plaintext message/contact/attachment leakage. |
 | Lobby recipient-tagged envelope test | `crates/hydra-msg/src/tests.rs` | Confirms the recipient tag is a routing helper on per-member envelopes. |
+| Anonymous authorization tests | `crates/hydra-msg/src/anonymous_auth_tests.rs` | Confirms repeated tokens for the same scope/action produce fresh bytes/nullifiers, replay and expiry fail, revocation blocks use, and tokens from other issuers are rejected. |
+| Anonymous authorization static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires the current auth-token format, HMAC issuer binding, nullifier recording, replay rejection, and no contact/identity id fields in tokens. |
 | Public docs anonymity wording | README, public API, message-flow docs | Distinguishes anonymous-to-user, unlinkable-across-chats, relay opacity, network anonymity, and anonymous authorization. |
 | Docs/static gate | `qa/ci/check-docs.sh`, `qa/ci/check-tests.ps1` | Blocks public roadmap links and stale privacy wording regressions. |
 
 ## Unsupported properties that must stay marked as future work
 
-- First-class one-time contact-card and one-time lobby-invite APIs.
+- Automatic cleanup after one-time contact-card and one-time lobby-invite use.
 - Automatic unlinkability protection across chats/lobbies/mailboxes.
 - Anonymous network transport.
-- Anonymous-but-authorized access control.
-- Blinded/randomized lobby routing tags or mailbox aliases.
+- Blind issuance, zero-knowledge eligibility proofs, accumulator-based revocation, and enterprise anonymous-credential review.
 - Independent cryptographic audit or enterprise production certification.
 
-## P1 conclusion
+## P6 conclusion
 
-P1 closes the known facade-handshake confidentiality verification gap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are metadata minimization, routing privacy, and anonymous authorization:
+P6 closes the first anonymous-but-authorized implementation gap with a bounded bearer-token stopgap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are stronger anonymous credentials, automatic unlinkability cleanup, network anonymity, and independent audit:
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;
 - local state at rest is always AEAD-sealed in `state.hydra` with a required state password;
 - password-derived protection now uses scrypt, but weak user passwords remain a risk;
 - metadata in contact cards and lobby invites is minimized by default, expanded only through explicit labeled/member APIs, and direct recipient tags remain intentional visible routing hints while randomized route hints are available for mailbox-style carriers;
-- network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.
+- anonymous authorization tokens are separate from HYDRA contact identity and message encryption, but blind credentials/proofs remain future work;
+- network anonymity remains a separate carrier/network design, not a HYDRA encryption property.
 ```

@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 This document defines the backend contract for the reference implementation
 and the independent vector oracle. Backend choice is not negotiated on wire

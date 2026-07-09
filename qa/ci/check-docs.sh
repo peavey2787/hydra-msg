@@ -76,7 +76,8 @@ for label in \
   "Chain-key evolution" \
   "TreeKEM profile" \
   "Group modes" \
-  "Group rekey"
+  "Group rekey" \
+  "Anonymous authorization"
 do
   forbidden_nav_label "README.md" "$main_nav" "$label"
 done
@@ -129,7 +130,8 @@ require_main_nav_family() {
     "Chain-key evolution" \
     "TreeKEM profile" \
     "Group modes" \
-    "Group rekey"
+    "Group rekey" \
+    "Anonymous authorization"
   do
     forbidden_nav_label "$file" "$nav" "$label"
   done
@@ -149,7 +151,8 @@ require_spec_nav_family() {
     "Chain-key evolution" \
     "TreeKEM profile" \
     "Group modes" \
-    "Group rekey"
+    "Group rekey" \
+    "Anonymous authorization"
   do
     require_nav_label "$file" "$nav" "$label"
   done

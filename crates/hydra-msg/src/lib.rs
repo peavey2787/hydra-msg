@@ -12,6 +12,7 @@ use std::{collections::HashMap, fmt, path::PathBuf};
 use hydra_crypto::SecretBytes;
 use hydra_session::SessionError;
 
+mod anonymous_auth;
 mod benchmark;
 mod codec;
 mod contacts;
@@ -22,6 +23,10 @@ mod lobby_routing;
 mod messages;
 mod storage;
 
+pub use anonymous_auth::{
+    HydraAnonymousAuthGrant, HydraAnonymousAuthNullifier, HydraAnonymousAuthPolicy,
+    HydraAnonymousAuthToken,
+};
 pub use benchmark::HydraBenchmarkReport;
 pub use contacts::{ContactId, HydraContact, HydraOneTimeContactCard};
 pub use handshake::{HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionStatus};
@@ -47,6 +52,7 @@ pub(crate) const ANSWER_MAGIC: &[u8] = b"HYDRA-MSG-ANSWER\n";
 pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD\n";
 pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE";
 pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD\n";
+pub(crate) const AUTH_TOKEN_MAGIC: &str = "HYDRA-MSG-AUTH-TOKEN";
 pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP\n";
 pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT\n";
 pub(crate) const STATE_MAGIC: &[u8] = b"HYDRA-MSG-STATE\n";
@@ -116,11 +122,15 @@ pub struct Hydra {
     pub(crate) messages: Vec<StoredMessage>,
     pub(crate) next_message_id: u64,
     pub(crate) lobbies: HashMap<LobbyId, HydraLobby>,
+    pub(crate) anonymous_auth_secret: SecretBytes<32>,
+    pub(crate) anonymous_auth_spent: Vec<HydraAnonymousAuthNullifier>,
     pub(crate) state_key: SecretBytes<32>,
     pub(crate) state_kdf: PasswordKdfRecord,
     pub(crate) state_generation: u64,
 }
 
+#[cfg(test)]
+mod anonymous_auth_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(test)]

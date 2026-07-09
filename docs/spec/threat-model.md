@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document is normative. It defines the adversaries, trusted components,
 security goals, compromise consequences, and exclusions for HYDRA-MSG v1. A

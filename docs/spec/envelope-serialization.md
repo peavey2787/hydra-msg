@@ -13,6 +13,7 @@
 - [TreeKEM profile](tree-kem.md)
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
+- [Anonymous authorization](anonymous-authorization.md)
 
 This document defines the byte-exact HYDRA wire records. HYDRA has three
 fixed-size envelope classes. Exact protected content length is hidden inside

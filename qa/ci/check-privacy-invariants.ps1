@@ -21,6 +21,9 @@ $ContactCodecFile = "crates/hydra-msg/src/codec/contacts.rs"
 $LobbyFile = "crates/hydra-msg/src/lobbies.rs"
 $LobbyRoutingFile = "crates/hydra-msg/src/lobby_routing.rs"
 $LobbyCodecFile = "crates/hydra-msg/src/codec/lobbies.rs"
+$AuthFile = "crates/hydra-msg/src/anonymous_auth.rs"
+$AuthCodecFile = "crates/hydra-msg/src/codec/auth.rs"
+$AuthTestsFile = "crates/hydra-msg/src/anonymous_auth_tests.rs"
 
 if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
     throw "hydra-msg handshake files missing"
@@ -30,6 +33,9 @@ if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path
 }
 if (!(Test-Path $ContactFile) -or !(Test-Path $ContactCodecFile) -or !(Test-Path $LobbyFile) -or !(Test-Path $LobbyRoutingFile) -or !(Test-Path $LobbyCodecFile)) {
     throw "hydra-msg metadata privacy files missing"
+}
+if (!(Test-Path $AuthFile) -or !(Test-Path $AuthCodecFile) -or !(Test-Path $AuthTestsFile)) {
+    throw "hydra-msg anonymous authorization files missing"
 }
 
 function Assert-SourceText {
@@ -122,6 +128,24 @@ Assert-SourceText $LobbyRoutingFile "not anonymous routing" "direct recipient hi
 Assert-SourceText $LobbyCodecFile "include_label: bool" "lobby invite label exposure is explicit"
 Assert-SourceText $LobbyCodecFile "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
 Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
+
+Assert-SourceText $LibFile 'AUTH_TOKEN_MAGIC: &str = "HYDRA-MSG-AUTH-TOKEN"' "current anonymous authorization token format"
+Assert-SourceText $LibFile "anonymous_auth_secret: SecretBytes<32>" "anonymous auth issuer secret is state-owned, not contact-owned"
+Assert-SourceText $LibFile "anonymous_auth_spent: Vec<HydraAnonymousAuthNullifier>" "spent anonymous auth nullifiers are tracked"
+Assert-SourceText $AuthFile "pub fn issue_anonymous_auth_token" "anonymous auth token issuance API"
+Assert-SourceText $AuthFile "pub fn accept_anonymous_auth_token" "anonymous auth token acceptance API"
+Assert-SourceText $AuthFile "pub fn revoke_anonymous_auth_token" "anonymous auth token revocation API"
+Assert-SourceText $AuthFile "reject_expired_policy" "anonymous auth expiry is checked"
+Assert-SourceText $AuthFile "reject_spent_anonymous_auth_nullifier" "anonymous auth replay/double-spend is rejected"
+Assert-SourceText $AuthCodecFile "RustCryptoBackend::hmac_sha3_256" "anonymous auth tokens are issuer-secret authenticated"
+Assert-SourceText $AuthCodecFile "HYDRA-MSG/facade/anonymous-auth/nullifier" "anonymous auth nullifiers are domain-separated"
+Assert-SourceText $StorageFile "anonymous_auth_secret" "anonymous auth issuer secret is stored inside encrypted state snapshot"
+Assert-SourceText $StorageFile "anonymous_auth_spent" "anonymous auth spent nullifiers are stored inside encrypted state snapshot"
+Assert-SourceText $AuthTestsFile "assert_ne!(token_a.as_bytes(), token_b.as_bytes())" "same policy issues unlinkable fresh tokens"
+Assert-SourceText $AuthTestsFile "anonymous_auth_token_from_other_issuer_is_not_valid" "tokens from other issuers are rejected"
+Assert-NoSourceText $AuthCodecFile "contact_id" "anonymous auth token codec must not encode contact ids"
+Assert-NoSourceText $AuthCodecFile "identity_id" "anonymous auth token codec must not encode identity ids"
+Assert-NoSourceText $AuthCodecFile "session_id" "anonymous auth token codec must not encode session ids"
 
 $versionTagSearchPaths = @(
     "crates/hydra-msg",

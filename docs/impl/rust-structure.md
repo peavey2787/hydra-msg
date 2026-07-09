@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 These are logical reference types. Wire encoding is exclusively the
 byte-indexed format in `envelope-serialization.md`; no type in this file may be

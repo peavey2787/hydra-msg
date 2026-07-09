@@ -13,6 +13,7 @@
 - [TreeKEM profile](../spec/tree-kem.md)
 - [Group modes](../spec/group-modes.md)
 - [Group rekey](../spec/group-rekey.md)
+- [Anonymous authorization](../spec/anonymous-authorization.md)
 
 All production entropy originates in the operating-system CSPRNG. Application
 PRNGs, timestamps, counters, UUID generators, process IDs, and transport RNGs

@@ -105,7 +105,7 @@ Anonymous to the network:
   Requires a Tor/I2P/mixnet/proxy/relay design. HYDRA encryption by itself does not hide network endpoints or traffic patterns.
 
 Anonymous-but-authorized:
-  Requires a separate auth/privacy layer, such as proofs, blind credentials, tokens, or another unlinkable eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
+  Current facade support is a one-time bearer-token stopgap for scope/action checks. Stronger unlinkable issuance/redemption needs blind credentials, zero-knowledge proofs, or another dedicated eligibility mechanism. Plain contact cards authenticate keys; they do not prove private eligibility.
 ```
 
 HYDRA should still treat the peer as a key-bearing contact/session internally. That keeps decryption, replay handling, safety-code checks, and message ownership coherent.
@@ -121,10 +121,11 @@ contact cards: default cards expose the public verification key only; labeled ca
 lobby invites: default invites expose lobby id and max-member policy only; labeled/member invites intentionally expose label and member list
 lobby recipient(): direct per-member app-local routing hint, not anonymous routing or authentication
 lobby routing_hint(): randomized per-copy opaque hint for mailbox-style carriers; still not authentication
+anonymous auth tokens: one-time scope/action bearer tokens with verifier-side nullifiers; not blind credentials and not network anonymity
 carrier/network layer: timing, IP, request size, mailbox id, and routing metadata remain carrier concerns
 ```
 
-These are intentional boundary statements. Apps that need unlinkability should use `create_one_time_contact_card`, `create_one_time_lobby_invite`, and fresh carrier/mailbox identifiers for each chat or lobby.
+These are intentional boundary statements. Apps that need unlinkability should use `create_one_time_contact_card`, `create_one_time_lobby_invite`, fresh anonymous authorization tokens/scopes where access control is needed, and fresh carrier/mailbox identifiers for each chat or lobby.
 
 ## What is contact verification?
 
