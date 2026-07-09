@@ -1,7 +1,25 @@
 #!/usr/bin/env sh
 set -eu
 
+
+prepare_rust_path() {
+    # Desktop launchers often start with a minimal PATH and do not load the
+    # user's interactive shell startup files. Prefer the official rustup env
+    # file, then add the common per-user cargo bin directory as a fallback.
+    if [ -f "${HOME}/.cargo/env" ]; then
+        # shellcheck disable=SC1091
+        . "${HOME}/.cargo/env"
+    fi
+
+    case ":${PATH:-}:" in
+        *:"${HOME}/.cargo/bin":*) ;;
+        *) PATH="${HOME}/.cargo/bin:${PATH:-}" ;;
+    esac
+    export PATH
+}
+
 run_check_all() {
+    prepare_rust_path
     downloads_dir="${HOME}/Downloads"
     if [ ! -d "$downloads_dir" ]; then
         echo "Downloads directory not found: $downloads_dir" >&2
