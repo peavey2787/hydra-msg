@@ -18,6 +18,7 @@ mod contacts;
 mod handshake;
 mod identity;
 mod lobbies;
+mod lobby_routing;
 mod messages;
 mod storage;
 
@@ -26,9 +27,9 @@ pub use contacts::{ContactId, HydraContact, HydraOneTimeContactCard};
 pub use handshake::{HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionStatus};
 pub use identity::{HydraIdentitySummary, IdentityId};
 pub use lobbies::{
-    HydraLobby, HydraLobbyEnvelope, HydraLobbyInvite, HydraLobbyPolicy, HydraOneTimeLobbyInvite,
-    LobbyId,
+    HydraLobby, HydraLobbyInvite, HydraLobbyPolicy, HydraOneTimeLobbyInvite, LobbyId,
 };
+pub use lobby_routing::{HydraLobbyEnvelope, HydraLobbyRoutingHint};
 pub use messages::{
     HydraAttachment, HydraAttachmentSource, HydraMessage, MessageId, ReceivedHydraMessage,
 };
@@ -126,3 +127,5 @@ mod tests;
 mod handshake_tests;
 #[cfg(test)]
 mod storage_tests;
+#[cfg(test)]
+mod lobby_routing_tests;

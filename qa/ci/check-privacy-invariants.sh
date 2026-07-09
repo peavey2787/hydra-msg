@@ -14,6 +14,7 @@ lib_file="crates/hydra-msg/src/lib.rs"
 contact_file="crates/hydra-msg/src/contacts.rs"
 contact_codec_file="crates/hydra-msg/src/codec/contacts.rs"
 lobby_file="crates/hydra-msg/src/lobbies.rs"
+lobby_routing_file="crates/hydra-msg/src/lobby_routing.rs"
 lobby_codec_file="crates/hydra-msg/src/codec/lobbies.rs"
 
 if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
@@ -24,7 +25,7 @@ if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$identi
   echo "hydra-msg storage/KDF files missing" >&2
   exit 1
 fi
-if [ ! -f "$contact_file" ] || [ ! -f "$contact_codec_file" ] || [ ! -f "$lobby_file" ] || [ ! -f "$lobby_codec_file" ]; then
+if [ ! -f "$contact_file" ] || [ ! -f "$contact_codec_file" ] || [ ! -f "$lobby_file" ] || [ ! -f "$lobby_routing_file" ] || [ ! -f "$lobby_codec_file" ]; then
   echo "hydra-msg metadata privacy files missing" >&2
   exit 1
 fi
@@ -111,13 +112,17 @@ forbidden_source_text "$contact_codec_file" "safety:{}" "default contact cards m
 require_source_text "$lobby_file" "pub fn create_labeled_lobby_invite" "explicit labeled lobby-invite API"
 require_source_text "$lobby_file" "pub fn create_lobby_member_invite" "explicit member-list lobby-invite API"
 require_source_text "$lobby_file" "pub fn create_one_time_lobby_invite" "first-class one-time lobby-invite API"
+require_source_text "$lobby_file" "let routing_hint = HydraLobbyRoutingHint::from_bytes(random_array::<32>()?)" "lobby routing hints are randomized per encrypted copy"
+require_source_text "$lobby_routing_file" "pub struct HydraLobbyRoutingHint" "opaque lobby routing hint type"
+require_source_text "$lobby_routing_file" "pub const fn routing_hint(&self) -> HydraLobbyRoutingHint" "lobby envelopes expose randomized carrier routing hints"
+require_source_text "$lobby_routing_file" "not anonymous routing" "direct recipient hint privacy boundary is documented in code"
 require_source_text "$lobby_codec_file" "include_label: bool" "lobby invite label exposure is explicit"
 require_source_text "$lobby_codec_file" "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
 forbidden_source_text "$lobby_codec_file" "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
 
 if grep -RInE "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" \
   crates/hydra-msg examples/hydra-app examples/hydra-app-core README.md crates/hydra-msg/README.md \
-  docs/roadmap.md docs/impl/message-flow docs/project/audit/privacy-baseline-invariant-map.md docs/validation/benchmark-results.md; then
+  docs/roadmap.md docs/spec/public-developer-api.md docs/impl/message-flow docs/project/audit/privacy-baseline-invariant-map.md docs/validation/benchmark-results.md; then
   echo "privacy invariant forbidden pattern found: facade/app format labels must not carry version tags" >&2
   exit 1
 fi

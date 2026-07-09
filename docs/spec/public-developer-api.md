@@ -46,17 +46,17 @@ The public facade has these current implementation boundaries:
 | Handshake confidentiality | `init_handshake`, `reply_handshake`, and `finish_handshake` use an authenticated hybrid exchange: ML-DSA identity signatures, ephemeral X25519, ephemeral ML-KEM-768, transcript binding, and answer confirmation. |
 | Normal message content | `send` returns opaque encrypted envelope bytes for the app carrier. The receiver must have the matching contact/session state to decrypt. |
 | Backup export | `export_backup` encrypts the state snapshot under the supplied backup password. |
-| Normal local state | `state-v1.hydra` is authenticated-encrypted. `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)` require the state password up front. |
+| Normal local state | `state.hydra` is authenticated-encrypted. `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)` require the state password up front. |
 | Identity passwords | Identity seeds, state files, and backups are wrapped with AEAD using per-record scrypt parameters and random salts before key derivation. Weak user passwords can still be brute-forced offline, so applications should enforce strong password policy where appropriate. |
 | Contact cards | Default contact cards expose the active identity public verification key only. The contact id/fingerprint and safety code are derived locally from that key. `create_labeled_contact_card` intentionally adds a label. Reusing the same identity/card can link chats. |
 | Lobby invites | Default lobby invites expose only the lobby id and max-member policy. `create_labeled_lobby_invite` intentionally adds the label, and `create_lobby_member_invite` intentionally adds the member list. Reusing the same lobby/invite can link activity. |
-| Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is an app/carrier routing hint for a per-member encrypted copy. It is not anonymous routing and must not be treated as authentication. |
+| Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is a direct app-local routing hint for a per-member encrypted copy. `HydraLobbyEnvelope.routing_hint()` is a randomized opaque hint for carriers that can route through mailbox aliases. Neither is anonymous routing by itself, and neither must be treated as authentication. |
 
 For unlinkable app designs today, use `create_one_time_contact_card` for fresh chat identities and `create_one_time_lobby_invite` for fresh lobby invites, then pair those with carrier/mailbox identifiers that are not reused across chats.
 
 ## 1. Public API rules
 
-The public API has no advanced mode for v1.
+The public API has no advanced mode.
 
 Do not add these to the public facade:
 
@@ -288,7 +288,8 @@ hydra.remove_lobby_member(lobby_id, contact_id)?;
 
 let copies = hydra.send_lobby(lobby_id, message)?;
 for copy in copies {
-    // `copy.recipient()` tells the app/carrier who should receive this opaque envelope.
+    // `copy.recipient()` is a direct local routing hint for apps that already know contacts.
+    // `copy.routing_hint()` is randomized per copy for carriers that support opaque mailbox aliases.
     carrier.send(copy.recipient(), copy.into_envelope())?;
 }
 
@@ -300,7 +301,7 @@ hydra.close_lobby(lobby_id)?;
 
 Purpose: create/join lobbies, create minimized or explicitly metadata-bearing invites, create one-time lobby invites for unlinkable setup, manage members, send encrypted lobby messages, and receive encrypted lobby messages.
 
-`send_lobby` returns recipient-tagged encrypted envelope copies. This keeps the public API simple while still giving the app/carrier the routing hint it needs. The recipient tag is not protocol authority; the envelope bytes remain opaque HYDRA bytes.
+`send_lobby` returns encrypted envelope copies with two visible routing helpers: `recipient()` for direct app-local routing and `routing_hint()` for carriers that support opaque mailbox aliases. `routing_hint()` is randomized per encrypted copy. Neither helper is protocol authority; the receiver authenticates the encrypted envelope bytes, not the carrier-provided route metadata.
 
 `create_lobby_invite` is minimized by default. Because it does not expose a member list, the joining app should add the inviter contact locally with `add_lobby_member(joined.id(), inviter_contact_id)` when it wants to accept messages from that inviter.
 
@@ -325,9 +326,9 @@ hydra.storage_status()?;
 hydra.benchmark()?;
 ```
 
-These are the only required public diagnostics for v1.
+These are the only required public diagnostics for the current facade.
 
-## 10. Complete public v1 API list
+## 10. Complete public API list
 
 ```rust
 // Open

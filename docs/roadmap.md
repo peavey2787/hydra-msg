@@ -206,7 +206,7 @@ This roadmap succeeds when:
 ### Current known gaps
 
 - Contact-card and lobby-invite cleanup after one-time use remains an app/UX responsibility.
-- Lobby recipient tags remain routing hints and do not provide anonymous routing.
+- Lobby recipient tags now have explicit boundary tests. Direct `recipient()` hints remain visible routing metadata, while `routing_hint()` gives carriers a randomized per-copy alias when the app can avoid sending direct contact ids.
 - Anonymous-to-network requires a carrier/network layer such as Tor, I2P, mixnet, proxy, or a relay design that hides IP/timing metadata.
 - Anonymous-but-authorized requires a separate auth/privacy layer such as proofs, blind credentials, or unlinkable tokens.
 
@@ -223,12 +223,21 @@ This roadmap succeeds when:
 - Removed the placeholder lobby-invite decoder so unsupported input fails closed.
 - Added tests and privacy-invariant checks for default metadata minimization and one-time fresh ids.
 
+### Completed in P5
+
+- Split lobby routing helpers into a focused `lobby_routing` module.
+- Kept `HydraLobbyEnvelope.recipient()` as an explicit direct app-local routing hint, not protocol authority and not anonymous routing.
+- Added `HydraLobbyEnvelope.routing_hint()` as a randomized per-envelope opaque hint for carriers that support mailbox-style routing without direct contact ids.
+- Added `HydraLobbyRoutingHint` for carrier-facing opaque route aliases.
+- Added tests proving altered routing hints/direct recipient labels do not affect envelope authentication.
+- Added tests proving a per-member lobby envelope sent to the wrong recipient session does not decrypt.
+- Added privacy-invariant checks for randomized routing hints and recipient-boundary APIs.
+
 ### Active phase
 
-- P5 lobby recipient-tag privacy boundary hardening is ready to start.
+- P6 anonymous-but-authorized design is ready to start.
 
 ### Not started
 
-- P5 lobby recipient-tag privacy boundary hardening.
 - P6 anonymous-but-authorized design.
 - P7 final validation and production-readiness audit.

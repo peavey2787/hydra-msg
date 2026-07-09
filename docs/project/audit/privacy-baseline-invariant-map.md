@@ -60,7 +60,7 @@ qa/ci/check-privacy-invariants.ps1
 | Identity password hardening | Public API states password protection uses per-record scrypt parameters and random salts. | `codec/identity.rs`, `codec/storage.rs`. | Supported for current facade identity records, normal state, and backups through scrypt-derived wrapping keys. Weak passwords remain vulnerable to offline guessing. |
 | Contact card metadata | Public API states default cards expose the public verification key only, with explicit labeled cards for label sharing. Contact id/fingerprint and safety code are derived locally. | `contacts.rs`, `codec/contacts.rs`. | Supported in P4 with minimized default cards and first-class one-time contact-card helpers. |
 | Lobby invite metadata | Public API states default invites expose lobby id and max-member policy only, with explicit labeled/member-list invite helpers when apps intentionally need more metadata. | `lobbies.rs`, `codec/lobbies.rs`. | Supported in P4 with minimized default invites and first-class one-time lobby-invite helpers. |
-| Lobby recipient tag | Public API now states `HydraLobbyEnvelope.recipient()` is a routing hint, not anonymous routing. | `lobbies.rs`. | Correctly bounded. P5 owns hardening/blinded tag options. |
+| Lobby recipient tag | Public API states `HydraLobbyEnvelope.recipient()` is a direct app-local routing hint and `HydraLobbyEnvelope.routing_hint()` is a randomized opaque carrier hint. Neither is authentication or anonymous routing by itself. | `lobbies.rs`, `lobby_routing.rs`. | Supported in P5 with randomized per-copy routing hints and tests that authentication ignores carrier-provided route metadata. |
 
 ## Boundary definitions
 
@@ -144,6 +144,6 @@ P1 closes the known facade-handshake confidentiality verification gap, but does 
 - content encryption and carrier opacity are implementation-backed after session establishment;
 - local state at rest is always AEAD-sealed in `state.hydra` with a required state password;
 - password-derived protection now uses scrypt, but weak user passwords remain a risk;
-- metadata in contact cards and lobby invites is minimized by default, expanded only through explicit labeled/member APIs, and recipient tags remain intentional visible routing hints;
+- metadata in contact cards and lobby invites is minimized by default, expanded only through explicit labeled/member APIs, and direct recipient tags remain intentional visible routing hints while randomized route hints are available for mailbox-style carriers;
 - network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.
 ```

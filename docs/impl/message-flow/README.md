@@ -119,7 +119,8 @@ state.hydra local file: authenticated-encrypted state opened with a required sta
 identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters
 contact cards: default cards expose the public verification key only; labeled cards intentionally expose a label; contact id/fingerprint and safety code are derived locally from the key
 lobby invites: default invites expose lobby id and max-member policy only; labeled/member invites intentionally expose label and member list
-lobby recipient(): per-member routing hint, not anonymous routing or authentication
+lobby recipient(): direct per-member app-local routing hint, not anonymous routing or authentication
+lobby routing_hint(): randomized per-copy opaque hint for mailbox-style carriers; still not authentication
 carrier/network layer: timing, IP, request size, mailbox id, and routing metadata remain carrier concerns
 ```
 

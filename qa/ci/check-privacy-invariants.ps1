@@ -19,6 +19,7 @@ $LibFile = "crates/hydra-msg/src/lib.rs"
 $ContactFile = "crates/hydra-msg/src/contacts.rs"
 $ContactCodecFile = "crates/hydra-msg/src/codec/contacts.rs"
 $LobbyFile = "crates/hydra-msg/src/lobbies.rs"
+$LobbyRoutingFile = "crates/hydra-msg/src/lobby_routing.rs"
 $LobbyCodecFile = "crates/hydra-msg/src/codec/lobbies.rs"
 
 if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
@@ -27,7 +28,7 @@ if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
 if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $IdentityCodecFile) -or !(Test-Path $KdfCodecFile) -or !(Test-Path $LibFile)) {
     throw "hydra-msg storage/KDF files missing"
 }
-if (!(Test-Path $ContactFile) -or !(Test-Path $ContactCodecFile) -or !(Test-Path $LobbyFile) -or !(Test-Path $LobbyCodecFile)) {
+if (!(Test-Path $ContactFile) -or !(Test-Path $ContactCodecFile) -or !(Test-Path $LobbyFile) -or !(Test-Path $LobbyRoutingFile) -or !(Test-Path $LobbyCodecFile)) {
     throw "hydra-msg metadata privacy files missing"
 }
 
@@ -114,6 +115,10 @@ Assert-NoSourceText $ContactCodecFile "safety:{}" "default contact cards must no
 Assert-SourceText $LobbyFile "pub fn create_labeled_lobby_invite" "explicit labeled lobby-invite API"
 Assert-SourceText $LobbyFile "pub fn create_lobby_member_invite" "explicit member-list lobby-invite API"
 Assert-SourceText $LobbyFile "pub fn create_one_time_lobby_invite" "first-class one-time lobby-invite API"
+Assert-SourceText $LobbyFile "let routing_hint = HydraLobbyRoutingHint::from_bytes(random_array::<32>()?)" "lobby routing hints are randomized per encrypted copy"
+Assert-SourceText $LobbyRoutingFile "pub struct HydraLobbyRoutingHint" "opaque lobby routing hint type"
+Assert-SourceText $LobbyRoutingFile "pub const fn routing_hint(&self) -> HydraLobbyRoutingHint" "lobby envelopes expose randomized carrier routing hints"
+Assert-SourceText $LobbyRoutingFile "not anonymous routing" "direct recipient hint privacy boundary is documented in code"
 Assert-SourceText $LobbyCodecFile "include_label: bool" "lobby invite label exposure is explicit"
 Assert-SourceText $LobbyCodecFile "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
 Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
@@ -125,6 +130,7 @@ $versionTagSearchPaths = @(
     "README.md",
     "crates/hydra-msg/README.md",
     "docs/roadmap.md",
+    "docs/spec/public-developer-api.md",
     "docs/impl/message-flow",
     "docs/project/audit/privacy-baseline-invariant-map.md",
     "docs/validation/benchmark-results.md"

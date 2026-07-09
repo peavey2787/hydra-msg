@@ -1,6 +1,6 @@
 use crate::{
-    codec::*, ContactId, Hydra, HydraEnvelope, HydraMessage, HydraMsgError, HydraResult, MessageId,
-    ReceivedHydraMessage,
+    codec::*, ContactId, Hydra, HydraLobbyEnvelope, HydraLobbyRoutingHint, HydraMessage,
+    HydraMsgError, HydraResult, MessageId, ReceivedHydraMessage,
 };
 use hydra_core::HASH_SIZE;
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
@@ -27,39 +27,6 @@ impl LobbyId {
     #[must_use]
     pub fn hex(self) -> String {
         hex_encode(&self.0)
-    }
-}
-
-/// Recipient-tagged lobby envelope returned by `send_lobby`.
-///
-/// The envelope bytes are still opaque HYDRA bytes. The recipient id is only a
-/// routing hint so app developers know which lobby member should receive each
-/// per-member encrypted copy.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HydraLobbyEnvelope {
-    pub(crate) recipient: ContactId,
-    pub(crate) envelope: HydraEnvelope,
-}
-
-impl HydraLobbyEnvelope {
-    #[must_use]
-    pub const fn recipient(&self) -> ContactId {
-        self.recipient
-    }
-
-    #[must_use]
-    pub const fn envelope(&self) -> &HydraEnvelope {
-        &self.envelope
-    }
-
-    #[must_use]
-    pub fn into_envelope(self) -> HydraEnvelope {
-        self.envelope
-    }
-
-    #[must_use]
-    pub fn into_parts(self) -> (ContactId, HydraEnvelope) {
-        (self.recipient, self.envelope)
     }
 }
 
@@ -316,9 +283,11 @@ impl Hydra {
         let lobby_payload = pack_lobby_payload(lobby_id, &packed_message)?;
         let mut envelopes = Vec::with_capacity(lobby.members.len());
         for member in lobby.members {
+            let routing_hint = HydraLobbyRoutingHint::from_bytes(random_array::<32>()?);
             let envelope = self.seal_payload_for_contact(member, &lobby_payload)?;
             envelopes.push(HydraLobbyEnvelope {
                 recipient: member,
+                routing_hint,
                 envelope,
             });
         }
