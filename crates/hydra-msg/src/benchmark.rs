@@ -65,18 +65,18 @@ fn benchmark_session_pair() -> HydraResult<(SessionState, SessionState)> {
     let kem_public_key = MlKemEncapsulationKey::from_bytes(&parsed_offer.kem_public_key)?;
     let (kem_ciphertext, right_kem_secret) =
         RustCryptoBackend::mlkem768_encapsulate(&kem_public_key)?;
-    let answer = encode_handshake_answer(
-        right,
-        &right_public_key,
-        parsed_offer.nonce,
-        random_array::<32>()?,
-        right_x25519.public_key(),
-        &kem_ciphertext,
-        &parsed_offer,
-        &right_keypair.signing_key,
-        &right_x25519_secret,
-        &right_kem_secret,
-    )?;
+    let answer = encode_handshake_answer(HandshakeAnswerParts {
+        id: right,
+        public_key: &right_public_key,
+        offer_nonce: parsed_offer.nonce,
+        nonce: random_array::<32>()?,
+        x25519_public: right_x25519.public_key(),
+        kem_ciphertext: &kem_ciphertext,
+        offer: &parsed_offer,
+        signing_key: &right_keypair.signing_key,
+        x25519_secret: &right_x25519_secret,
+        kem_secret: &right_kem_secret,
+    })?;
     let parsed_answer = decode_handshake_answer(&answer)?;
     verify_answer_signature(&parsed_answer, &parsed_offer)?;
 

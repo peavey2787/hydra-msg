@@ -32,6 +32,19 @@ pub(crate) struct ParsedHandshakeAnswer {
     pub(crate) core: Vec<u8>,
 }
 
+pub(crate) struct HandshakeAnswerParts<'a> {
+    pub(crate) id: IdentityId,
+    pub(crate) public_key: &'a [u8; ML_DSA_65_VK_SIZE],
+    pub(crate) offer_nonce: [u8; 32],
+    pub(crate) nonce: [u8; 32],
+    pub(crate) x25519_public: [u8; X25519_SIZE],
+    pub(crate) kem_ciphertext: &'a [u8; ML_KEM_768_CT_SIZE],
+    pub(crate) offer: &'a ParsedHandshakeOffer,
+    pub(crate) signing_key: &'a MlDsaSigningKey,
+    pub(crate) x25519_secret: &'a SecretBytes<32>,
+    pub(crate) kem_secret: &'a SecretBytes<32>,
+}
+
 pub(crate) fn encode_handshake_offer(
     id: IdentityId,
     public_key: &[u8; ML_DSA_65_VK_SIZE],
@@ -46,30 +59,24 @@ pub(crate) fn encode_handshake_offer(
     Ok(append_signature(core, &signature))
 }
 
-pub(crate) fn encode_handshake_answer(
-    id: IdentityId,
-    public_key: &[u8; ML_DSA_65_VK_SIZE],
-    offer_nonce: [u8; 32],
-    nonce: [u8; 32],
-    x25519_public: [u8; X25519_SIZE],
-    kem_ciphertext: &[u8; ML_KEM_768_CT_SIZE],
-    offer: &ParsedHandshakeOffer,
-    signing_key: &MlDsaSigningKey,
-    x25519_secret: &SecretBytes<32>,
-    kem_secret: &SecretBytes<32>,
-) -> HydraResult<Vec<u8>> {
+pub(crate) fn encode_handshake_answer(parts: HandshakeAnswerParts<'_>) -> HydraResult<Vec<u8>> {
     let core = encode_answer_core(
-        id,
-        public_key,
-        offer_nonce,
-        nonce,
-        x25519_public,
-        kem_ciphertext,
+        parts.id,
+        parts.public_key,
+        parts.offer_nonce,
+        parts.nonce,
+        parts.x25519_public,
+        parts.kem_ciphertext,
     );
-    let digest = answer_signature_digest(offer, &core);
-    let signature = RustCryptoBackend::mldsa65_sign(signing_key, &digest)?;
-    let confirmation_tag =
-        answer_confirmation_tag(offer, &core, &signature, x25519_secret, kem_secret);
+    let digest = answer_signature_digest(parts.offer, &core);
+    let signature = RustCryptoBackend::mldsa65_sign(parts.signing_key, &digest)?;
+    let confirmation_tag = answer_confirmation_tag(
+        parts.offer,
+        &core,
+        &signature,
+        parts.x25519_secret,
+        parts.kem_secret,
+    );
     Ok(append_answer_authentication(
         core,
         &signature,

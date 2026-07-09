@@ -170,18 +170,18 @@ impl Hydra {
         let (kem_ciphertext, kem_shared) =
             RustCryptoBackend::mlkem768_encapsulate(&kem_public_key)?;
         let nonce = random_array::<32>()?;
-        let answer = encode_handshake_answer(
-            active.id,
-            &active.public_key,
-            parsed_offer.nonce,
+        let answer = encode_handshake_answer(HandshakeAnswerParts {
+            id: active.id,
+            public_key: &active.public_key,
+            offer_nonce: parsed_offer.nonce,
             nonce,
             x25519_public,
-            &kem_ciphertext,
-            &parsed_offer,
-            &signing_key,
-            &x25519_shared,
-            &kem_shared,
-        )?;
+            kem_ciphertext: &kem_ciphertext,
+            offer: &parsed_offer,
+            signing_key: &signing_key,
+            x25519_secret: &x25519_shared,
+            kem_secret: &kem_shared,
+        })?;
         let parsed_answer = decode_handshake_answer(&answer)?;
         verify_answer_signature(&parsed_answer, &parsed_offer)?;
         let (secret, transcript_hash) =
