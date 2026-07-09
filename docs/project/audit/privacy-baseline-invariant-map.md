@@ -1,0 +1,143 @@
+# Privacy baseline and invariant map
+
+Status: P0 implementation privacy baseline.
+
+This audit defines the current privacy claims, their implementation owners, and the unsupported properties that must stay marked as future work until later privacy-hardening phases implement them. It is maintainer/assistant working evidence, not public release documentation.
+
+## Scope
+
+Audited public documentation:
+
+```text
+README.md
+docs/spec/README.md
+docs/spec/protocol-spec.md
+docs/spec/public-developer-api.md
+docs/spec/threat-model.md
+docs/impl/message-flow/README.md
+docs/impl/carrier-examples.md
+docs/impl/wasm-javascript-bindings.md
+docs/validation/production-qa-gate.md
+docs/validation/release-criteria.md
+docs/validation/release-readiness.md
+```
+
+Audited facade implementation areas:
+
+```text
+crates/hydra-msg/src/identity.rs
+crates/hydra-msg/src/contacts.rs
+crates/hydra-msg/src/handshake.rs
+crates/hydra-msg/src/messages.rs
+crates/hydra-msg/src/lobbies.rs
+crates/hydra-msg/src/storage.rs
+crates/hydra-msg/src/codec/identity.rs
+crates/hydra-msg/src/codec/contacts.rs
+crates/hydra-msg/src/codec/handshake.rs
+crates/hydra-msg/src/codec/lobbies.rs
+crates/hydra-msg/src/codec/messages.rs
+crates/hydra-msg/src/codec/storage.rs
+crates/hydra-msg/src/tests.rs
+```
+
+## Privacy-claim inventory
+
+| Claim area | Current public wording | Implementation owner | P0 status |
+|---|---|---|---|
+| Normal messages are encrypted | README and public API describe encrypted HYDRA envelopes carried by app transports. | `handshake.rs`, `messages.rs`, `codec/handshake.rs`, `hydra-session` use through `SessionState`. | Supported for facade send/receive after the authenticated hybrid handshake completes. P1 still owns regression/static guards. |
+| Carriers move opaque HYDRA bytes | README, public API, and message-flow docs say WebRTC/files/HTTP/relays/mailboxes are carriers only. | `HydraEnvelope`, `HandshakeOffer`, `HandshakeAnswer`, carrier examples. | Supported as an API boundary: carriers receive byte buffers, not protocol authority. Metadata remains visible to carriers. |
+| Normal path is not inherently anonymous | Public API and message-flow docs distinguish key/session messaging from anonymous designs. | Contacts, identities, sessions, contact cards. | Correctly documented. Normal conversations are contact/session based. |
+| Anonymous to the other user | Public docs say use a one-time HYDRA identity/contact card for that chat. | `generate_id`, `create_contact_card`, `add_contact`. | Possible manually today by creating a fresh identity/card. First-class one-time API remains P4 work. |
+| Unlinkable across chats | Public docs say use fresh identities/cards/invites/mailboxes/app handles. | Identity/contact/lobby invite APIs. | Possible only by app discipline today. First-class unlinkability helpers remain P4/P5 work. |
+| Anonymous to relay/server | Public docs say relays only need opaque bytes but may see timing/IP/routing metadata. | Carrier boundary, `HydraEnvelope`, lobby recipient hints. | Correctly documented. HYDRA encryption does not hide relay-observable metadata. |
+| Anonymous to network | Public docs say Tor/I2P/mixnet/proxy/relay design is required. | Outside HYDRA facade. | Unsupported by HYDRA encryption alone; must stay documented as carrier/network-layer work. |
+| Anonymous-but-authorized | Public docs say proofs/blind credentials/tokens are separate. | No current facade implementation. | Unsupported until P6. |
+| Local state confidentiality | Public API now warns `state-v1.hydra` is plaintext at rest. | `storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Unsupported until P2. Normal state must be treated as sensitive. |
+| Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext, but password KDF is not enterprise-grade until P3. |
+| Identity password hardening | Public API now warns password protection is not memory-hard yet. | `codec/identity.rs`, `codec/storage.rs`. | Partial only: AEAD seed wrapping exists, but HKDF/SHA3-only password derivation is cheap against offline attack. P3 owns Argon2id/scrypt migration. |
+| Contact card metadata | Public API now states cards expose labels, public keys, ids, and safety code. | `codec/contacts.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
+| Lobby invite metadata | Public API now states invites expose lobby id, label, max members, and member list. | `codec/lobbies.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
+| Lobby recipient tag | Public API now states `HydraLobbyEnvelope.recipient()` is a routing hint, not anonymous routing. | `lobbies.rs`. | Correctly bounded. P5 owns hardening/blinded tag options. |
+
+## Boundary definitions
+
+### Anonymous to the other user
+
+Meaning: the peer does not receive a stable identity/contact card that links back to the user's ordinary identity.
+
+Current implementation path: create a fresh identity with `generate_id`, make it active, and share only that identity's contact card for the chat.
+
+Invariant: public docs must not imply the normal long-lived contact/session path is anonymous.
+
+Unsupported until later phases: a first-class one-time identity/contact-card helper, automatic cleanup, and app-level UX that prevents accidental reuse.
+
+### Unlinkable across chats
+
+Meaning: two separate chats/lobbies cannot be linked by reused HYDRA cards, lobby invites, mailbox IDs, app account IDs, or carrier metadata.
+
+Current implementation path: possible only through app discipline: fresh identities, fresh contact cards, fresh lobby/invite state, and fresh carrier/mailbox identifiers.
+
+Invariant: public docs must state that reuse links chats.
+
+Unsupported until later phases: automatic one-time invite/card APIs, local-only labels by default, and carrier mailbox alias guidance.
+
+### Anonymous to relay/server
+
+Meaning: a relay or mailbox server does not need HYDRA plaintext, identity secrets, or session keys to carry messages.
+
+Current implementation path: app sends opaque handshake/envelope bytes through the relay. Relays may still observe timing, IP addresses, request sizes, mailbox IDs, recipient tags, and app-level routing data.
+
+Invariant: relay opacity must never be described as full relay anonymity.
+
+Unsupported until later phases: relay metadata minimization, blinded mailbox aliases, and anonymous-but-authorized relay access.
+
+### Anonymous to network
+
+Meaning: network observers cannot link endpoints, IPs, timing, or traffic patterns.
+
+Current implementation path: none inside HYDRA. This requires Tor, I2P, a mixnet, proxy routing, or another carrier/network privacy design.
+
+Invariant: HYDRA encryption must not be documented as hiding endpoints or traffic analysis.
+
+### Anonymous-but-authorized
+
+Meaning: a user proves eligibility to a lobby, mailbox, relay, or paid/rate-limited service without revealing a stable HYDRA identity.
+
+Current implementation path: none. Plain contact cards authenticate keys; they are not unlinkable authorization credentials.
+
+Invariant: authorization tokens/proofs must stay separate from message encryption and contact identity.
+
+## Existing evidence and tests
+
+| Existing evidence | File/path | Covered property |
+|---|---|---|
+| Tampered offer/answer rejection test | `crates/hydra-msg/src/tests.rs` | Signed authenticated hybrid handshake rejects modified public bytes. |
+| Contact handshake and attachment roundtrip | `crates/hydra-msg/src/tests.rs` | Post-handshake facade send/receive carries encrypted envelopes and restores plaintext locally. |
+| Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
+| Native storage persistence test | `crates/hydra-msg/src/tests.rs` | Confirms current plaintext state persistence behavior; this is evidence for the P2 migration target, not a privacy pass. |
+| Lobby recipient-tagged envelope test | `crates/hydra-msg/src/tests.rs` | Confirms the recipient tag is a routing helper on per-member envelopes. |
+| Public docs anonymity wording | README, public API, message-flow docs | Distinguishes anonymous-to-user, unlinkable-across-chats, relay opacity, network anonymity, and anonymous authorization. |
+| Docs/static gate | `qa/ci/check-docs.sh`, `qa/ci/check-tests.ps1` | Blocks public roadmap links and stale privacy wording regressions. |
+
+## Unsupported properties that must stay marked as future work
+
+- Normal `state-v1.hydra` local state encryption at rest.
+- Memory-hard password KDF for identity records, state encryption, and backup keys.
+- First-class one-time contact-card and one-time lobby-invite APIs.
+- Automatic unlinkability protection across chats/lobbies/mailboxes.
+- Anonymous network transport.
+- Anonymous-but-authorized access control.
+- Blinded/randomized lobby routing tags or mailbox aliases.
+- Independent cryptographic audit or enterprise production certification.
+
+## P0 conclusion
+
+P0 does not make the repository production-ready or enterprise-grade. It establishes the baseline needed before implementation hardening:
+
+```text
+- content encryption and carrier opacity are implementation-backed after session establishment;
+- local state at rest remains plaintext and must be treated as sensitive;
+- password-derived protection remains legacy/cheap until memory-hard KDF migration;
+- metadata in contact cards, lobby invites, and recipient tags is intentional and visible;
+- network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.
+```

@@ -37,6 +37,23 @@ Anonymous-but-authorized:
 
 Do not describe the normal message path as inherently anonymous. A normal HYDRA conversation is still based on peer key material, a contact/session record, and decryptable envelopes for the intended recipient.
 
+## Current facade privacy boundaries
+
+The public facade has these current implementation boundaries:
+
+| Area | Current status |
+|---|---|
+| Handshake confidentiality | `init_handshake`, `reply_handshake`, and `finish_handshake` use an authenticated hybrid exchange: ML-DSA identity signatures, ephemeral X25519, ephemeral ML-KEM-768, transcript binding, and answer confirmation. |
+| Normal message content | `send` returns opaque encrypted envelope bytes for the app carrier. The receiver must have the matching contact/session state to decrypt. |
+| Backup export | `export_backup` encrypts the state snapshot under the supplied backup password. |
+| Normal local state | `state-v1.hydra` is still plaintext at rest. It stores identities, contacts, messages, attachment bytes, lobbies, and routing metadata in a local state snapshot. Treat the data directory as sensitive until encrypted state-at-rest ships. |
+| Identity passwords | Identity seeds are wrapped with AEAD, but the current facade password derivation is HKDF/SHA3 based and not memory-hard. Treat this as legacy protection against casual disclosure, not enterprise-grade offline brute-force resistance, until Argon2id/scrypt migration ships. |
+| Contact cards | Contact cards intentionally expose the local label, public key, contact id/fingerprint, and safety code to whoever receives the card. Reusing the same card can link chats. |
+| Lobby invites | Lobby invites intentionally expose the lobby id, label, max-member policy, and member list encoded into the invite. Reusing invites can link lobby activity. |
+| Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is an app/carrier routing hint for a per-member encrypted copy. It is not anonymous routing and must not be treated as authentication. |
+
+For unlinkable app designs today, create fresh identities/contact cards/lobby invites manually and use carrier/mailbox identifiers that are not reused across chats. First-class one-time helpers and encrypted local state are future implementation work.
+
 ## 1. Public API rules
 
 The public API has no advanced mode for v1.

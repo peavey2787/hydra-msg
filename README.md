@@ -25,6 +25,8 @@ open local HYDRA store
 
 A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
 
+Current storage boundary: encrypted backups are supported, but the normal local `state-v1.hydra` file is still plaintext at rest and should be treated as sensitive app data. Identity password protection is not memory-hard yet, and contact cards/lobby invites intentionally expose metadata to recipients.
+
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 
 ## Super-simple app shape

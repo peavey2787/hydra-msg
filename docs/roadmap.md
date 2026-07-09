@@ -167,6 +167,15 @@ This roadmap succeeds when:
 - Public docs were updated to distinguish anonymous-to-user, unlinkable-across-chats, anonymous-to-relay, anonymous-to-network, and anonymous-but-authorized privacy boundaries.
 - Public README navigation was cleaned so this internal roadmap is not part of public navigation.
 
+### Completed in P0
+
+- Added a maintainer privacy baseline and invariant map under `docs/project/audit/privacy-baseline-invariant-map.md`.
+- Inventoried the current public privacy claims and mapped them to the facade implementation files that enforce or expose each boundary.
+- Recorded explicit boundaries for anonymous-to-user, unlinkable-across-chats, anonymous-to-relay/server, anonymous-to-network, and anonymous-but-authorized designs.
+- Marked unsupported implementation properties as future work instead of implying they are automatic: encrypted state at rest, memory-hard KDFs, first-class one-time cards/invites, network anonymity, anonymous authorization, and blinded routing tags.
+- Updated public-facing privacy-boundary wording in the README, public developer API, message-flow docs, and production QA gate.
+- Reconfirmed that public docs must not point users to this internal roadmap.
+
 ### Current known gaps
 
 - The authenticated hybrid facade handshake still needs the regression/static-guard tests listed in P1 before the gap should be considered permanently closed.
@@ -179,7 +188,7 @@ This roadmap succeeds when:
 
 ### Active phase
 
-- P0 is ready to start.
+- P1 verification/regression hardening is ready to start.
 
 ### Not started
 

@@ -110,6 +110,21 @@ Anonymous-but-authorized:
 
 HYDRA should still treat the peer as a key-bearing contact/session internally. That keeps decryption, replay handling, safety-code checks, and message ownership coherent.
 
+## What does HYDRA still expose locally or as metadata?
+
+Current facade boundaries:
+
+```text
+state-v1.hydra local file: plaintext local state until encrypted state-at-rest ships
+identity password protection: AEAD seed wrapping, but not memory-hard KDF yet
+contact cards: label, public key, contact id/fingerprint, and safety code are visible
+lobby invites: lobby id, label, max-member policy, and member list are visible
+lobby recipient(): per-member routing hint, not anonymous routing or authentication
+carrier/network layer: timing, IP, request size, mailbox id, and routing metadata remain carrier concerns
+```
+
+These are intentional boundary statements, not final privacy goals. Apps that need unlinkability should use fresh identities, contact cards, invites, and carrier/mailbox identifiers for each chat or lobby until first-class one-time helpers exist.
+
 ## What is contact verification?
 
 Contact verification is a trust flag for the app UI.
