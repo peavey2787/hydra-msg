@@ -15,7 +15,7 @@ hydra-crypto = { path = "../../crates/hydra-crypto" }
 hydra-group = { path = "../../crates/hydra-group" }
 hydra-session = { path = "../../crates/hydra-session" }
 rand_core = "=0.10.1"
-scrypt = "=0.11.0"
+scrypt = { version = "=0.11.0", default-features = false }
 zeroize = "=1.9.0"
 
 

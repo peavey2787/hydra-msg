@@ -9,8 +9,6 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 getrandom = { version = "=0.4.3", features = ["sys_rng", "wasm_js"] }
-# Force the transitive getrandom 0.2 line used by WASM dependencies to enable browser entropy.
-getrandom02 = { package = "getrandom", version = "=0.2.17", features = ["js"] }
 hydra-msg = { path = "../hydra-msg" }
 js-sys = "=0.3.77"
 wasm-bindgen = "=0.2.100"
