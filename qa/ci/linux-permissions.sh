@@ -27,7 +27,19 @@ $(find "$HYDRA_REPO_ROOT" \
   -type f -name '*.sh' -print | sort)
 EOF_FIND
 
-printf '\nUpdated %s shell script(s).\n' "$count"
+while IFS= read -r desktop_path; do
+  chmod +x "$desktop_path"
+  count=$((count + 1))
+  rel=${desktop_path#"$HYDRA_REPO_ROOT/"}
+  printf '  +x %s\n' "$rel"
+done <<EOF_DESKTOP
+$(find "$HYDRA_REPO_ROOT" \
+  -path "$HYDRA_REPO_ROOT/.git" -prune -o \
+  -path "$HYDRA_REPO_ROOT/target" -prune -o \
+  -type f -name '*.desktop' -print | sort)
+EOF_DESKTOP
+
+printf '\nUpdated %s launcher/script file(s).\n' "$count"
 printf 'Next commands:\n'
 printf '  ./qa/ci/check-all.sh\n'
 printf '  ./qa/ci/check-tests.sh     # tests/static checks only\n'

@@ -35,6 +35,14 @@ sh qa/ci/linux-permissions.sh
 ./qa/ci/check-all.sh
 ```
 
+Linux desktop launcher:
+
+```bash
+./run-check-all-linux.sh
+```
+
+You can also double-click `run-check-all-linux.desktop` on desktops that trust executable `.desktop` launchers. It opens a terminal, finds the first `~/Downloads/hydra*` folder containing `qa/ci/check-all.sh`, and runs the full gate there.
+
 PowerShell:
 
 ```powershell

@@ -115,17 +115,3 @@ pub(crate) fn hex_nibble(byte: u8) -> HydraResult<u8> {
         _ => Err(HydraMsgError::InvalidEncoding("hex character")),
     }
 }
-
-pub(crate) fn escape_line(input: &str) -> String {
-    input
-        .replace('%', "%25")
-        .replace('\n', "%0a")
-        .replace('\r', "%0d")
-}
-
-pub(crate) fn unescape_line(input: &str) -> String {
-    input
-        .replace("%0d", "\r")
-        .replace("%0a", "\n")
-        .replace("%25", "%")
-}

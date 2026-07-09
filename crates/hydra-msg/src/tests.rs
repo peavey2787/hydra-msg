@@ -231,8 +231,8 @@ fn lobby_invites_default_to_minimized_metadata_and_one_time_ids() {
     assert!(invite_text.contains("HYDRA-MSG-LOBBY-INVITE"));
     assert!(invite_text.contains("id:"));
     assert!(invite_text.contains("max_members:"));
-    assert!(!invite_text.contains("label:"));
-    assert!(!invite_text.contains("members:"));
+    assert!(!invite_text.lines().any(|line| line.starts_with("label:")));
+    assert!(!invite_text.lines().any(|line| line.starts_with("members:")));
 
     let labeled_invite = alice.create_labeled_lobby_invite(lobby.id()).unwrap();
     let labeled_text = String::from_utf8(labeled_invite.into_bytes()).unwrap();
