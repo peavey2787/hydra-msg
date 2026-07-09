@@ -11,6 +11,10 @@ storage_codec_file="crates/hydra-msg/src/codec/storage.rs"
 identity_codec_file="crates/hydra-msg/src/codec/identity.rs"
 kdf_codec_file="crates/hydra-msg/src/codec/kdf.rs"
 lib_file="crates/hydra-msg/src/lib.rs"
+contact_file="crates/hydra-msg/src/contacts.rs"
+contact_codec_file="crates/hydra-msg/src/codec/contacts.rs"
+lobby_file="crates/hydra-msg/src/lobbies.rs"
+lobby_codec_file="crates/hydra-msg/src/codec/lobbies.rs"
 
 if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
   echo "hydra-msg handshake files missing" >&2
@@ -18,6 +22,10 @@ if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
 fi
 if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$identity_codec_file" ] || [ ! -f "$kdf_codec_file" ] || [ ! -f "$lib_file" ]; then
   echo "hydra-msg storage/KDF files missing" >&2
+  exit 1
+fi
+if [ ! -f "$contact_file" ] || [ ! -f "$contact_codec_file" ] || [ ! -f "$lobby_file" ] || [ ! -f "$lobby_codec_file" ]; then
+  echo "hydra-msg metadata privacy files missing" >&2
   exit 1
 fi
 
@@ -89,5 +97,22 @@ forbidden_source_text "$storage_file" "load_state_without_password" "state must 
 forbidden_source_text "$storage_file" "state_key: Option" "state encryption must not be optional"
 forbidden_source_text "$storage_file" "state_v1" "current state path must not include plaintext compatibility helpers"
 forbidden_source_text "$storage_file" "remove_file" "current state path must not delete old plaintext files"
+
+
+require_source_text "$lib_file" 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V2"' "current minimized contact-card format"
+require_source_text "$lib_file" 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V2"' "current minimized lobby-invite format"
+require_source_text "$contact_file" "pub fn create_labeled_contact_card" "explicit labeled contact-card API"
+require_source_text "$contact_file" "pub fn create_one_time_contact_card" "first-class one-time contact-card API"
+require_source_text "$contact_file" "identity_record_from_seed(String::new()" "one-time contact cards use empty local label by default"
+require_source_text "$contact_codec_file" "pub(crate) fn encode_contact_card(" "current contact-card encoder exists"
+require_source_text "$contact_codec_file" "public_key:" "contact cards carry public verification key"
+forbidden_source_text "$contact_codec_file" "id:{}" "default contact cards must not encode contact id as a field"
+forbidden_source_text "$contact_codec_file" "safety:{}" "default contact cards must not encode safety code as a field"
+require_source_text "$lobby_file" "pub fn create_labeled_lobby_invite" "explicit labeled lobby-invite API"
+require_source_text "$lobby_file" "pub fn create_lobby_member_invite" "explicit member-list lobby-invite API"
+require_source_text "$lobby_file" "pub fn create_one_time_lobby_invite" "first-class one-time lobby-invite API"
+require_source_text "$lobby_codec_file" "include_label: bool" "lobby invite label exposure is explicit"
+require_source_text "$lobby_codec_file" "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
+forbidden_source_text "$lobby_codec_file" "placeholder invite" "lobby invite current decoder must not include placeholder compatibility"
 
 echo "privacy invariant checks passed"

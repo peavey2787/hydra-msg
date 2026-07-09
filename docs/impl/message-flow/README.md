@@ -117,13 +117,13 @@ Current facade boundaries:
 ```text
 state-v2.hydra local file: authenticated-encrypted state opened with a required state password
 identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters
-contact cards: label, public key, contact id/fingerprint, and safety code are visible
-lobby invites: lobby id, label, max-member policy, and member list are visible
+contact cards: default cards expose the public verification key only; labeled cards intentionally expose a label; contact id/fingerprint and safety code are derived locally from the key
+lobby invites: default invites expose lobby id and max-member policy only; labeled/member invites intentionally expose label and member list
 lobby recipient(): per-member routing hint, not anonymous routing or authentication
 carrier/network layer: timing, IP, request size, mailbox id, and routing metadata remain carrier concerns
 ```
 
-These are intentional boundary statements, not final privacy goals. Apps that need unlinkability should use fresh identities, contact cards, invites, and carrier/mailbox identifiers for each chat or lobby until first-class one-time helpers exist.
+These are intentional boundary statements. Apps that need unlinkability should use `create_one_time_contact_card`, `create_one_time_lobby_invite`, and fresh carrier/mailbox identifiers for each chat or lobby.
 
 ## What is contact verification?
 

@@ -63,7 +63,9 @@ impl HydraLobbyEnvelope {
     }
 }
 
-/// Lobby creation policy placeholder for the simple public API.
+/// Lobby creation policy.
+///
+/// The label is local state by default and is not exposed in minimized invites.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HydraLobbyPolicy {
     pub max_members: usize,
@@ -82,7 +84,7 @@ impl HydraLobbyPolicy {
 
 impl Default for HydraLobbyPolicy {
     fn default() -> Self {
-        Self::new("HYDRA lobby", 64)
+        Self::new("", 64)
     }
 }
 
@@ -138,6 +140,35 @@ impl AsRef<[u8]> for HydraLobbyInvite {
     }
 }
 
+/// Fresh one-time lobby invite output for unlinkable lobby setup.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HydraOneTimeLobbyInvite {
+    pub(crate) lobby_id: LobbyId,
+    pub(crate) invite: HydraLobbyInvite,
+}
+
+impl HydraOneTimeLobbyInvite {
+    #[must_use]
+    pub const fn lobby_id(&self) -> LobbyId {
+        self.lobby_id
+    }
+
+    #[must_use]
+    pub const fn invite(&self) -> &HydraLobbyInvite {
+        &self.invite
+    }
+
+    #[must_use]
+    pub fn into_invite(self) -> HydraLobbyInvite {
+        self.invite
+    }
+
+    #[must_use]
+    pub fn into_parts(self) -> (LobbyId, HydraLobbyInvite) {
+        (self.lobby_id, self.invite)
+    }
+}
+
 impl Hydra {
     pub fn create_lobby(&mut self, policy: HydraLobbyPolicy) -> HydraResult<HydraLobby> {
         validate_lobby_policy(&policy)?;
@@ -160,8 +191,40 @@ impl Hydra {
             .lobbies
             .get(&lobby_id)
             .ok_or(HydraMsgError::LobbyNotFound)?;
+        Ok(HydraLobbyInvite(encode_lobby_invite(lobby, false, None)))
+    }
+
+    pub fn create_labeled_lobby_invite(&self, lobby_id: LobbyId) -> HydraResult<HydraLobbyInvite> {
+        let lobby = self
+            .lobbies
+            .get(&lobby_id)
+            .ok_or(HydraMsgError::LobbyNotFound)?;
+        Ok(HydraLobbyInvite(encode_lobby_invite(lobby, true, None)))
+    }
+
+    pub fn create_lobby_member_invite(&self, lobby_id: LobbyId) -> HydraResult<HydraLobbyInvite> {
+        let lobby = self
+            .lobbies
+            .get(&lobby_id)
+            .ok_or(HydraMsgError::LobbyNotFound)?;
         let members = self.lobby_invite_members(lobby);
-        Ok(HydraLobbyInvite(encode_lobby_invite(lobby, &members)))
+        Ok(HydraLobbyInvite(encode_lobby_invite(
+            lobby,
+            true,
+            Some(&members),
+        )))
+    }
+
+    pub fn create_one_time_lobby_invite(
+        &mut self,
+        max_members: usize,
+    ) -> HydraResult<HydraOneTimeLobbyInvite> {
+        let lobby = self.create_lobby(HydraLobbyPolicy::new("", max_members))?;
+        let invite = self.create_lobby_invite(lobby.id())?;
+        Ok(HydraOneTimeLobbyInvite {
+            lobby_id: lobby.id(),
+            invite,
+        })
     }
 
     pub fn join_lobby(&mut self, invite: impl AsRef<[u8]>) -> HydraResult<HydraLobby> {

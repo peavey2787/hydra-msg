@@ -25,7 +25,7 @@ open encrypted local HYDRA store
 
 A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
 
-Current storage boundary: normal local state is always opened with a state password and sealed into `state-v2.hydra`. State passwords, backup passwords, and identity seed passwords use per-record scrypt parameters and random salts before AEAD wrapping. Contact cards/lobby invites intentionally expose metadata to recipients.
+Current storage boundary: normal local state is always opened with a state password and sealed into `state-v2.hydra`. State passwords, backup passwords, and identity seed passwords use per-record scrypt parameters and random salts before AEAD wrapping. Current contact cards expose only the public verification key by default; labeled cards are explicit. Current lobby invites expose the lobby id and max-member policy by default; labels and member lists are explicit.
 
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 

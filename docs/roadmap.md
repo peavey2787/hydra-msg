@@ -90,8 +90,8 @@ Goal: make metadata exposure in contact cards and lobby invites intentional, min
 
 Steps:
 
-- Audit exactly what current contact cards expose: label, public key, contact id, identity id, and any stable routing data.
-- Audit exactly what current lobby invites expose: lobby id, member list, policy, labels, and routing hints.
+- Audit exactly what current contact cards expose by default and through explicit labeled-card APIs.
+- Audit exactly what current lobby invites expose by default and through explicit labeled/member-list invite APIs.
 - Add one-time contact-card generation as a first-class facade/API path.
 - Add one-time lobby invite generation as a first-class facade/API path.
 - Support label minimization, such as empty labels, local-only labels, or encrypted labels where practical.
@@ -151,7 +151,7 @@ This roadmap succeeds when:
 5. Contact cards and lobby invites have documented visible metadata and first-class one-time/unlinkable alternatives.
 6. Lobby recipient tags are documented and tested as routing hints, not anonymous routing.
 7. Anonymous-to-network and anonymous-but-authorized properties are explicitly separated from HYDRA encryption.
-8. Unsupported older or malformed local formats fail closed without silent downgrade.
+8. Unsupported or malformed local formats fail closed without silent downgrade.
 9. `qa/ci/check-all.*` passes, including tests, examples, docs, Markdown links, lock checks, and file-size guardrails.
 10. A final audit records whether the repo is production-ready and enterprise-grade.
 
@@ -190,7 +190,7 @@ This roadmap succeeds when:
 - Removed the no-password open path and removed the opt-in encryption method; state encryption is required from the beginning.
 - Sealed identity records, contact records, message plaintext, attachment bytes, lobby records, and local metadata inside the encrypted state payload.
 - Authenticated the state v2 header, KDF profile, nonce, and ciphertext with AEAD associated data.
-- Added local rollback guard checks for replayed older state files on the same data directory.
+- Added local rollback guard checks for replayed stale state files on the same data directory.
 - Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, and backup restore into encrypted state.
 - Extended privacy-invariant checks so the official `check-all.*` path guards the encrypted state format and does not regress to plaintext normal state.
 
@@ -205,18 +205,30 @@ This roadmap succeeds when:
 
 ### Current known gaps
 
-- Contact cards and lobby invites still expose intentional metadata and need first-class one-time/unlinkable API support.
+- Contact-card and lobby-invite cleanup after one-time use remains an app/UX responsibility.
 - Lobby recipient tags remain routing hints and do not provide anonymous routing.
 - Anonymous-to-network requires a carrier/network layer such as Tor, I2P, mixnet, proxy, or a relay design that hides IP/timing metadata.
 - Anonymous-but-authorized requires a separate auth/privacy layer such as proofs, blind credentials, or unlinkable tokens.
 
+### Completed in P4
+
+- Changed the current contact-card format to `HYDRA-MSG-CONTACT-V2`.
+- Minimized default contact cards to expose the public verification key only.
+- Added explicit `create_labeled_contact_card` for apps that intentionally want to expose a label.
+- Added `create_one_time_contact_card`, which creates a fresh identity, makes it active, and returns a minimized card for unlinkable chat setup.
+- Changed the current lobby-invite format to `HYDRA-MSG-LOBBY-INVITE-V2`.
+- Minimized default lobby invites to expose only lobby id and max-member policy.
+- Added explicit `create_labeled_lobby_invite` and `create_lobby_member_invite` for apps that intentionally want to expose label/member metadata.
+- Added `create_one_time_lobby_invite`, which creates a fresh lobby and minimized invite for unlinkable lobby setup.
+- Removed the placeholder lobby-invite compatibility decoder so unsupported formats fail closed.
+- Added tests and privacy-invariant checks for default metadata minimization and one-time fresh ids.
+
 ### Active phase
 
-- P4 contact-card and invite metadata minimization is ready to start.
+- P5 lobby recipient-tag privacy boundary hardening is ready to start.
 
 ### Not started
 
-- P4 one-time contact-card and invite metadata minimization.
 - P5 lobby recipient-tag privacy boundary hardening.
 - P6 anonymous-but-authorized design.
 - P7 final validation and production-readiness audit.

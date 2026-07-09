@@ -59,6 +59,32 @@ fn contact_import_export_and_verification_roundtrip() {
 }
 
 #[test]
+fn contact_cards_default_to_minimized_metadata_and_one_time_ids() {
+    let mut alice = fresh("target/hydra-msg-test-contact-p4-alice");
+    let alice_id = alice.generate_id("pw").unwrap();
+    alice.set_active_id(alice_id, "pw").unwrap();
+
+    let default_card = alice.create_contact_card().unwrap();
+    let default_text = String::from_utf8(default_card.clone()).unwrap();
+    assert!(default_text.contains("HYDRA-MSG-CONTACT-V2"));
+    assert!(default_text.contains("public_key:"));
+    assert!(!default_text.contains("label:"));
+    assert!(!default_text.contains("id:"));
+    assert!(!default_text.contains("safety:"));
+
+    let labeled_card = alice.create_labeled_contact_card("Alice").unwrap();
+    let labeled_text = String::from_utf8(labeled_card).unwrap();
+    assert!(labeled_text.contains("label:"));
+
+    let one_time_a = alice.create_one_time_contact_card("one-time-a").unwrap();
+    let one_time_b = alice.create_one_time_contact_card("one-time-b").unwrap();
+    assert_ne!(one_time_a.identity_id(), alice_id);
+    assert_ne!(one_time_a.identity_id(), one_time_b.identity_id());
+    assert_ne!(one_time_a.card(), one_time_b.card());
+    assert_eq!(alice.active_id(), Some(one_time_b.identity_id()));
+}
+
+#[test]
 fn contact_handshake_and_attachment_roundtrip() {
     let mut alice = fresh("target/hydra-msg-test-alice");
     let mut bob = fresh("target/hydra-msg-test-bob");
@@ -192,6 +218,34 @@ fn fluent_message_attachment_roundtrip() {
 }
 
 #[test]
+fn lobby_invites_default_to_minimized_metadata_and_one_time_ids() {
+    let mut alice = fresh("target/hydra-msg-test-lobby-p4-alice");
+    let alice_id = alice.generate_id("pw").unwrap();
+    alice.set_active_id(alice_id, "pw").unwrap();
+
+    let lobby = alice
+        .create_lobby(HydraLobbyPolicy::new("private party", 4))
+        .unwrap();
+    let invite = alice.create_lobby_invite(lobby.id()).unwrap();
+    let invite_text = String::from_utf8(invite.clone().into_bytes()).unwrap();
+    assert!(invite_text.contains("HYDRA-MSG-LOBBY-INVITE-V2"));
+    assert!(invite_text.contains("id:"));
+    assert!(invite_text.contains("max_members:"));
+    assert!(!invite_text.contains("label:"));
+    assert!(!invite_text.contains("members:"));
+
+    let labeled_invite = alice.create_labeled_lobby_invite(lobby.id()).unwrap();
+    let labeled_text = String::from_utf8(labeled_invite.into_bytes()).unwrap();
+    assert!(labeled_text.contains("label:"));
+
+    let one_time_a = alice.create_one_time_lobby_invite(4).unwrap();
+    let one_time_b = alice.create_one_time_lobby_invite(4).unwrap();
+    assert_ne!(one_time_a.lobby_id(), lobby.id());
+    assert_ne!(one_time_a.lobby_id(), one_time_b.lobby_id());
+    assert_ne!(one_time_a.invite().as_bytes(), one_time_b.invite().as_bytes());
+}
+
+#[test]
 fn lobby_backup_storage_and_benchmark_surface_exists() {
     let mut hydra = fresh("target/hydra-msg-test-lobby");
     let id = hydra.generate_id("pw").unwrap();
@@ -244,6 +298,8 @@ fn lobby_send_receive_uses_recipient_tagged_envelopes_and_membership_checks() {
     let invite = alice.create_lobby_invite(lobby.id()).unwrap();
     let joined = bob.join_lobby(invite).unwrap();
     assert_eq!(joined.id(), lobby.id());
+    assert!(bob.lobby_members(joined.id()).unwrap().is_empty());
+    bob.add_lobby_member(joined.id(), alice_contact.id()).unwrap();
     assert_eq!(
         bob.lobby_members(joined.id()).unwrap(),
         vec![alice_contact.id()]

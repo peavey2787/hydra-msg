@@ -16,12 +16,19 @@ $StorageCodecFile = "crates/hydra-msg/src/codec/storage.rs"
 $IdentityCodecFile = "crates/hydra-msg/src/codec/identity.rs"
 $KdfCodecFile = "crates/hydra-msg/src/codec/kdf.rs"
 $LibFile = "crates/hydra-msg/src/lib.rs"
+$ContactFile = "crates/hydra-msg/src/contacts.rs"
+$ContactCodecFile = "crates/hydra-msg/src/codec/contacts.rs"
+$LobbyFile = "crates/hydra-msg/src/lobbies.rs"
+$LobbyCodecFile = "crates/hydra-msg/src/codec/lobbies.rs"
 
 if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
     throw "hydra-msg handshake files missing"
 }
 if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $IdentityCodecFile) -or !(Test-Path $KdfCodecFile) -or !(Test-Path $LibFile)) {
     throw "hydra-msg storage/KDF files missing"
+}
+if (!(Test-Path $ContactFile) -or !(Test-Path $ContactCodecFile) -or !(Test-Path $LobbyFile) -or !(Test-Path $LobbyCodecFile)) {
+    throw "hydra-msg metadata privacy files missing"
 }
 
 function Assert-SourceText {
@@ -93,5 +100,22 @@ if ($reintroduced) {
     $reintroduced | ForEach-Object { Write-Host $_ }
     throw "removed public transcript-only facade helper was reintroduced"
 }
+
+
+Assert-SourceText $LibFile 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V2"' "current minimized contact-card format"
+Assert-SourceText $LibFile 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V2"' "current minimized lobby-invite format"
+Assert-SourceText $ContactFile "pub fn create_labeled_contact_card" "explicit labeled contact-card API"
+Assert-SourceText $ContactFile "pub fn create_one_time_contact_card" "first-class one-time contact-card API"
+Assert-SourceText $ContactFile "identity_record_from_seed(String::new()" "one-time contact cards use empty local label by default"
+Assert-SourceText $ContactCodecFile "pub(crate) fn encode_contact_card(" "current contact-card encoder exists"
+Assert-SourceText $ContactCodecFile "public_key:" "contact cards carry public verification key"
+Assert-NoSourceText $ContactCodecFile "id:{}" "default contact cards must not encode contact id as a field"
+Assert-NoSourceText $ContactCodecFile "safety:{}" "default contact cards must not encode safety code as a field"
+Assert-SourceText $LobbyFile "pub fn create_labeled_lobby_invite" "explicit labeled lobby-invite API"
+Assert-SourceText $LobbyFile "pub fn create_lobby_member_invite" "explicit member-list lobby-invite API"
+Assert-SourceText $LobbyFile "pub fn create_one_time_lobby_invite" "first-class one-time lobby-invite API"
+Assert-SourceText $LobbyCodecFile "include_label: bool" "lobby invite label exposure is explicit"
+Assert-SourceText $LobbyCodecFile "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
+Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder compatibility"
 
 Write-Host "privacy invariant checks passed" -ForegroundColor Green

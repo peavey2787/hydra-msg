@@ -58,8 +58,8 @@ qa/ci/check-privacy-invariants.ps1
 | Local state confidentiality | Public API states `state-v2.hydra` is authenticated-encrypted and requires a state password before local state opens. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state, with P3 adding per-record scrypt password derivation parameters and random salts. |
 | Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext with per-backup scrypt parameters and random salt. |
 | Identity password hardening | Public API states password protection uses per-record scrypt parameters and random salts. | `codec/identity.rs`, `codec/storage.rs`. | Supported for current facade identity records, normal state, and backups through scrypt-derived wrapping keys. Weak passwords remain vulnerable to offline guessing. |
-| Contact card metadata | Public API now states cards expose labels, public keys, ids, and safety code. | `codec/contacts.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
-| Lobby invite metadata | Public API now states invites expose lobby id, label, max members, and member list. | `codec/lobbies.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
+| Contact card metadata | Public API states default cards expose the public verification key only, with explicit labeled cards for label sharing. Contact id/fingerprint and safety code are derived locally. | `contacts.rs`, `codec/contacts.rs`. | Supported in P4 with minimized default cards and first-class one-time contact-card helpers. |
+| Lobby invite metadata | Public API states default invites expose lobby id and max-member policy only, with explicit labeled/member-list invite helpers when apps intentionally need more metadata. | `lobbies.rs`, `codec/lobbies.rs`. | Supported in P4 with minimized default invites and first-class one-time lobby-invite helpers. |
 | Lobby recipient tag | Public API now states `HydraLobbyEnvelope.recipient()` is a routing hint, not anonymous routing. | `lobbies.rs`. | Correctly bounded. P5 owns hardening/blinded tag options. |
 
 ## Boundary definitions
@@ -68,21 +68,21 @@ qa/ci/check-privacy-invariants.ps1
 
 Meaning: the peer does not receive a stable identity/contact card that links back to the user's ordinary identity.
 
-Current implementation path: create a fresh identity with `generate_id`, make it active, and share only that identity's contact card for the chat.
+Current implementation path: call `create_one_time_contact_card`, which creates a fresh identity, makes it active, and returns a minimized contact card for that chat.
 
 Invariant: public docs must not imply the normal long-lived contact/session path is anonymous.
 
-Unsupported until later phases: a first-class one-time identity/contact-card helper, automatic cleanup, and app-level UX that prevents accidental reuse.
+Unsupported until later phases: automatic cleanup and app-level UX that prevents accidental reuse after a one-time card has been used.
 
 ### Unlinkable across chats
 
 Meaning: two separate chats/lobbies cannot be linked by reused HYDRA cards, lobby invites, mailbox IDs, app account IDs, or carrier metadata.
 
-Current implementation path: possible only through app discipline: fresh identities, fresh contact cards, fresh lobby/invite state, and fresh carrier/mailbox identifiers.
+Current implementation path: supported through first-class one-time contact-card and lobby-invite helpers plus app-controlled fresh carrier/mailbox identifiers.
 
 Invariant: public docs must state that reuse links chats.
 
-Unsupported until later phases: automatic one-time invite/card APIs, local-only labels by default, and carrier mailbox alias guidance.
+Unsupported until later phases: automatic cleanup after one-time invite/card use and carrier mailbox alias guidance.
 
 ### Anonymous to relay/server
 
@@ -118,6 +118,8 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 | Swapped identity answer rejection test | `crates/hydra-msg/src/handshake_tests.rs` | Initiator refuses an answer signed by a different identity than the pending contact. |
 | Mismatched answer transcript rejection test | `crates/hydra-msg/src/handshake_tests.rs` | Initiator refuses an answer rebound to another offer nonce/transcript. |
 | Facade handshake static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires ML-DSA signing/verification, X25519 secret input, ML-KEM secret input, answer confirmation, and no reintroduced public transcript-only helper. |
+| Metadata minimization regression tests | `crates/hydra-msg/src/tests.rs` | Default contact cards omit labels/ids/safety strings, default lobby invites omit labels/member lists, and one-time helpers produce fresh ids. |
+| Metadata minimization static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires current v2 minimized card/invite formats and one-time helper APIs. |
 | Contact handshake and attachment roundtrip | `crates/hydra-msg/src/tests.rs` | Post-handshake facade send/receive carries encrypted envelopes and restores plaintext locally. |
 | Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
 | Encrypted state persistence test | `crates/hydra-msg/src/storage_tests.rs` | Confirms current state persists inside authenticated-encrypted `state-v2.hydra` without plaintext message/contact/attachment leakage. |
@@ -142,6 +144,6 @@ P1 closes the known facade-handshake confidentiality verification gap, but does 
 - content encryption and carrier opacity are implementation-backed after session establishment;
 - local state at rest is always AEAD-sealed in `state-v2.hydra` with a required state password;
 - password-derived protection now uses scrypt, but weak user passwords remain a risk;
-- metadata in contact cards, lobby invites, and recipient tags is intentional and visible;
+- metadata in contact cards and lobby invites is minimized by default, expanded only through explicit labeled/member APIs, and recipient tags remain intentional visible routing hints;
 - network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.
 ```

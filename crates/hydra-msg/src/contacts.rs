@@ -1,7 +1,7 @@
-use crate::{codec::*, Hydra, HydraMsgError, HydraResult, CONTACTS_MAGIC};
+use crate::{codec::*, Hydra, HydraMsgError, HydraResult, IdentityId, CONTACTS_MAGIC};
 use hydra_core::{HASH_SIZE, ML_DSA_65_VK_SIZE};
 
-/// HYDRA contact id. In v1 this is the contact identity fingerprint.
+/// HYDRA contact id. This is the contact identity fingerprint.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ContactId(pub(crate) [u8; HASH_SIZE]);
 
@@ -26,7 +26,7 @@ impl ContactId {
     }
 }
 
-/// Public contact metadata.
+/// Public contact metadata stored locally after a contact card is imported.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HydraContact {
     pub(crate) id: ContactId,
@@ -68,10 +68,68 @@ impl HydraContact {
     }
 }
 
+/// Fresh one-time contact-card output for unlinkable chat setup.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HydraOneTimeContactCard {
+    pub(crate) identity_id: IdentityId,
+    pub(crate) card: Vec<u8>,
+}
+
+impl HydraOneTimeContactCard {
+    #[must_use]
+    pub const fn identity_id(&self) -> IdentityId {
+        self.identity_id
+    }
+
+    #[must_use]
+    pub fn card(&self) -> &[u8] {
+        &self.card
+    }
+
+    #[must_use]
+    pub fn into_card(self) -> Vec<u8> {
+        self.card
+    }
+
+    #[must_use]
+    pub fn into_parts(self) -> (IdentityId, Vec<u8>) {
+        (self.identity_id, self.card)
+    }
+}
+
+impl AsRef<[u8]> for HydraOneTimeContactCard {
+    fn as_ref(&self) -> &[u8] {
+        self.card()
+    }
+}
+
 impl Hydra {
     pub fn create_contact_card(&self) -> HydraResult<Vec<u8>> {
         let record = self.active_record()?;
-        Ok(encode_contact_card(&record.label, &record.public_key))
+        Ok(encode_contact_card(None, &record.public_key))
+    }
+
+    pub fn create_labeled_contact_card(&self, label: impl AsRef<str>) -> HydraResult<Vec<u8>> {
+        let record = self.active_record()?;
+        let label = label.as_ref().trim();
+        if label.is_empty() {
+            return self.create_contact_card();
+        }
+        Ok(encode_contact_card(Some(label), &record.public_key))
+    }
+
+    pub fn create_one_time_contact_card(
+        &mut self,
+        password: impl AsRef<str>,
+    ) -> HydraResult<HydraOneTimeContactCard> {
+        let seed = random_array::<32>()?;
+        let record = identity_record_from_seed(String::new(), seed, password.as_ref(), true)?;
+        let identity_id = record.id;
+        let card = encode_contact_card(None, &record.public_key);
+        self.identities.insert(identity_id, record);
+        self.active_id = Some(identity_id);
+        self.persist()?;
+        Ok(HydraOneTimeContactCard { identity_id, card })
     }
 
     pub fn create_contact_invite(&self) -> HydraResult<Vec<u8>> {

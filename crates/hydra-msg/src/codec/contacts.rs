@@ -1,4 +1,4 @@
-use super::{escape_line, exact_array_from_vec, hex_decode, hex_encode, unescape_line};
+use super::{exact_array_from_vec, hex_decode, hex_encode};
 use crate::{ContactId, HydraContact, HydraMsgError, HydraResult, CONTACT_CARD_MAGIC};
 use hydra_core::ML_DSA_65_VK_SIZE;
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
@@ -12,7 +12,7 @@ pub(crate) fn encode_contact_line(contact: &HydraContact) -> String {
         if contact.verified { "1" } else { "0" }.to_string(),
         if contact.blocked { "1" } else { "0" }.to_string(),
     ]
-    .join("	")
+    .join("\t")
 }
 
 pub(crate) fn decode_contact_line(line: &str) -> HydraResult<HydraContact> {
@@ -39,16 +39,17 @@ pub(crate) fn decode_contact_line(line: &str) -> HydraResult<HydraContact> {
     })
 }
 
-pub(crate) fn encode_contact_card(label: &str, public_key: &[u8; ML_DSA_65_VK_SIZE]) -> Vec<u8> {
-    let id = RustCryptoBackend::sha3_256(public_key);
-    format!(
-        "{CONTACT_CARD_MAGIC}\nlabel:{}\nid:{}\npublic_key:{}\nsafety:{}\n",
-        escape_line(label),
-        hex_encode(&id),
-        hex_encode(public_key),
-        safety_code_for_contact(ContactId(id))
-    )
-    .into_bytes()
+pub(crate) fn encode_contact_card(
+    label: Option<&str>,
+    public_key: &[u8; ML_DSA_65_VK_SIZE],
+) -> Vec<u8> {
+    let mut out = format!("{CONTACT_CARD_MAGIC}\npublic_key:{}\n", hex_encode(public_key));
+    if let Some(label) = label.filter(|label| !label.trim().is_empty()) {
+        out.push_str("label:");
+        out.push_str(&hex_encode(label.trim().as_bytes()));
+        out.push('\n');
+    }
+    out.into_bytes()
 }
 
 pub(crate) fn decode_contact_card(bytes: &[u8]) -> HydraResult<HydraContact> {
@@ -59,28 +60,27 @@ pub(crate) fn decode_contact_card(bytes: &[u8]) -> HydraResult<HydraContact> {
         return Err(HydraMsgError::InvalidEncoding("contact card magic"));
     }
     let mut label = None;
-    let mut id = None;
     let mut public_key = None;
     for line in lines {
+        if line.trim().is_empty() {
+            continue;
+        }
         if let Some(value) = line.strip_prefix("label:") {
-            label = Some(unescape_line(value));
-        } else if let Some(value) = line.strip_prefix("id:") {
-            id = Some(ContactId(exact_array_from_vec(hex_decode(value)?)?));
+            label = Some(
+                String::from_utf8(hex_decode(value)?)
+                    .map_err(|_| HydraMsgError::InvalidEncoding("contact card label"))?,
+            );
         } else if let Some(value) = line.strip_prefix("public_key:") {
             public_key = Some(exact_array_from_vec(hex_decode(value)?)?);
+        } else {
+            return Err(HydraMsgError::InvalidEncoding("contact card field"));
         }
     }
     let public_key = public_key.ok_or(HydraMsgError::InvalidEncoding("contact public key"))?;
-    let expected_id = ContactId(RustCryptoBackend::sha3_256(&public_key));
-    let id = id.unwrap_or(expected_id);
-    if id != expected_id {
-        return Err(HydraMsgError::InvalidEncoding(
-            "contact fingerprint mismatch",
-        ));
-    }
+    let id = ContactId(RustCryptoBackend::sha3_256(&public_key));
     Ok(HydraContact {
         id,
-        label: label.unwrap_or_else(|| format!("contact-{}", id.hex())),
+        label: label.unwrap_or_default(),
         public_key,
         verified: false,
         blocked: false,

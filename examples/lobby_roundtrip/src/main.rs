@@ -23,6 +23,7 @@ fn main() -> HydraResult<()> {
 
     let invite = alice.create_lobby_invite(lobby.id())?;
     let joined = bob.join_lobby(invite)?;
+    bob.add_lobby_member(joined.id(), alice_contact.id())?;
 
     let outbound = alice.send_lobby(
         lobby.id(),

@@ -48,11 +48,11 @@ The public facade has these current implementation boundaries:
 | Backup export | `export_backup` encrypts the state snapshot under the supplied backup password. |
 | Normal local state | `state-v2.hydra` is authenticated-encrypted. `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)` require the state password up front. |
 | Identity passwords | Identity seeds, state files, and backups are wrapped with AEAD using per-record scrypt parameters and random salts before key derivation. Weak user passwords can still be brute-forced offline, so applications should enforce strong password policy where appropriate. |
-| Contact cards | Contact cards intentionally expose the local label, public key, contact id/fingerprint, and safety code to whoever receives the card. Reusing the same card can link chats. |
-| Lobby invites | Lobby invites intentionally expose the lobby id, label, max-member policy, and member list encoded into the invite. Reusing invites can link lobby activity. |
+| Contact cards | Default contact cards expose the active identity public verification key only. The contact id/fingerprint and safety code are derived locally from that key. `create_labeled_contact_card` intentionally adds a label. Reusing the same identity/card can link chats. |
+| Lobby invites | Default lobby invites expose only the lobby id and max-member policy. `create_labeled_lobby_invite` intentionally adds the label, and `create_lobby_member_invite` intentionally adds the member list. Reusing the same lobby/invite can link activity. |
 | Lobby recipient tags | `HydraLobbyEnvelope.recipient()` is an app/carrier routing hint for a per-member encrypted copy. It is not anonymous routing and must not be treated as authentication. |
 
-For unlinkable app designs today, create fresh identities/contact cards/lobby invites manually and use carrier/mailbox identifiers that are not reused across chats. First-class one-time helpers remain future implementation work.
+For unlinkable app designs today, use `create_one_time_contact_card` for fresh chat identities and `create_one_time_lobby_invite` for fresh lobby invites, then pair those with carrier/mailbox identifiers that are not reused across chats.
 
 ## 1. Public API rules
 
@@ -126,6 +126,8 @@ Purpose: create, restore, export, unlock, lock, rename, delete, and switch ident
 
 ```rust
 hydra.create_contact_card()?;
+hydra.create_labeled_contact_card(label)?;
+hydra.create_one_time_contact_card(identity_password)?;
 hydra.create_contact_invite()?;
 
 hydra.add_contact(contact_card)?;
@@ -146,9 +148,9 @@ hydra.block_contact(contact_id)?;
 hydra.unblock_contact(contact_id)?;
 ```
 
-Purpose: create your shareable contact card, add contacts, review safety codes, verify contacts, export/import contacts, and manage blocked contacts.
+Purpose: create minimized or explicitly labeled shareable contact cards, create fresh one-time cards for unlinkable chat setup, add contacts, review safety codes, verify contacts, export/import contacts, and manage blocked contacts.
 
-Trust model for v1:
+Trust model:
 
 ```text
 verified = safety code matched
@@ -270,6 +272,9 @@ Purpose: send/receive encrypted payloads and optionally store/export/import loca
 ```rust
 let lobby = hydra.create_lobby(policy)?;
 let invite = hydra.create_lobby_invite(lobby.id())?;
+let labeled_invite = hydra.create_labeled_lobby_invite(lobby.id())?;
+let member_invite = hydra.create_lobby_member_invite(lobby.id())?;
+let one_time_invite = hydra.create_one_time_lobby_invite(max_members)?;
 
 hydra.join_lobby(invite)?;
 hydra.leave_lobby(lobby_id)?;
@@ -293,9 +298,11 @@ hydra.rekey_lobby(lobby_id)?;
 hydra.close_lobby(lobby_id)?;
 ```
 
-Purpose: create/join lobbies, manage members, send encrypted lobby messages, and receive encrypted lobby messages.
+Purpose: create/join lobbies, create minimized or explicitly metadata-bearing invites, create one-time lobby invites for unlinkable setup, manage members, send encrypted lobby messages, and receive encrypted lobby messages.
 
 `send_lobby` returns recipient-tagged encrypted envelope copies. This keeps the public API simple while still giving the app/carrier the routing hint it needs. The recipient tag is not protocol authority; the envelope bytes remain opaque HYDRA bytes.
+
+`create_lobby_invite` is minimized by default. Because it does not expose a member list, the joining app should add the inviter contact locally with `add_lobby_member(joined.id(), inviter_contact_id)` when it wants to accept messages from that inviter.
 
 `receive_lobby` only accepts lobby payloads. A normal 1:1 message passed to `receive_lobby` must be rejected without being consumed, and lobby messages from contacts that are not members of the local lobby must be rejected.
 
@@ -344,6 +351,8 @@ hydra.delete_id(id, password)
 
 // Contacts
 hydra.create_contact_card()
+hydra.create_labeled_contact_card(label)
+hydra.create_one_time_contact_card(identity_password)
 hydra.create_contact_invite()
 hydra.add_contact(contact_card)
 hydra.import_contacts(bytes)
@@ -378,6 +387,9 @@ hydra.import_messages(bytes)
 // Groups / lobbies
 hydra.create_lobby(policy)
 hydra.create_lobby_invite(lobby_id)
+hydra.create_labeled_lobby_invite(lobby_id)
+hydra.create_lobby_member_invite(lobby_id)
+hydra.create_one_time_lobby_invite(max_members)
 hydra.join_lobby(invite)
 hydra.leave_lobby(lobby_id)
 hydra.list_lobbies()

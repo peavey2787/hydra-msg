@@ -22,10 +22,13 @@ mod messages;
 mod storage;
 
 pub use benchmark::HydraBenchmarkReport;
-pub use contacts::{ContactId, HydraContact};
+pub use contacts::{ContactId, HydraContact, HydraOneTimeContactCard};
 pub use handshake::{HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionStatus};
 pub use identity::{HydraIdentitySummary, IdentityId};
-pub use lobbies::{HydraLobby, HydraLobbyEnvelope, HydraLobbyInvite, HydraLobbyPolicy, LobbyId};
+pub use lobbies::{
+    HydraLobby, HydraLobbyEnvelope, HydraLobbyInvite, HydraLobbyPolicy, HydraOneTimeLobbyInvite,
+    LobbyId,
+};
 pub use messages::{
     HydraAttachment, HydraAttachmentSource, HydraMessage, MessageId, ReceivedHydraMessage,
 };
@@ -36,12 +39,12 @@ use handshake::{PendingOffer, SessionRecord};
 use identity::IdentityRecord;
 use messages::StoredMessage;
 
-pub(crate) const CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V1";
+pub(crate) const CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V2";
 pub(crate) const ID_EXPORT_MAGIC: &[u8] = b"HYDRA-MSG-ID-V1\n";
 pub(crate) const OFFER_MAGIC: &[u8] = b"HYDRA-MSG-OFFER-V1\n";
 pub(crate) const ANSWER_MAGIC: &[u8] = b"HYDRA-MSG-ANSWER-V1\n";
 pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD-V1\n";
-pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V1";
+pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V2";
 pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD-V1\n";
 pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP-V1\n";
 pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT-V2\n";
