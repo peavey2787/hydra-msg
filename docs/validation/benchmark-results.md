@@ -20,6 +20,7 @@ These numbers came from real browser/WASM runs reported during HYDRA-MSG develop
 - Server/native results measure the computer hosting the page, not the phone/tablet.
 - Message timings are batched internally and reported as per-operation averages.
 - The final validation gate still needs to run format, tests, clippy, examples, docs checks, and fresh benchmark captures on the release candidate.
+- Any facade-handshake benchmark captured before the authenticated hybrid facade handshake landed is stale for that path. Regenerate facade handshake numbers after the signed ML-DSA, ephemeral X25519, ephemeral ML-KEM, and answer-confirmation path is in the release candidate.
 
 ## 1 KiB payload browser/WASM results
 

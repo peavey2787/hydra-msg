@@ -111,3 +111,5 @@ pub struct Hydra {
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod handshake_tests;

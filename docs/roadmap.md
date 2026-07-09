@@ -176,9 +176,18 @@ This roadmap succeeds when:
 - Updated public-facing privacy-boundary wording in the README, public developer API, message-flow docs, and production QA gate.
 - Reconfirmed that public docs must not point users to this internal roadmap.
 
+### Completed in P1
+
+- Added facade handshake regression tests for swapped identity answers and mismatched answer transcripts.
+- Kept the existing tampered offer/answer regression coverage for modified handshake bytes.
+- Added official static privacy-invariant checks under `qa/ci/check-privacy-invariants.*`.
+- Wired privacy-invariant checks into `qa/ci/check-tests.*`, which keeps them inside the official `check-all.*` path.
+- The privacy-invariant gate now requires ML-DSA signing/verification, ephemeral X25519 secret input, ephemeral ML-KEM secret input, answer confirmation, pending-contact identity checks, and no reintroduced public transcript-only facade helper.
+- Updated benchmark notes so old facade-handshake timing numbers must be regenerated after the authenticated hybrid handshake path.
+- Updated the maintainer privacy invariant map with P1 evidence.
+
 ### Current known gaps
 
-- The authenticated hybrid facade handshake still needs the regression/static-guard tests listed in P1 before the gap should be considered permanently closed.
 - Normal local state remains plaintext at rest until P2 is implemented.
 - Identity password protection still needs memory-hard KDF hardening until P3 is implemented.
 - Contact cards and lobby invites still expose intentional metadata and need first-class one-time/unlinkable API support.
@@ -188,11 +197,10 @@ This roadmap succeeds when:
 
 ### Active phase
 
-- P1 verification/regression hardening is ready to start.
+- P2 encrypted local state at rest is ready to start.
 
 ### Not started
 
-- P1 verification/regression hardening.
 - P2 encrypted local state at rest.
 - P3 memory-hard password KDF migration.
 - P4 one-time contact-card and invite metadata minimization.

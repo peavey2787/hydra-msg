@@ -27,6 +27,7 @@ run_step() {
 
 run_step "workspace Rust checks" qa/ci/check-rust.sh
 run_step "Rust source-size ownership checks" qa/ci/check-rust-file-sizes.sh
+run_step "privacy invariant checks" qa/ci/check-privacy-invariants.sh
 run_step "docs/static checks" qa/ci/check-docs.sh
 run_step "lock-file checks" qa/ci/check-locks.sh
 

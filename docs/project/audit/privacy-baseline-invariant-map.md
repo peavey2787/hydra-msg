@@ -1,6 +1,6 @@
 # Privacy baseline and invariant map
 
-Status: P0 implementation privacy baseline.
+Status: P1 facade handshake confidentiality verification complete.
 
 This audit defines the current privacy claims, their implementation owners, and the unsupported properties that must stay marked as future work until later privacy-hardening phases implement them. It is maintainer/assistant working evidence, not public release documentation.
 
@@ -38,13 +38,16 @@ crates/hydra-msg/src/codec/lobbies.rs
 crates/hydra-msg/src/codec/messages.rs
 crates/hydra-msg/src/codec/storage.rs
 crates/hydra-msg/src/tests.rs
+crates/hydra-msg/src/handshake_tests.rs
+qa/ci/check-privacy-invariants.sh
+qa/ci/check-privacy-invariants.ps1
 ```
 
 ## Privacy-claim inventory
 
 | Claim area | Current public wording | Implementation owner | P0 status |
 |---|---|---|---|
-| Normal messages are encrypted | README and public API describe encrypted HYDRA envelopes carried by app transports. | `handshake.rs`, `messages.rs`, `codec/handshake.rs`, `hydra-session` use through `SessionState`. | Supported for facade send/receive after the authenticated hybrid handshake completes. P1 still owns regression/static guards. |
+| Normal messages are encrypted | README and public API describe encrypted HYDRA envelopes carried by app transports. | `handshake.rs`, `messages.rs`, `codec/handshake.rs`, `hydra-session` use through `SessionState`. | Supported for facade send/receive after authenticated hybrid handshake completion. P1 regression/static guards now cover swapped identities, mismatched transcripts, and secret-material requirements. |
 | Carriers move opaque HYDRA bytes | README, public API, and message-flow docs say WebRTC/files/HTTP/relays/mailboxes are carriers only. | `HydraEnvelope`, `HandshakeOffer`, `HandshakeAnswer`, carrier examples. | Supported as an API boundary: carriers receive byte buffers, not protocol authority. Metadata remains visible to carriers. |
 | Normal path is not inherently anonymous | Public API and message-flow docs distinguish key/session messaging from anonymous designs. | Contacts, identities, sessions, contact cards. | Correctly documented. Normal conversations are contact/session based. |
 | Anonymous to the other user | Public docs say use a one-time HYDRA identity/contact card for that chat. | `generate_id`, `create_contact_card`, `add_contact`. | Possible manually today by creating a fresh identity/card. First-class one-time API remains P4 work. |
@@ -112,6 +115,9 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 | Existing evidence | File/path | Covered property |
 |---|---|---|
 | Tampered offer/answer rejection test | `crates/hydra-msg/src/tests.rs` | Signed authenticated hybrid handshake rejects modified public bytes. |
+| Swapped identity answer rejection test | `crates/hydra-msg/src/handshake_tests.rs` | Initiator refuses an answer signed by a different identity than the pending contact. |
+| Mismatched answer transcript rejection test | `crates/hydra-msg/src/handshake_tests.rs` | Initiator refuses an answer rebound to another offer nonce/transcript. |
+| Facade handshake static privacy guard | `qa/ci/check-privacy-invariants.*` | Official validation requires ML-DSA signing/verification, X25519 secret input, ML-KEM secret input, answer confirmation, and no reintroduced public transcript-only helper. |
 | Contact handshake and attachment roundtrip | `crates/hydra-msg/src/tests.rs` | Post-handshake facade send/receive carries encrypted envelopes and restores plaintext locally. |
 | Encrypted backup wrong-password test | `crates/hydra-msg/src/tests.rs` | Backup ciphertext requires the backup password before import succeeds. |
 | Native storage persistence test | `crates/hydra-msg/src/tests.rs` | Confirms current plaintext state persistence behavior; this is evidence for the P2 migration target, not a privacy pass. |
@@ -130,9 +136,9 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 - Blinded/randomized lobby routing tags or mailbox aliases.
 - Independent cryptographic audit or enterprise production certification.
 
-## P0 conclusion
+## P1 conclusion
 
-P0 does not make the repository production-ready or enterprise-grade. It establishes the baseline needed before implementation hardening:
+P1 closes the known facade-handshake confidentiality verification gap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are storage, password KDFs, metadata minimization, routing privacy, and anonymous authorization:
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;

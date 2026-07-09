@@ -19,6 +19,7 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 | `check-rust.sh` | Workspace format, test, and clippy gate. |
 | `check-docs.sh` | Docs/static checks, README/product-doc navigation, and local Markdown link resolution. |
 | `check-rust-file-sizes.ps1` / `check-rust-file-sizes.sh` | `hydra-group` and `hydra-msg` Rust source-size ownership checks with documented exceptions. |
+| `check-privacy-invariants.ps1` / `check-privacy-invariants.sh` | Static implementation privacy guardrails for the facade handshake and other hardened boundaries. |
 | `check-markdown-links.ps1` / `check-markdown-links.sh` | Local Markdown link resolver used by docs checks. |
 | `check-locks.sh` | Lock-file alignment checks for offline validation. |
 | `check-vectors.sh` | Vector generator and candidate manifest verification. |

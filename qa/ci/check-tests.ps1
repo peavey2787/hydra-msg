@@ -371,6 +371,7 @@ Invoke-Step "cargo clippy --workspace --all-targets -- -D warnings" {
     cargo clippy --workspace --all-targets -- -D warnings
 }
 Invoke-Step "rust file size ownership checks" { .\qa\ci\check-rust-file-sizes.ps1 }
+Invoke-Step "privacy invariant checks" { .\qa\ci\check-privacy-invariants.ps1 }
 Invoke-DocsGate
 Invoke-LockGate
 
