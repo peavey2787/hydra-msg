@@ -246,8 +246,16 @@ This roadmap succeeds when:
 
 ### Active phase
 
-- P7 final validation and production-readiness audit is ready to start.
+- No active phase. The current privacy-hardening roadmap is complete after P7, pending the maintainer's fresh local full-validation rerun on the returned worktree.
+
+### Completed in P7
+
+- Added `docs/project/audit/privacy-hardening-p7-production-audit.md` as the final implementation privacy-boundary and production-readiness audit.
+- Fixed WASM-target dead-code warnings by compiling native filesystem-state helpers and fields only for non-WASM builds instead of allowing or suppressing warnings.
+- Reconfirmed that `qa/ci/check-all.*` is the official top-level validation path and includes tests, examples, docs, Markdown links, lock checks, privacy invariant checks, vector checks unless skipped, and source-size guardrails.
+- Recorded that HYDRA-MSG is a stronger local release candidate after a fresh green validation pass, but is not enterprise-grade or independently production-certified.
+- Recorded remaining enterprise blockers: independent cryptographic review, parser/fuzzing campaign, dependency/license advisory policy, SBOM/signing process, browser persistent-state design, external interoperability evidence, network anonymity carrier design, blind/zero-knowledge anonymous authorization, and operational security guidance.
 
 ### Not started
 
-- P7 final validation and production-readiness audit.
+- No active implementation phase remains in this roadmap.

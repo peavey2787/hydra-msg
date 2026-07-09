@@ -40,6 +40,7 @@ pub use messages::{
 };
 pub use storage::HydraStorageStatus;
 
+#[cfg(not(target_arch = "wasm32"))]
 use codec::PasswordKdfRecord;
 use handshake::{PendingOffer, SessionRecord};
 use identity::IdentityRecord;
@@ -55,6 +56,7 @@ pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD\n";
 pub(crate) const AUTH_TOKEN_MAGIC: &str = "HYDRA-MSG-AUTH-TOKEN";
 pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP\n";
 pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT\n";
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) const STATE_MAGIC: &[u8] = b"HYDRA-MSG-STATE\n";
 pub(crate) const CONTACTS_MAGIC: &[u8] = b"HYDRA-MSG-CONTACTS\n";
 pub(crate) const MESSAGES_MAGIC: &[u8] = b"HYDRA-MSG-MESSAGES\n";
@@ -124,7 +126,9 @@ pub struct Hydra {
     pub(crate) lobbies: HashMap<LobbyId, HydraLobby>,
     pub(crate) anonymous_auth_secret: SecretBytes<32>,
     pub(crate) anonymous_auth_spent: Vec<HydraAnonymousAuthNullifier>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) state_key: SecretBytes<32>,
+    #[cfg(not(target_arch = "wasm32"))]
     pub(crate) state_kdf: PasswordKdfRecord,
     pub(crate) state_generation: u64,
 }

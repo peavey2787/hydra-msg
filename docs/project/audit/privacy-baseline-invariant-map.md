@@ -1,6 +1,6 @@
 # Privacy baseline and invariant map
 
-Status: P6 anonymous authorization stopgap complete.
+Status: P7 privacy hardening audit complete.
 
 This audit defines the current privacy claims, their implementation owners, and the unsupported properties that must stay marked as future work until later privacy-hardening phases implement them. It is maintainer/assistant working evidence, not public release documentation.
 
@@ -140,9 +140,9 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 - Blind issuance, zero-knowledge eligibility proofs, accumulator-based revocation, and enterprise anonymous-credential review.
 - Independent cryptographic audit or enterprise production certification.
 
-## P6 conclusion
+## P7 conclusion
 
-P6 closes the first anonymous-but-authorized implementation gap with a bounded bearer-token stopgap, but does not make the repository production-ready or enterprise-grade. The remaining implementation privacy gaps are stronger anonymous credentials, automatic unlinkability cleanup, network anonymity, and independent audit:
+P7 completes the current privacy-hardening roadmap with a final implementation-boundary audit. The repository is a stronger local release candidate after a fresh full validation pass, but it is not enterprise-grade or independently production-certified. The remaining privacy and assurance gaps are stronger anonymous credentials, automatic unlinkability cleanup, network anonymity, browser persistent-state design, fuzzing, dependency/license policy, signed release process, and independent audit:
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;

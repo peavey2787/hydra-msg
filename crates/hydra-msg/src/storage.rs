@@ -24,23 +24,29 @@ pub struct HydraStorageStatus {
 impl Hydra {
     pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>) -> HydraResult<Self> {
         let data_dir = data_dir.as_ref().to_path_buf();
+
         #[cfg(not(target_arch = "wasm32"))]
-        fs::create_dir_all(&data_dir)?;
-        #[cfg(not(target_arch = "wasm32"))]
-        let state_kdf = {
-            let path = data_dir.join(STATE_FILE_NAME);
-            if path.exists() {
-                parse_state_kdf(&fs::read(&path)?)?
-            } else {
-                new_storage_kdf()?
-            }
-        };
+        {
+            fs::create_dir_all(&data_dir)?;
+            let state_kdf = {
+                let path = data_dir.join(STATE_FILE_NAME);
+                if path.exists() {
+                    parse_state_kdf(&fs::read(&path)?)?
+                } else {
+                    new_storage_kdf()?
+                }
+            };
+            let state_key = state_key(state_password.as_ref(), &state_kdf)?;
+            let mut hydra = Self::empty(data_dir, state_key, state_kdf)?;
+            hydra.load_state()?;
+            Ok(hydra)
+        }
+
         #[cfg(target_arch = "wasm32")]
-        let state_kdf = new_storage_kdf()?;
-        let state_key = state_key(state_password.as_ref(), &state_kdf)?;
-        let mut hydra = Self::empty(data_dir, state_key, state_kdf)?;
-        hydra.load_state()?;
-        Ok(hydra)
+        {
+            let _ = state_password.as_ref();
+            Self::empty(data_dir)
+        }
     }
 
     pub fn open_default(state_password: impl AsRef<str>) -> HydraResult<Self> {
@@ -87,6 +93,7 @@ impl Hydra {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn empty(
         data_dir: PathBuf,
         state_key: hydra_crypto::SecretBytes<32>,
@@ -110,6 +117,24 @@ impl Hydra {
         })
     }
 
+    #[cfg(target_arch = "wasm32")]
+    fn empty(data_dir: PathBuf) -> HydraResult<Self> {
+        Ok(Self {
+            data_dir,
+            identities: HashMap::new(),
+            active_id: None,
+            contacts: HashMap::new(),
+            pending_offers: HashMap::new(),
+            sessions: HashMap::new(),
+            messages: Vec::new(),
+            next_message_id: 1,
+            lobbies: HashMap::new(),
+            anonymous_auth_secret: hydra_crypto::SecretBytes::from_array(random_array::<32>()?),
+            anonymous_auth_spent: Vec::new(),
+            state_generation: 0,
+        })
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     fn state_path(&self) -> PathBuf {
         self.data_dir.join(STATE_FILE_NAME)
@@ -120,25 +145,18 @@ impl Hydra {
         self.data_dir.join(STATE_ROLLBACK_FILE_NAME)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn load_state(&mut self) -> HydraResult<()> {
-        #[cfg(target_arch = "wasm32")]
-        {
+        let path = self.state_path();
+        if !path.exists() {
             return Ok(());
         }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let path = self.state_path();
-            if !path.exists() {
-                return Ok(());
-            }
-            let bytes = fs::read(path)?;
-            let snapshot = decode_encrypted_state(&bytes, &self.state_key)?;
-            self.apply_state_snapshot(&snapshot)?;
-            self.reject_state_rollback()?;
-            self.write_rollback_guard()?;
-            Ok(())
-        }
+        let bytes = fs::read(path)?;
+        let snapshot = decode_encrypted_state(&bytes, &self.state_key)?;
+        self.apply_state_snapshot(&snapshot)?;
+        self.reject_state_rollback()?;
+        self.write_rollback_guard()?;
+        Ok(())
     }
 
     pub(crate) fn persist(&mut self) -> HydraResult<()> {

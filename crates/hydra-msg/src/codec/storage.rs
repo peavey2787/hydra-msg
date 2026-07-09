@@ -2,9 +2,12 @@ use super::{
     decode_kdf_fields, derive_password_key, encode_kdf_fields, exact_array_from_vec, hex_decode,
     hex_encode, required_field, PasswordKdfRecord,
 };
-use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_MAGIC};
+use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::STATE_MAGIC;
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 
+#[cfg(not(target_arch = "wasm32"))]
 const STATE_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/state-key";
 const BACKUP_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/backup-key";
 
@@ -12,6 +15,7 @@ pub(crate) fn new_storage_kdf() -> HydraResult<PasswordKdfRecord> {
     PasswordKdfRecord::new_interactive()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn state_key(password: &str, kdf: &PasswordKdfRecord) -> HydraResult<SecretBytes<32>> {
     derive_password_key(STATE_KEY_LABEL, password, kdf)
 }
@@ -49,6 +53,7 @@ pub(crate) fn decode_backup(bytes: &[u8], password: &str) -> HydraResult<Vec<u8>
     Ok((*plaintext).clone())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn encode_encrypted_state(
     snapshot: &[u8],
     key: &SecretBytes<32>,
@@ -65,12 +70,14 @@ pub(crate) fn encode_encrypted_state(
     Ok(out)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn decode_encrypted_state(bytes: &[u8], key: &SecretBytes<32>) -> HydraResult<Vec<u8>> {
     let (aad, _, nonce, ciphertext) = parse_encrypted_state(bytes)?;
     let plaintext = RustCryptoBackend::aead_open(key, &nonce, aad.as_bytes(), &ciphertext)?;
     Ok((*plaintext).clone())
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn parse_state_kdf(bytes: &[u8]) -> HydraResult<PasswordKdfRecord> {
     let (_, kdf, _, _) = parse_encrypted_state(bytes)?;
     Ok(kdf)
@@ -100,6 +107,7 @@ fn parse_backup(bytes: &[u8]) -> HydraResult<(String, PasswordKdfRecord, [u8; 12
     Ok((backup_aad(&kdf, nonce_hex), kdf, nonce, ciphertext))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn parse_encrypted_state(
     bytes: &[u8],
 ) -> HydraResult<(String, PasswordKdfRecord, [u8; 12], Vec<u8>)> {
@@ -126,6 +134,7 @@ fn parse_encrypted_state(
     Ok((state_aad(&kdf, nonce_hex), kdf, nonce, ciphertext))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn state_aad(kdf: &PasswordKdfRecord, nonce_hex: &str) -> String {
     format!(
         "{}{}nonce\t{}\n",
