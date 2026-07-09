@@ -342,7 +342,7 @@ function Invoke-DocsGate {
     }
 
     Assert-NoTextMatch "public roadmap references" @("README.md", "crates", "examples", "docs/spec", "docs/impl", "docs/validation", "Cargo.toml") "\[Roadmap\]|docs/roadmap\.md"
-    Assert-NoTextMatch "deprecated simple-API wording" @("README.md", "crates", "examples", "docs", "Cargo.toml") "stupid[-]simple|stupid[ ]simple"
+    Assert-NoTextMatch "blocked simple-API wording" @("README.md", "crates", "examples", "docs", "Cargo.toml") "stupid[-]simple|stupid[ ]simple"
     Assert-NoTextMatch "docs/planning references" @("docs", "crates", "README.md", "Cargo.toml") "docs/planning"
     Assert-NoTextMatch "product doc references under docs/project" @("docs", "crates", "examples", "README.md", "Cargo.toml") "docs/project/(message-flow|public-developer-api|benchmark-results|carrier-examples|hydra-msg-cli|wasm-javascript-bindings|production-qa-gate|release-readiness)"
     Assert-NoTextMatch "crate name references" @("docs", "crates", "README.md", "Cargo.toml") "hydra-types|hydra-wire"

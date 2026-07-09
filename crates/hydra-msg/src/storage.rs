@@ -1,6 +1,6 @@
 #[cfg(not(target_arch = "wasm32"))]
-use crate::{LEGACY_STATE_FILE_NAME, STATE_FILE_NAME, STATE_ROLLBACK_FILE_NAME};
-use crate::{codec::*, Hydra, HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_V1_MAGIC};
+use crate::{STATE_FILE_NAME, STATE_ROLLBACK_FILE_NAME};
+use crate::{codec::*, Hydra, HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_SNAPSHOT_MAGIC};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;
@@ -23,34 +23,17 @@ pub struct HydraStorageStatus {
 }
 
 impl Hydra {
-    pub fn open(data_dir: impl AsRef<Path>) -> HydraResult<Self> {
+    pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>) -> HydraResult<Self> {
         let data_dir = data_dir.as_ref().to_path_buf();
         #[cfg(not(target_arch = "wasm32"))]
         fs::create_dir_all(&data_dir)?;
-        let mut hydra = Self::empty(data_dir, None);
-        hydra.load_state_without_password()?;
+        let mut hydra = Self::empty(data_dir, state_key(state_password.as_ref()));
+        hydra.load_state()?;
         Ok(hydra)
     }
 
-    pub fn open_with_state_password(
-        data_dir: impl AsRef<Path>,
-        password: impl AsRef<str>,
-    ) -> HydraResult<Self> {
-        let data_dir = data_dir.as_ref().to_path_buf();
-        #[cfg(not(target_arch = "wasm32"))]
-        fs::create_dir_all(&data_dir)?;
-        let key = state_key(password.as_ref());
-        let mut hydra = Self::empty(data_dir, Some(key));
-        hydra.load_state_with_password()?;
-        Ok(hydra)
-    }
-
-    pub fn open_default() -> HydraResult<Self> {
-        Self::open("hydra-msg-data")
-    }
-
-    pub fn open_default_with_state_password(password: impl AsRef<str>) -> HydraResult<Self> {
-        Self::open_with_state_password("hydra-msg-data", password)
+    pub fn open_default(state_password: impl AsRef<str>) -> HydraResult<Self> {
+        Self::open("hydra-msg-data", state_password)
     }
 
     #[must_use]
@@ -58,13 +41,8 @@ impl Hydra {
         &self.data_dir
     }
 
-    pub fn enable_encrypted_state(&mut self, password: impl AsRef<str>) -> HydraResult<()> {
-        self.state_key = Some(state_key(password.as_ref()));
-        self.persist()
-    }
-
     pub fn export_backup(&self, password: impl AsRef<str>) -> HydraResult<Vec<u8>> {
-        let snapshot = self.encode_plain_state_snapshot()?;
+        let snapshot = self.encode_state_snapshot()?;
         let nonce = random_array::<12>()?;
         let key = backup_key(password.as_ref());
         let ciphertext = RustCryptoBackend::aead_seal(&key, &nonce, BACKUP_MAGIC, &snapshot)?;
@@ -82,12 +60,8 @@ impl Hydra {
         bytes: impl AsRef<[u8]>,
         password: impl AsRef<str>,
     ) -> HydraResult<()> {
-        let password = password.as_ref();
-        let snapshot = decode_backup(bytes.as_ref(), password)?;
-        self.apply_plain_state_snapshot(&snapshot)?;
-        if self.state_key.is_none() {
-            self.state_key = Some(state_key(password));
-        }
+        let snapshot = decode_backup(bytes.as_ref(), password.as_ref())?;
+        self.apply_state_snapshot(&snapshot)?;
         self.persist()?;
         Ok(())
     }
@@ -105,12 +79,12 @@ impl Hydra {
             session_count: self.sessions.len(),
             message_count: self.messages.len(),
             lobby_count: self.lobbies.len(),
-            encrypted_state: self.state_key.is_some(),
+            encrypted_state: true,
             state_generation: self.state_generation,
         }
     }
 
-    fn empty(data_dir: PathBuf, state_key: Option<hydra_crypto::SecretBytes<32>>) -> Self {
+    fn empty(data_dir: PathBuf, state_key: hydra_crypto::SecretBytes<32>) -> Self {
         Self {
             data_dir,
             identities: HashMap::new(),
@@ -132,16 +106,11 @@ impl Hydra {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    fn legacy_state_path(&self) -> PathBuf {
-        self.data_dir.join(LEGACY_STATE_FILE_NAME)
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
     fn rollback_path(&self) -> PathBuf {
         self.data_dir.join(STATE_ROLLBACK_FILE_NAME)
     }
 
-    fn load_state_without_password(&mut self) -> HydraResult<()> {
+    fn load_state(&mut self) -> HydraResult<()> {
         #[cfg(target_arch = "wasm32")]
         {
             return Ok(());
@@ -149,46 +118,15 @@ impl Hydra {
 
         #[cfg(not(target_arch = "wasm32"))]
         {
-            if self.state_path().exists() {
-                return Err(HydraMsgError::InvalidPassword);
-            }
-            let legacy = self.legacy_state_path();
-            if legacy.exists() {
-                let bytes = fs::read(legacy)?;
-                self.apply_plain_state_snapshot(&bytes)?;
-            }
-            Ok(())
-        }
-    }
-
-    fn load_state_with_password(&mut self) -> HydraResult<()> {
-        #[cfg(target_arch = "wasm32")]
-        {
-            return Ok(());
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let encrypted = self.state_path();
-            if encrypted.exists() {
-                let bytes = fs::read(encrypted)?;
-                let key = self
-                    .state_key
-                    .as_ref()
-                    .ok_or(HydraMsgError::InvalidPassword)?;
-                let snapshot = decode_encrypted_state_v2(&bytes, key)?;
-                self.apply_plain_state_snapshot(&snapshot)?;
-                self.reject_state_rollback()?;
-                self.write_rollback_guard()?;
+            let path = self.state_path();
+            if !path.exists() {
                 return Ok(());
             }
-            let legacy = self.legacy_state_path();
-            if legacy.exists() {
-                let bytes = fs::read(&legacy)?;
-                self.apply_plain_state_snapshot(&bytes)?;
-                self.persist()?;
-                fs::remove_file(legacy)?;
-            }
+            let bytes = fs::read(path)?;
+            let snapshot = decode_encrypted_state_v2(&bytes, &self.state_key)?;
+            self.apply_state_snapshot(&snapshot)?;
+            self.reject_state_rollback()?;
+            self.write_rollback_guard()?;
             Ok(())
         }
     }
@@ -202,21 +140,21 @@ impl Hydra {
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.state_generation = self.state_generation.saturating_add(1);
-            let snapshot = self.encode_plain_state_snapshot()?;
-            let key = self
-                .state_key
-                .as_ref()
-                .ok_or(HydraMsgError::InvalidPassword)?;
-            let encrypted = encode_encrypted_state_v2(&snapshot, key, random_array::<12>()?)?;
+            let snapshot = self.encode_state_snapshot()?;
+            let encrypted = encode_encrypted_state_v2(
+                &snapshot,
+                &self.state_key,
+                random_array::<12>()?,
+            )?;
             write_atomic(&self.state_path(), &encrypted)?;
             self.write_rollback_guard()?;
             Ok(())
         }
     }
 
-    fn encode_plain_state_snapshot(&self) -> HydraResult<Vec<u8>> {
+    fn encode_state_snapshot(&self) -> HydraResult<Vec<u8>> {
         let mut out = Vec::new();
-        out.extend_from_slice(STATE_V1_MAGIC);
+        out.extend_from_slice(STATE_SNAPSHOT_MAGIC);
         out.extend_from_slice(format!("state_generation\t{}\n", self.state_generation).as_bytes());
         out.extend_from_slice(format!("next_message_id\t{}\n", self.next_message_id).as_bytes());
         for record in self.identities.values() {
@@ -238,10 +176,10 @@ impl Hydra {
         Ok(out)
     }
 
-    fn apply_plain_state_snapshot(&mut self, bytes: &[u8]) -> HydraResult<()> {
+    fn apply_state_snapshot(&mut self, bytes: &[u8]) -> HydraResult<()> {
         let text = std::str::from_utf8(bytes)
             .map_err(|_| HydraMsgError::InvalidEncoding("state snapshot utf-8"))?;
-        if !text.starts_with(std::str::from_utf8(STATE_V1_MAGIC).unwrap_or_default()) {
+        if !text.starts_with(std::str::from_utf8(STATE_SNAPSHOT_MAGIC).unwrap_or_default()) {
             return Err(HydraMsgError::InvalidEncoding("state snapshot magic"));
         }
         self.identities.clear();
@@ -261,16 +199,16 @@ impl Hydra {
             match parts.next() {
                 Some("state_generation") => {
                     if let Some(value) = parts.next() {
-                        self.state_generation = value.parse().map_err(|_| {
-                            HydraMsgError::InvalidEncoding("state generation")
-                        })?;
+                        self.state_generation = value
+                            .parse()
+                            .map_err(|_| HydraMsgError::InvalidEncoding("state generation"))?;
                     }
                 }
                 Some("next_message_id") => {
                     if let Some(value) = parts.next() {
-                        self.next_message_id = value.parse().map_err(|_| {
-                            HydraMsgError::InvalidEncoding("state next_message_id")
-                        })?;
+                        self.next_message_id = value
+                            .parse()
+                            .map_err(|_| HydraMsgError::InvalidEncoding("state next_message_id"))?;
                     }
                 }
                 Some("identity") => {
@@ -283,9 +221,7 @@ impl Hydra {
                 }
                 Some("message") => {
                     let message = decode_message_line(line)?;
-                    self.next_message_id = self
-                        .next_message_id
-                        .max(message.id.0.saturating_add(1));
+                    self.next_message_id = self.next_message_id.max(message.id.0.saturating_add(1));
                     self.messages.push(message);
                 }
                 Some("lobby") => {

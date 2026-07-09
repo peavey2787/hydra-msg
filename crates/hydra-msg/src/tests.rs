@@ -2,7 +2,7 @@ use super::*;
 
 fn fresh(path: &str) -> Hydra {
     let _ = std::fs::remove_dir_all(path);
-    Hydra::open(path).unwrap()
+    Hydra::open(path, "state-pw").unwrap()
 }
 
 #[test]

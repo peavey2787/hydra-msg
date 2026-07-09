@@ -193,7 +193,7 @@ if grep -RInE '\[Roadmap\]|docs/roadmap\.md' README.md crates examples docs/spec
 fi
 
 if grep -RInE 'stupid[-]simple|stupid[ ]simple' README.md crates examples docs Cargo.toml; then
-  echo "deprecated simple-API wording found" >&2
+  echo "blocked simple-API wording found" >&2
   exit 1
 fi
 

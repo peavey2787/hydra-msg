@@ -43,16 +43,16 @@ pub struct WasmHydraBenchmarkReport {
 #[wasm_bindgen]
 impl WasmHydra {
     #[wasm_bindgen(js_name = open)]
-    pub fn open(data_dir: &str) -> Result<WasmHydra, JsValue> {
+    pub fn open(data_dir: &str, state_password: &str) -> Result<WasmHydra, JsValue> {
         Ok(Self {
-            inner: Hydra::open(data_dir).map_err(to_js_error)?,
+            inner: Hydra::open(data_dir, state_password).map_err(to_js_error)?,
         })
     }
 
     #[wasm_bindgen(js_name = openDefault)]
-    pub fn open_default() -> Result<WasmHydra, JsValue> {
+    pub fn open_default(state_password: &str) -> Result<WasmHydra, JsValue> {
         Ok(Self {
-            inner: Hydra::open_default().map_err(to_js_error)?,
+            inner: Hydra::open_default(state_password).map_err(to_js_error)?,
         })
     }
 

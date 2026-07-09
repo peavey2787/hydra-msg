@@ -43,12 +43,10 @@ pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD-V1\n";
 pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V1";
 pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD-V1\n";
 pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP-V1\n";
-pub(crate) const STATE_V1_MAGIC: &[u8] = b"HYDRA-MSG-STATE-V1\n";
+pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT-V2\n";
 pub(crate) const STATE_V2_MAGIC: &[u8] = b"HYDRA-MSG-STATE-V2\n";
 pub(crate) const CONTACTS_MAGIC: &[u8] = b"HYDRA-MSG-CONTACTS-V1\n";
 pub(crate) const MESSAGES_MAGIC: &[u8] = b"HYDRA-MSG-MESSAGES-V1\n";
-#[cfg(not(target_arch = "wasm32"))]
-pub(crate) const LEGACY_STATE_FILE_NAME: &str = "state-v1.hydra";
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) const STATE_FILE_NAME: &str = "state-v2.hydra";
 #[cfg(not(target_arch = "wasm32"))]
@@ -113,7 +111,7 @@ pub struct Hydra {
     pub(crate) messages: Vec<StoredMessage>,
     pub(crate) next_message_id: u64,
     pub(crate) lobbies: HashMap<LobbyId, HydraLobby>,
-    pub(crate) state_key: Option<SecretBytes<32>>,
+    pub(crate) state_key: SecretBytes<32>,
     pub(crate) state_generation: u64,
 }
 

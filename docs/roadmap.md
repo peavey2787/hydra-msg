@@ -56,7 +56,7 @@ Steps:
 
 ### P2 — Encrypted local state at rest
 
-Goal: stop normal `state-v1.hydra` files from storing plaintext messages, attachments, identities, contacts, lobbies, and routing metadata.
+Goal: keep normal local state in the current encrypted `state-v2.hydra` format, with no plaintext-at-rest compatibility path.
 
 Steps:
 
@@ -64,10 +64,9 @@ Steps:
 - Separate public header fields from encrypted payload fields.
 - Seal message bodies, attachment bytes, identity records, contact records, lobby records, and session material.
 - Authenticate the whole state file, including version and KDF parameters.
-- Keep only the minimum safe plaintext header needed for format detection and migration.
-- Add migration from plaintext `state-v1.hydra` to encrypted `state-v2.hydra`.
-- Ensure migration deletes or archives plaintext state only after successful encrypted write and fsync/rename.
-- Add tests for wrong password, corrupted ciphertext, truncated file, replayed old file, and partial migration failure.
+- Keep only the minimum safe plaintext header needed for format detection.
+- Do not add plaintext-state migration or fallback behavior.
+- Add tests for wrong password, corrupted ciphertext, truncated file, and replayed old file.
 - Update backup/export behavior so backups and normal state use consistent authenticated encryption rules.
 
 ### P3 — Enterprise-grade password KDF hardening
@@ -80,10 +79,9 @@ Steps:
 - Store per-record random salts and explicit KDF parameters.
 - Add KDF profile names for interactive, mobile, and high-security settings.
 - Use the KDF output only as key material for authenticated encryption or wrapping keys.
-- Migrate existing identity records and state files to the new KDF format.
-- Keep old-format decoding only long enough to migrate safely.
+- Re-encrypt current identity records and state files into the new KDF format.
 - Add tests proving identical passwords produce different stored records because salts differ.
-- Add tests for wrong password, changed KDF parameters, legacy import, and re-encryption after password change.
+- Add tests for wrong password, changed KDF parameters, fresh import, and re-encryption after password change.
 - Document that weak user passwords still limit offline resistance.
 
 ### P4 — Contact-card and invite metadata minimization
@@ -137,7 +135,6 @@ Steps:
 - Run `qa/ci/check-all.sh` and `qa/ci/check-all.ps1` after each completed implementation phase.
 - Ensure every example package remains covered by `check-examples.*`.
 - Add parser/codecs fuzz targets for state files, contact cards, lobby invites, handshakes, and message envelopes.
-- Add fixture tests for legacy state migration.
 - Add documentation tests or static checks for privacy-boundary wording.
 - Add an audit checklist under `docs/project/audit/` for implementation evidence.
 - Re-run facade and mobile performance benchmarks after encryption-at-rest and KDF changes.
@@ -189,14 +186,12 @@ This roadmap succeeds when:
 ### Completed in P2
 
 - Added versioned encrypted normal state file support as `state-v2.hydra`.
-- Added password-aware open APIs: `open_with_state_password` and `open_default_with_state_password`.
-- Added `enable_encrypted_state` for callers that opened an empty or legacy facade and then want to seal future state.
-- Kept the public `open` path for fresh/demo/legacy plaintext reads, but encrypted state requires the password-aware open path.
+- Replaced optional/additive storage opening with current-version-only APIs: `open(data_dir, state_password)` and `open_default(state_password)`.
+- Removed the no-password open path and removed the opt-in encryption method; state encryption is required from the beginning.
 - Sealed identity records, contact records, message plaintext, attachment bytes, lobby records, and local metadata inside the encrypted state payload.
 - Authenticated the state v2 header, KDF profile, nonce, and ciphertext with AEAD associated data.
-- Added legacy plaintext `state-v1.hydra` migration through the password-aware open path, with plaintext removal only after the encrypted v2 write succeeds.
 - Added local rollback guard checks for replayed older state files on the same data directory.
-- Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, backup restore into encrypted state, and legacy migration.
+- Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, and backup restore into encrypted state.
 - Extended privacy-invariant checks so the official `check-all.*` path guards the encrypted state format and does not regress to plaintext normal state.
 
 ### Current known gaps

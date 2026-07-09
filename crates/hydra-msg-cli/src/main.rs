@@ -46,22 +46,22 @@ fn print_help() {
         r#"HYDRA-MSG developer CLI
 
 Usage:
-  hydra-msg-cli generate-id <data-dir> <password>
-  hydra-msg-cli contact-card <data-dir> <identity-id-hex> <password>
+  hydra-msg-cli generate-id <data-dir> <state-password> <identity-password>
+  hydra-msg-cli contact-card <data-dir> <state-password> <identity-id-hex> <identity-password>
   hydra-msg-cli handshake-demo [data-dir]
   hydra-msg-cli send-demo [data-dir] [message]
   hydra-msg-cli attachment-demo [data-dir]
-  hydra-msg-cli bench [data-dir]
-  hydra-msg-cli doctor [data-dir]
+  hydra-msg-cli bench [data-dir] [state-password]
+  hydra-msg-cli doctor [data-dir] [state-password]
 
 Examples:
-  cargo run -p hydra-msg-cli -- generate-id ./hydra-msg-data password
-  cargo run -p hydra-msg-cli -- contact-card ./hydra-msg-data <id-hex> password
+  cargo run -p hydra-msg-cli -- generate-id ./hydra-msg-data state-password identity-password
+  cargo run -p hydra-msg-cli -- contact-card ./hydra-msg-data state-password <id-hex> identity-password
   cargo run -p hydra-msg-cli -- handshake-demo ./hydra-msg-cli-demo
   cargo run -p hydra-msg-cli -- send-demo ./hydra-msg-cli-demo "hello"
   cargo run -p hydra-msg-cli -- attachment-demo ./hydra-msg-cli-demo
-  cargo run -p hydra-msg-cli -- bench ./hydra-msg-data
-  cargo run -p hydra-msg-cli -- doctor ./hydra-msg-data
+  cargo run -p hydra-msg-cli -- bench ./hydra-msg-data state-password
+  cargo run -p hydra-msg-cli -- doctor ./hydra-msg-data state-password
 
 This CLI is only a developer tool over the simple hydra-msg facade.
 It is not protocol authority and it does not add a public advanced API.
@@ -71,10 +71,11 @@ It is not protocol authority and it does not add a public advanced API.
 
 fn generate_id(args: &[String]) -> HydraResult<()> {
     let data_dir = required_arg(args, 0, "data-dir")?;
-    let password = required_arg(args, 1, "password")?;
-    let mut hydra = Hydra::open(data_dir)?;
-    let id = hydra.generate_id(password)?;
-    hydra.set_active_id(id, password)?;
+    let state_password = required_arg(args, 1, "state-password")?;
+    let identity_password = required_arg(args, 2, "identity-password")?;
+    let mut hydra = Hydra::open(data_dir, state_password)?;
+    let id = hydra.generate_id(identity_password)?;
+    hydra.set_active_id(id, identity_password)?;
     println!("id={}", id.hex());
     println!("data_dir={}", hydra.data_dir().display());
     Ok(())
@@ -82,11 +83,12 @@ fn generate_id(args: &[String]) -> HydraResult<()> {
 
 fn contact_card(args: &[String]) -> HydraResult<()> {
     let data_dir = required_arg(args, 0, "data-dir")?;
-    let identity_hex = required_arg(args, 1, "identity-id-hex")?;
-    let password = required_arg(args, 2, "password")?;
+    let state_password = required_arg(args, 1, "state-password")?;
+    let identity_hex = required_arg(args, 2, "identity-id-hex")?;
+    let identity_password = required_arg(args, 3, "identity-password")?;
     let id = IdentityId::from_hex(identity_hex)?;
-    let mut hydra = Hydra::open(data_dir)?;
-    hydra.set_active_id(id, password)?;
+    let mut hydra = Hydra::open(data_dir, state_password)?;
+    hydra.set_active_id(id, identity_password)?;
     let card = hydra.create_contact_card()?;
     println!("{}", String::from_utf8_lossy(&card));
     Ok(())
@@ -141,7 +143,8 @@ fn attachment_demo(args: &[String]) -> HydraResult<()> {
 
 fn bench(args: &[String]) -> HydraResult<()> {
     let data_dir = args.first().map_or("hydra-msg-data", String::as_str);
-    let hydra = Hydra::open(data_dir)?;
+    let state_password = args.get(1).map_or("developer-state-password", String::as_str);
+    let hydra = Hydra::open(data_dir, state_password)?;
     let report = hydra.benchmark()?;
     print_benchmark(&report);
     Ok(())
@@ -149,7 +152,8 @@ fn bench(args: &[String]) -> HydraResult<()> {
 
 fn doctor(args: &[String]) -> HydraResult<()> {
     let data_dir = args.first().map_or("hydra-msg-data", String::as_str);
-    let hydra = Hydra::open(data_dir)?;
+    let state_password = args.get(1).map_or("developer-state-password", String::as_str);
+    let hydra = Hydra::open(data_dir, state_password)?;
     let status = hydra.storage_status();
     println!("data_dir={}", status.data_dir.display());
     println!("identities={}", status.identity_count);
@@ -166,8 +170,8 @@ fn setup_two_party_demo(base: &Path) -> HydraResult<(Hydra, Hydra, ContactId)> {
 
     let alice_dir = base.join("alice");
     let bob_dir = base.join("bob");
-    let mut alice = Hydra::open(&alice_dir)?;
-    let mut bob = Hydra::open(&bob_dir)?;
+    let mut alice = Hydra::open(&alice_dir, "alice-state-password")?;
+    let mut bob = Hydra::open(&bob_dir, "bob-state-password")?;
 
     let alice_id = alice.generate_id("alice-password")?;
     alice.set_active_id(alice_id, "alice-password")?;

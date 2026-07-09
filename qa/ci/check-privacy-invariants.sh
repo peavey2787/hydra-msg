@@ -59,19 +59,23 @@ forbidden_source_text "$handshake_file" "public transcript" "facade secret must 
 
 require_source_text "$lib_file" "STATE_V2_MAGIC" "encrypted local state v2 format constant"
 require_source_text "$lib_file" 'const STATE_FILE_NAME: &str = "state-v2.hydra"' "normal local state file uses encrypted v2 path"
-require_source_text "$storage_file" "open_with_state_password" "password-aware encrypted state open path"
+require_source_text "$storage_file" "pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>)" "state password is required when opening local state"
 require_source_text "$storage_file" "encode_encrypted_state_v2" "normal state is sealed before writing"
 require_source_text "$storage_file" "decode_encrypted_state_v2" "normal state is opened with authentication"
 require_source_text "$storage_file" "reject_state_rollback" "local replay rollback guard is enforced"
-require_source_text "$storage_file" "fs::remove_file(legacy)?" "legacy plaintext state is removed after encrypted migration"
 require_source_text "$storage_codec_file" "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
 require_source_text "$storage_codec_file" "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
 require_source_text "$storage_codec_file" "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
-forbidden_source_text "$lib_file" 'const STATE_FILE_NAME: &str = "state-v1.hydra"' "normal local state must not use plaintext v1 path"
+forbidden_source_text "$lib_file" 'STATE_V1' "normal local state must not use plaintext v1 constants"
 
 if grep -RIn "derive_facade_handshake_material" crates/hydra-msg/src; then
   echo "removed public transcript-only facade helper was reintroduced" >&2
   exit 1
 fi
+
+forbidden_source_text "$storage_file" "load_state_without_password" "state must never open without a state password"
+forbidden_source_text "$storage_file" "state_key: Option" "state encryption must not be optional"
+forbidden_source_text "$storage_file" "state_v1" "current state path must not include plaintext migration helpers"
+forbidden_source_text "$storage_file" "remove_file" "current state path must not delete plaintext migration files"
 
 echo "privacy invariant checks passed"

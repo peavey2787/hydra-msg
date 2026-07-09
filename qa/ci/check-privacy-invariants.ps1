@@ -62,15 +62,19 @@ Assert-NoSourceText $HandshakeFile "public transcript" "facade secret must not b
 
 Assert-SourceText $LibFile "STATE_V2_MAGIC" "encrypted local state v2 format constant"
 Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v2.hydra`"" "normal local state file uses encrypted v2 path"
-Assert-SourceText $StorageFile "open_with_state_password" "password-aware encrypted state open path"
+Assert-SourceText $StorageFile "pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>)" "state password is required when opening local state"
 Assert-SourceText $StorageFile "encode_encrypted_state_v2" "normal state is sealed before writing"
 Assert-SourceText $StorageFile "decode_encrypted_state_v2" "normal state is opened with authentication"
 Assert-SourceText $StorageFile "reject_state_rollback" "local replay rollback guard is enforced"
-Assert-SourceText $StorageFile "fs::remove_file(legacy)?" "legacy plaintext state is removed after encrypted migration"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
 Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
 Assert-SourceText $StorageCodecFile "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
-Assert-NoSourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v1.hydra`"" "normal local state must not use plaintext v1 path"
+Assert-NoSourceText $LibFile "STATE_V1" "normal local state must not use plaintext v1 constants"
+
+Assert-NoSourceText $StorageFile "load_state_without_password" "state must never open without a state password"
+Assert-NoSourceText $StorageFile "state_key: Option" "state encryption must not be optional"
+Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext migration helpers"
+Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete plaintext migration files"
 
 $reintroduced = Select-String -Path "crates/hydra-msg/src/*.rs", "crates/hydra-msg/src/codec/*.rs" -Pattern "derive_facade_handshake_material" -ErrorAction SilentlyContinue
 if ($reintroduced) {

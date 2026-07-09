@@ -69,7 +69,7 @@ plumbing, GUI behavior, or demo orchestration stays internal or stays in
 | Area | Current role | Facade decision |
 |---|---|---|
 | `cli/` | Demo CLI command parser/output for local demo app. | Keep as example until replaced by future `hydra-msg-cli`/`cargo-hydra-msg`. |
-| `config.rs` | App/demo runtime config and data-dir defaults. | Do not move into public facade. Public API has `Hydra::open(data_dir)` plus password-aware encrypted state open helpers. |
+| `config.rs` | App/demo runtime config and data-dir defaults. | Do not move into public facade. Public API has `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)`. |
 | `contacts.rs` | CLI/GUI contact-book adapter over app-core trust store. | Reuse behavior ideas only; facade owns its own contact methods. |
 | `gui/` | Local browser GUI routing/security/assets/state. | Example only. No protocol authority. |
 | `secrets.rs` | Demo app storage-secret loading. | Reuse crash-safe/local-secret ideas internally only if needed. No public config/profile API. |
@@ -79,7 +79,7 @@ plumbing, GUI behavior, or demo orchestration stays internal or stays in
 
 | Public API group | Existing code to reuse | Gaps before facade crate |
 |---|---|---|
-| `Hydra::open`, `open_with_state_password`, `open_default`, `open_default_with_state_password`, `enable_encrypted_state`, `data_dir` | `examples/hydra-app/src/config.rs`, `secret_handling.rs` | Need new facade-owned storage root and defaults without `HydraConfig` or profiles. |
+| `Hydra::open`, `open_default`, `data_dir` | `examples/hydra-app/src/config.rs`, `secret_handling.rs` | Need new facade-owned storage root and defaults without `HydraConfig` or profiles. |
 | Identity | `identity.rs`, `identity_store.rs`, `identity_vault.rs`, `recovery.rs` | Need simple ID type, import/export bytes format, and facade-owned error mapping. |
 | Contacts | `contact_trust.rs`, `contacts.rs`, `chat_bootstrap.rs` | Need contact card type, contact ID type, safety-code verification path, block/unblock storage. |
 | Handshake/session setup | `session.rs`, lower `hydra-session` | Need real offer/answer types and handshake layer binding to identity/contact material. |

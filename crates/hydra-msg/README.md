@@ -19,7 +19,7 @@ Apps should start here instead of depending directly on crypto, envelope, sessio
 ```rust
 use hydra_msg::{Hydra, HydraMessage};
 
-let mut hydra = Hydra::open("./hydra-msg-data")?;
+let mut hydra = Hydra::open("./hydra-msg-data", "state-password")?;
 let my_id = hydra.generate_id("password")?;
 hydra.set_active_id(my_id, "password")?;
 
@@ -49,6 +49,6 @@ HYDRA identity, contact trust, handshakes, sessions, encryption, decryption, att
 
 ## Native storage
 
-`Hydra::open(path)` creates or loads a native filesystem store at `path`.
+`Hydra::open(path, state_password)` creates or loads an authenticated-encrypted native filesystem store at `path`.
 
-Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are persisted by the SDK. Backups are encrypted and authenticated with the backup password.
+Identity seed material is encrypted at rest. Identities reopen locked by default. Contacts, message history, attachments, lobby summaries, and local counters are stored inside `state-v2.hydra`. Backups are encrypted and authenticated with the backup password.

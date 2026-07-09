@@ -115,8 +115,7 @@ HYDRA should still treat the peer as a key-bearing contact/session internally. T
 Current facade boundaries:
 
 ```text
-state-v2.hydra local file: authenticated-encrypted state when opened with a state password
-legacy state-v1.hydra: migrates through open_with_state_password, then is removed after v2 write
+state-v2.hydra local file: authenticated-encrypted state opened with a required state password
 identity and state passwords: AEAD wrapping, but not memory-hard KDF yet
 contact cards: label, public key, contact id/fingerprint, and safety code are visible
 lobby invites: lobby id, label, max-member policy, and member list are visible

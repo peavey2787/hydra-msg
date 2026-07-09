@@ -4,7 +4,7 @@ use std::path::Path;
 
 fn fresh(path: &str) -> Hydra {
     let _ = fs::remove_dir_all(path);
-    Hydra::open(path).unwrap()
+    Hydra::open(path, "state-pw").unwrap()
 }
 
 fn make_persisted_state(path: &str) -> (IdentityId, ContactId, MessageId, LobbyId) {
@@ -40,10 +40,8 @@ fn encrypted_state_persists_without_plaintext_leakage() {
     assert!(!text.contains("persisted"));
     assert!(!text.contains("self-contact"));
     assert!(!text.contains("persisted.bin"));
-    assert!(!Path::new(path).join("state-v1.hydra").exists());
-    assert!(Hydra::open(path).is_err());
 
-    let mut reopened = Hydra::open_with_state_password(path, "state-pw").unwrap();
+    let mut reopened = Hydra::open(path, "state-pw").unwrap();
     assert_eq!(reopened.list_ids().len(), 1);
     assert_eq!(reopened.active_id(), None);
     assert!(!reopened.get_id(id).unwrap().unlocked());
@@ -64,7 +62,7 @@ fn encrypted_state_persists_without_plaintext_leakage() {
 fn encrypted_state_rejects_wrong_password_corruption_and_truncation() {
     let path = "target/hydra-msg-test-encrypted-state-failures";
     make_persisted_state(path);
-    assert!(Hydra::open_with_state_password(path, "wrong-pw").is_err());
+    assert!(Hydra::open(path, "wrong-pw").is_err());
 
     let state_path = Path::new(path).join("state-v2.hydra");
     let original = fs::read(&state_path).unwrap();
@@ -73,13 +71,13 @@ fn encrypted_state_rejects_wrong_password_corruption_and_truncation() {
     let last = corrupted.len() - 2;
     corrupted[last] ^= 1;
     fs::write(&state_path, corrupted).unwrap();
-    assert!(Hydra::open_with_state_password(path, "state-pw").is_err());
+    assert!(Hydra::open(path, "state-pw").is_err());
 
     fs::write(&state_path, &original[..original.len() / 2]).unwrap();
-    assert!(Hydra::open_with_state_password(path, "state-pw").is_err());
+    assert!(Hydra::open(path, "state-pw").is_err());
 
     fs::write(&state_path, original).unwrap();
-    assert!(Hydra::open_with_state_password(path, "state-pw").is_ok());
+    assert!(Hydra::open(path, "state-pw").is_ok());
 }
 
 #[test]
@@ -89,30 +87,13 @@ fn encrypted_state_detects_local_replay_after_newer_commit() {
     let state_path = Path::new(path).join("state-v2.hydra");
     let old_state = fs::read(&state_path).unwrap();
 
-    let mut hydra = Hydra::open_with_state_password(path, "state-pw").unwrap();
+    let mut hydra = Hydra::open(path, "state-pw").unwrap();
     hydra.store_message(contact_id, true, b"newer".to_vec(), Vec::new());
     hydra.persist().unwrap();
-    assert!(Hydra::open_with_state_password(path, "state-pw").is_ok());
+    assert!(Hydra::open(path, "state-pw").is_ok());
 
     fs::write(&state_path, old_state).unwrap();
-    assert!(Hydra::open_with_state_password(path, "state-pw").is_err());
-}
-
-#[test]
-fn legacy_plaintext_state_migrates_to_encrypted_state_after_password_open() {
-    let path = "target/hydra-msg-test-legacy-state-migration";
-    let _ = fs::remove_dir_all(path);
-    fs::create_dir_all(path).unwrap();
-    fs::write(
-        Path::new(path).join("state-v1.hydra"),
-        b"HYDRA-MSG-STATE-V1\nnext_message_id\t7\n",
-    )
-    .unwrap();
-
-    let hydra = Hydra::open_with_state_password(path, "state-pw").unwrap();
-    assert_eq!(hydra.storage_status().state_generation, 1);
-    assert!(!Path::new(path).join("state-v1.hydra").exists());
-    assert!(Path::new(path).join("state-v2.hydra").exists());
+    assert!(Hydra::open(path, "state-pw").is_err());
 }
 
 #[test]

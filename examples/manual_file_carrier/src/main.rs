@@ -8,14 +8,8 @@ fn main() -> HydraResult<()> {
     let _ = fs::remove_dir_all(&root);
     fs::create_dir_all(&carrier)?;
 
-    let mut alice = Hydra::open_with_state_password(
-        root.join("alice"),
-        "example-state",
-    )?;
-    let mut bob = Hydra::open_with_state_password(
-        root.join("bob"),
-        "example-state",
-    )?;
+    let mut alice = Hydra::open(root.join("alice"), "example-state")?;
+    let mut bob = Hydra::open(root.join("bob"), "example-state")?;
 
     let alice_id = alice.generate_id("alice-password")?;
     alice.set_active_id(alice_id, "alice-password")?;
