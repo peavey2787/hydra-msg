@@ -2,9 +2,9 @@ use super::{
     decode_kdf_fields, derive_password_key, encode_kdf_fields, exact_array_from_vec, hex_decode,
     hex_encode, required_field, PasswordKdfRecord,
 };
-use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::STATE_MAGIC;
+use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 
 #[cfg(not(target_arch = "wasm32"))]
