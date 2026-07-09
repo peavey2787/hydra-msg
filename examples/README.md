@@ -23,6 +23,8 @@ Examples show how app code moves opaque HYDRA bytes over different carriers. Pro
 | [attachment_roundtrip](attachment_roundtrip/README.md) | Text plus file and byte attachments. |
 | [lobby_roundtrip](lobby_roundtrip/README.md) | Lobby invite and recipient-tagged lobby send/receive. |
 | [manual_file_carrier](manual_file_carrier/README.md) | Files on disk as a manual opaque-byte carrier. |
+| hydra-app-core | Lower-level app architecture examples used by the local example gate. |
+| hydra-app | CLI/local GUI reference app used by the local example gate. |
 | [mobile_perf_web](mobile_perf_web/README.md) | LAN browser/device WASM benchmark host. |
 | [webrtc_manual_carrier](webrtc_manual_carrier/README.md) | WebRTC DataChannel carrier after manual contact-card exchange. |
 
@@ -34,7 +36,10 @@ cargo run --manifest-path examples/contact_card/Cargo.toml
 cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml
 cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
 cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
+cargo run --manifest-path examples/hydra-app/Cargo.toml -- help
 ```
+
+`check-examples` is the source of truth for full example coverage. It also runs all `hydra-app-core` examples, smoke-runs the browser host packages, and builds the example WASM packages unless WASM is explicitly skipped.
 
 ## Run all example checks
 

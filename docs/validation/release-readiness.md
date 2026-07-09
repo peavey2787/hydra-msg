@@ -34,7 +34,7 @@ Accurate status wording:
 ## Cleanup performed
 
 - Kept the active workspace focused on protocol/product crates and active facade examples.
-- Kept demo app crates outside the active workspace under `examples/` as reference material only.
+- Included demo app crates under `examples/` in the validation workspace so the official example gate covers them.
 - Removed stale phase wording from demo app CSS comments.
 - Added real-world benchmark notes under `docs/validation/benchmark-results.md`.
 - Updated README files to point app developers at `hydra-msg` first.

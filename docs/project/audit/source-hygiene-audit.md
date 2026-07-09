@@ -57,7 +57,7 @@ crates/hydra-msg/src/messages.rs  message ids, attachments, sent/received messag
 crates/hydra-msg/src/lobbies.rs   lobby ids, policy, invites, members, and per-member sends
 crates/hydra-msg/src/storage.rs   open/load/persist, snapshots, backups, and storage status
 crates/hydra-msg/src/benchmark.rs facade benchmark report
-crates/hydra-msg/src/codec/       private wire/state/contact/message/lobby encoding helpers
+crates/hydra-msg/src/codec/       private wire/state/contact/message/lobby/handshake encoding helpers
 ```
 
 ### 3. Crate and example ownership
@@ -66,7 +66,7 @@ The active workspace remains aligned with the ownership rules:
 
 - protocol/product crates are under `crates/`;
 - examples are under `examples/`;
-- demo reference material remains outside the active workspace;
+- demo reference material remains under `examples/` and is included in the validation workspace;
 - WebRTC and file examples remain carriers only;
 - `hydra-msg` does not depend on example crates.
 

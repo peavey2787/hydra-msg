@@ -13,7 +13,7 @@ Reusable local scripts for checks, examples, vector checks, and browser package 
 |---|---|
 | `check-all.ps1` / `check-all.sh` | Full local gate: tests/static checks plus runnable examples/browser package checks. |
 | `check-tests.ps1` / `check-tests.sh` | Tests/static checks only: workspace Rust checks, docs, source-size ownership, locks, and vectors. |
-| `check-examples.ps1` / `check-examples.sh` | Runnable examples and browser package checks. |
+| `check-examples.ps1` / `check-examples.sh` | Runs every package under `examples/`, including app-core examples, app help, browser host smoke runs, and browser package checks. |
 | `build-wasm-web.ps1` / `build-wasm-web.sh` | Reusable web package builder. |
 | `linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
 | `check-rust.sh` | Workspace format, test, and clippy gate. |
@@ -70,6 +70,9 @@ PowerShell:
 ```powershell
 .\qa\ci\check-examples.ps1
 ```
+
+
+`check-examples` is the official examples gate. Every `examples/*/Cargo.toml` package must appear in this script. Long-running browser host examples are smoke-run on loopback and then stopped; browser WASM packages are built unless skipped.
 
 Skip WASM package checks while debugging native examples:
 

@@ -1,5 +1,6 @@
 mod contacts;
 mod handshake;
+mod handshake_fields;
 mod identity;
 mod lobbies;
 mod messages;

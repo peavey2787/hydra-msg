@@ -1,5 +1,9 @@
 use crate::{codec::*, ContactId, Hydra, HydraContact, HydraMsgError, HydraResult, LobbyId};
 use hydra_core::FULL_MAX_CONTENT_SIZE;
+use hydra_crypto::{
+    CryptoBackend, MlDsaKeyPair, MlKemDecapsulationKey, MlKemEncapsulationKey, RustCryptoBackend,
+    X25519SecretKey,
+};
 use hydra_session::{derive_initial_secrets, SessionError, SessionRole, SessionState};
 
 /// Opaque handshake offer bytes.
@@ -96,44 +100,102 @@ pub(crate) struct SessionRecord {
     pub(crate) closed: bool,
 }
 
-#[derive(Clone)]
 pub(crate) struct PendingOffer {
     pub(crate) contact_id: ContactId,
-    pub(crate) nonce: [u8; 32],
+    pub(crate) offer: ParsedHandshakeOffer,
+    pub(crate) x25519_secret: X25519SecretKey,
+    pub(crate) kem_decapsulation_key: MlKemDecapsulationKey,
+}
+
+fn identity_signing_key(
+    record: &crate::identity::IdentityRecord,
+) -> HydraResult<hydra_crypto::MlDsaSigningKey> {
+    let seed = record
+        .seed
+        .ok_or(HydraMsgError::InvalidInput("active identity is locked"))?;
+    Ok(MlDsaKeyPair::from_seed(seed)?.signing_key)
 }
 
 impl Hydra {
     pub fn init_handshake(&mut self, contact_id: ContactId) -> HydraResult<HandshakeOffer> {
         self.require_contact(contact_id)?;
-        let record = self.active_unlocked_record()?;
+        let record = self.active_unlocked_record()?.clone();
+        let signing_key = identity_signing_key(&record)?;
         let nonce = random_array::<32>()?;
-        let offer = encode_handshake_offer(record.id, &record.public_key, nonce);
-        self.pending_offers
-            .insert(nonce, PendingOffer { contact_id, nonce });
+        let x25519_secret = RustCryptoBackend::x25519_generate()?;
+        let x25519_public = x25519_secret.public_key();
+        let kem_keypair = RustCryptoBackend::mlkem768_generate()?;
+        let kem_public_key = kem_keypair.encapsulation_key.to_bytes();
+        let offer = encode_handshake_offer(
+            record.id,
+            &record.public_key,
+            nonce,
+            x25519_public,
+            &kem_public_key,
+            &signing_key,
+        )?;
+        let parsed_offer = decode_handshake_offer(&offer)?;
+        self.pending_offers.insert(
+            nonce,
+            PendingOffer {
+                contact_id,
+                offer: parsed_offer,
+                x25519_secret,
+                kem_decapsulation_key: kem_keypair.decapsulation_key,
+            },
+        );
         Ok(HandshakeOffer(offer))
     }
 
     pub fn reply_handshake(&mut self, offer: impl AsRef<[u8]>) -> HydraResult<HandshakeAnswer> {
-        let parsed = decode_handshake_offer(offer.as_ref())?;
+        let parsed_offer = decode_handshake_offer(offer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
-        let contact_id = ContactId(parsed.peer_id.0);
+        let contact_id = ContactId(parsed_offer.peer_id.0);
         self.contacts
             .entry(contact_id)
             .or_insert_with(|| HydraContact {
                 id: contact_id,
                 label: format!("contact-{}", contact_id.hex()),
-                public_key: parsed.public_key,
+                public_key: parsed_offer.public_key,
                 verified: false,
                 blocked: false,
             });
-        let (secret, transcript_hash) =
-            derive_facade_handshake_material(parsed.nonce, parsed.peer_id, active.id);
+
+        let signing_key = identity_signing_key(&active)?;
+        let x25519_secret = RustCryptoBackend::x25519_generate()?;
+        let x25519_public = x25519_secret.public_key();
+        let x25519_shared =
+            RustCryptoBackend::x25519_diffie_hellman(&x25519_secret, &parsed_offer.x25519_public)?;
+        let kem_public_key = MlKemEncapsulationKey::from_bytes(&parsed_offer.kem_public_key)?;
+        let (kem_ciphertext, kem_shared) =
+            RustCryptoBackend::mlkem768_encapsulate(&kem_public_key)?;
+        let nonce = random_array::<32>()?;
+        let answer = encode_handshake_answer(
+            active.id,
+            &active.public_key,
+            parsed_offer.nonce,
+            nonce,
+            x25519_public,
+            &kem_ciphertext,
+            &parsed_offer,
+            &signing_key,
+            &x25519_shared,
+            &kem_shared,
+        )?;
+        let parsed_answer = decode_handshake_answer(&answer)?;
+        verify_answer_signature(&parsed_answer, &parsed_offer)?;
+        let (secret, transcript_hash) = verify_answer_confirmation(
+            &parsed_answer,
+            &parsed_offer,
+            &x25519_shared,
+            &kem_shared,
+        )?;
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
         let state = SessionState::established(
             SessionRole::Responder,
             transcript_hash,
             active.id.0,
-            parsed.peer_id.0,
+            parsed_offer.peer_id.0,
             secrets,
         );
         self.sessions.insert(
@@ -144,38 +206,48 @@ impl Hydra {
             },
         );
         self.persist()?;
-        Ok(HandshakeAnswer(encode_handshake_answer(
-            active.id,
-            &active.public_key,
-            parsed.nonce,
-        )))
+        Ok(HandshakeAnswer(answer))
     }
 
     pub fn finish_handshake(&mut self, answer: impl AsRef<[u8]>) -> HydraResult<()> {
-        let parsed = decode_handshake_answer(answer.as_ref())?;
+        let parsed_answer = decode_handshake_answer(answer.as_ref())?;
         let active = self.active_unlocked_record()?.clone();
         let pending = self
             .pending_offers
-            .remove(&parsed.nonce)
+            .get(&parsed_answer.offer_nonce)
             .ok_or(HydraMsgError::InvalidInput("unknown handshake answer"))?;
-        if pending.contact_id != ContactId(parsed.peer_id.0) {
+        if pending.contact_id != ContactId(parsed_answer.peer_id.0) {
             return Err(HydraMsgError::InvalidInput(
                 "handshake answer does not match pending contact",
             ));
         }
-        let _ = pending.nonce;
-        let (secret, transcript_hash) =
-            derive_facade_handshake_material(parsed.nonce, active.id, parsed.peer_id);
+        verify_answer_signature(&parsed_answer, &pending.offer)?;
+        let x25519_shared = RustCryptoBackend::x25519_diffie_hellman(
+            &pending.x25519_secret,
+            &parsed_answer.x25519_public,
+        )?;
+        let kem_shared = RustCryptoBackend::mlkem768_decapsulate(
+            &pending.kem_decapsulation_key,
+            &parsed_answer.kem_ciphertext,
+        )?;
+        let (secret, transcript_hash) = verify_answer_confirmation(
+            &parsed_answer,
+            &pending.offer,
+            &x25519_shared,
+            &kem_shared,
+        )?;
+        let contact_id = pending.contact_id;
+        self.pending_offers.remove(&parsed_answer.offer_nonce);
         let secrets = derive_initial_secrets(&secret, &transcript_hash)?;
         let state = SessionState::established(
             SessionRole::Initiator,
             transcript_hash,
             active.id.0,
-            parsed.peer_id.0,
+            parsed_answer.peer_id.0,
             secrets,
         );
         self.sessions.insert(
-            pending.contact_id,
+            contact_id,
             SessionRecord {
                 state,
                 closed: false,

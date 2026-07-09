@@ -16,6 +16,8 @@ members = [
     "examples/mobile_perf_web",
     "examples/manual_file_carrier",
     "examples/webrtc_manual_carrier",
+    "examples/hydra-app-core",
+    "examples/hydra-app",
 ]
 
 [workspace.package]

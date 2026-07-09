@@ -111,6 +111,51 @@ fn contact_handshake_and_attachment_roundtrip() {
     assert_eq!(received.attachments()[1].bytes(), b"named-bytes");
 }
 
+
+#[test]
+fn authenticated_hybrid_handshake_rejects_tampered_offer_and_answer() {
+    let mut alice = fresh("target/hydra-msg-test-handshake-tamper-alice");
+    let mut bob = fresh("target/hydra-msg-test-handshake-tamper-bob");
+    let alice_id = alice.generate_id("pw").unwrap();
+    let bob_id = bob.generate_id("pw").unwrap();
+    alice.set_active_id(alice_id, "pw").unwrap();
+    bob.set_active_id(bob_id, "pw").unwrap();
+
+    let alice_contact = bob
+        .add_contact(alice.create_contact_card().unwrap())
+        .unwrap();
+    let bob_contact = alice
+        .add_contact(bob.create_contact_card().unwrap())
+        .unwrap();
+
+    let offer = alice.init_handshake(bob_contact.id()).unwrap();
+    let mut tampered_offer = offer.clone().into_bytes();
+    let last = tampered_offer.len() - 2;
+    tampered_offer[last] ^= 1;
+    assert!(bob.reply_handshake(HandshakeOffer::from_bytes(tampered_offer)).is_err());
+
+    let answer = bob.reply_handshake(offer).unwrap();
+    let mut tampered_answer = answer.into_bytes();
+    let last = tampered_answer.len() - 2;
+    tampered_answer[last] ^= 1;
+    assert!(alice
+        .finish_handshake(HandshakeAnswer::from_bytes(tampered_answer))
+        .is_err());
+
+    let answer = bob
+        .reply_handshake(alice.init_handshake(bob_contact.id()).unwrap())
+        .unwrap();
+    alice.finish_handshake(answer).unwrap();
+    assert_eq!(
+        alice.session_status(bob_contact.id()).unwrap(),
+        HydraSessionStatus::Active
+    );
+    assert_eq!(
+        bob.session_status(alice_contact.id()).unwrap(),
+        HydraSessionStatus::Active
+    );
+}
+
 #[test]
 fn fluent_message_attachment_roundtrip() {
     let mut alice = fresh("target/hydra-msg-test-fluent-alice");

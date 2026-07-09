@@ -62,7 +62,7 @@ Unix shell:
 ./qa/ci/check-examples.sh
 ```
 
-The example script runs the native examples, checks the browser host examples, and builds example-local WASM packages. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
+The example script runs every package under `examples/`: native facade examples, all `hydra-app-core` examples, the `hydra-app` help path, browser host compile checks, loopback smoke runs for long-running browser hosts, and example-local WASM package builds. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
 
 Build the reusable web package separately when validating app-facing WASM output:
 

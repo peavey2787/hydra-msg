@@ -67,12 +67,12 @@ New `hydra-group` and `hydra-msg` source files should usually stay under 400 lin
 ```text
 crates/hydra-msg/src/identity.rs    identity ids, summaries, encrypted identity records, and identity lifecycle methods
 crates/hydra-msg/src/contacts.rs    contact ids, contact metadata, contact cards, import/export, verification, and blocking
-crates/hydra-msg/src/handshake.rs   handshake wrappers, session status, session records, and contact payload sealing/opening
+crates/hydra-msg/src/handshake.rs   signed hybrid handshake orchestration, session status, session records, and contact payload sealing/opening
 crates/hydra-msg/src/messages.rs    message ids, attachments, message builders, received messages, and message persistence helpers
 crates/hydra-msg/src/lobbies.rs     lobby ids, lobby policy, invites, member management, and per-member lobby sends
 crates/hydra-msg/src/storage.rs     local open/persist/load behavior, backups, snapshots, and storage status
 crates/hydra-msg/src/benchmark.rs   facade benchmark surface
-crates/hydra-msg/src/codec/         private wire/state/contact/message/lobby encoding helpers by domain
+crates/hydra-msg/src/codec/         private wire/state/contact/message/lobby/handshake encoding helpers by domain
 ```
 
 The public API remains available through the crate root; the modules are implementation ownership boundaries, not new public paths.

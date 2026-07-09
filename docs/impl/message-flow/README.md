@@ -75,7 +75,7 @@ sequenceDiagram
 
 ## Do users need contacts first?
 
-For normal encrypted send/receive, yes: HYDRA needs peer key material and an active session so the receiver can decrypt.
+For normal encrypted send/receive, yes: HYDRA needs peer key material and an active session so the receiver can decrypt. The facade session is established by a signed hybrid handshake: ML-DSA authenticates the peer identity, ephemeral X25519 contributes classical forward secrecy, ephemeral ML-KEM-768 contributes post-quantum store-now-decrypt-later resistance, and the answer confirmation tag proves transcript/key agreement before session installation on the initiator side.
 
 That does not mean your app has to expose a traditional contact list. The app can hide the contact model behind an invite, QR code, temporary chat link, support-ticket inbox, lobby join flow, relay pickup flow, or one-time identity.
 

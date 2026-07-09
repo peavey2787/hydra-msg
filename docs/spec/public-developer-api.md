@@ -156,11 +156,13 @@ Public rule:
 
 ```text
 init_handshake(contact_id) creates the initiator's outbound handshake offer.
-reply_handshake(offer) creates the responder answer and creates/activates the responder-side session.
-finish_handshake(answer) verifies the answer and creates/activates the initiator-side session.
+reply_handshake(offer) verifies the signed offer, creates the signed responder answer, and creates/activates the responder-side session.
+finish_handshake(answer) verifies the signed answer and creates/activates the initiator-side session.
 ```
 
-After the handshake flow completes, the contact is ready for `send()` and `receive()`. App developers must not manually create sessions.
+The facade handshake is an authenticated hybrid exchange. The offer carries the initiator identity verification key, an ML-DSA signature, an ephemeral X25519 public key, and an ephemeral ML-KEM-768 encapsulation key. The answer carries the responder identity verification key, an ML-DSA signature bound to the offer, an ephemeral X25519 public key, an ML-KEM-768 ciphertext, and a confirmation tag. The session secret is derived from the X25519 shared secret, the ML-KEM shared secret, and the signed transcript; the confirmation tag proves both sides derived the same answer transcript secret before the initiator installs the session.
+
+After the handshake flow completes, the contact is ready for `send()` and `receive()`. App developers must not manually create sessions. Carriers can see handshake bytes and timing/routing metadata, but they do not receive the session secret.
 
 ## 6. Messages, payloads, and attachments
 
