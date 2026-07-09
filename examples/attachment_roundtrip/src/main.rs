@@ -7,7 +7,10 @@ fn main() -> HydraResult<()> {
     let file_path = "target/examples/attachment_roundtrip/files/from-disk.txt";
     std::fs::write(file_path, b"file attachment bytes")?;
 
-    let mut alice = Hydra::open("target/examples/attachment_roundtrip/alice", "example-state")?;
+    let mut alice = Hydra::open(
+        "target/examples/attachment_roundtrip/alice",
+        "example-state",
+    )?;
     let mut bob = Hydra::open("target/examples/attachment_roundtrip/bob", "example-state")?;
 
     let alice_id = alice.generate_id("alice-password")?;

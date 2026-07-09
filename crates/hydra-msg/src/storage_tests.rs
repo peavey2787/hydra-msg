@@ -18,9 +18,7 @@ fn make_persisted_state(path: &str) -> (IdentityId, ContactId, MessageId, LobbyI
         contact.id(),
         true,
         b"persisted".to_vec(),
-        vec![
-            HydraAttachment::from_named_bytes("persisted.bin", b"bytes".to_vec()).unwrap(),
-        ],
+        vec![HydraAttachment::from_named_bytes("persisted.bin", b"bytes".to_vec()).unwrap()],
     );
     let lobby = hydra
         .create_lobby(HydraLobbyPolicy::new("persisted lobby", 3))
@@ -104,12 +102,7 @@ fn encrypted_backup_requires_password_and_restores_state() {
     let contact = hydra
         .add_contact(hydra.create_contact_card().unwrap())
         .unwrap();
-    hydra.store_message(
-        contact.id(),
-        true,
-        b"backup-message".to_vec(),
-        Vec::new(),
-    );
+    hydra.store_message(contact.id(), true, b"backup-message".to_vec(), Vec::new());
     hydra.persist().unwrap();
     let backup = hydra.export_backup("backup-pw").unwrap();
     hydra.verify_backup(&backup).unwrap();

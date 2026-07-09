@@ -151,7 +151,11 @@ impl Hydra {
     ) -> HydraResult<HydraAnonymousAuthGrant> {
         let parsed = decode_anonymous_auth_token(token.as_ref())?;
         verify_anonymous_auth_token_tag(&self.anonymous_auth_secret, &parsed)?;
-        require_expected_policy(&parsed.policy, expected_scope.as_ref(), expected_action.as_ref())?;
+        require_expected_policy(
+            &parsed.policy,
+            expected_scope.as_ref(),
+            expected_action.as_ref(),
+        )?;
         reject_expired_policy(&parsed.policy, now_unix_seconds)?;
         let nullifier = anonymous_auth_token_nullifier(&self.anonymous_auth_secret, &parsed);
         self.reject_spent_anonymous_auth_nullifier(nullifier)?;
@@ -171,7 +175,11 @@ impl Hydra {
     ) -> HydraResult<HydraAnonymousAuthNullifier> {
         let parsed = decode_anonymous_auth_token(token.as_ref())?;
         verify_anonymous_auth_token_tag(&self.anonymous_auth_secret, &parsed)?;
-        require_expected_policy(&parsed.policy, expected_scope.as_ref(), expected_action.as_ref())?;
+        require_expected_policy(
+            &parsed.policy,
+            expected_scope.as_ref(),
+            expected_action.as_ref(),
+        )?;
         let nullifier = anonymous_auth_token_nullifier(&self.anonymous_auth_secret, &parsed);
         if !self.anonymous_auth_spent.contains(&nullifier) {
             self.anonymous_auth_spent.push(nullifier);

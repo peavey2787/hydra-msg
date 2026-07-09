@@ -132,10 +132,10 @@ pub struct Hydra {
 #[cfg(test)]
 mod anonymous_auth_tests;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod handshake_tests;
+#[cfg(test)]
+mod lobby_routing_tests;
 #[cfg(test)]
 mod storage_tests;
 #[cfg(test)]
-mod lobby_routing_tests;
+mod tests;

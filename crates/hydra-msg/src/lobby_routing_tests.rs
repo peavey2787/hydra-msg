@@ -33,9 +33,7 @@ fn lobby_routing_hints_are_randomized_and_not_authentication() {
     let lobby = alice
         .create_lobby(HydraLobbyPolicy::new("routing", 4))
         .unwrap();
-    alice
-        .add_lobby_member(lobby.id(), bob_contact)
-        .unwrap();
+    alice.add_lobby_member(lobby.id(), bob_contact).unwrap();
     let joined = bob
         .join_lobby(alice.create_lobby_invite(lobby.id()).unwrap())
         .unwrap();

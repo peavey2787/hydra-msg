@@ -242,7 +242,10 @@ fn lobby_invites_default_to_minimized_metadata_and_one_time_ids() {
     let one_time_b = alice.create_one_time_lobby_invite(4).unwrap();
     assert_ne!(one_time_a.lobby_id(), lobby.id());
     assert_ne!(one_time_a.lobby_id(), one_time_b.lobby_id());
-    assert_ne!(one_time_a.invite().as_bytes(), one_time_b.invite().as_bytes());
+    assert_ne!(
+        one_time_a.invite().as_bytes(),
+        one_time_b.invite().as_bytes()
+    );
 }
 
 #[test]
@@ -299,7 +302,8 @@ fn lobby_send_receive_uses_recipient_tagged_envelopes_and_membership_checks() {
     let joined = bob.join_lobby(invite).unwrap();
     assert_eq!(joined.id(), lobby.id());
     assert!(bob.lobby_members(joined.id()).unwrap().is_empty());
-    bob.add_lobby_member(joined.id(), alice_contact.id()).unwrap();
+    bob.add_lobby_member(joined.id(), alice_contact.id())
+        .unwrap();
     assert_eq!(
         bob.lobby_members(joined.id()).unwrap(),
         vec![alice_contact.id()]

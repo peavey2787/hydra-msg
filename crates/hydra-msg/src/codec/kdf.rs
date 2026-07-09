@@ -98,11 +98,7 @@ where
     let p = required_field(lines, "kdf_p", "kdf p")?
         .parse::<u32>()
         .map_err(|_| HydraMsgError::InvalidEncoding("kdf p"))?;
-    let salt = exact_array_from_vec(hex_decode(required_field(
-        lines,
-        "kdf_salt",
-        "kdf salt",
-    )?)?)?;
+    let salt = exact_array_from_vec(hex_decode(required_field(lines, "kdf_salt", "kdf salt")?)?)?;
     let record = PasswordKdfRecord {
         profile,
         log_n,
@@ -154,7 +150,9 @@ pub(crate) fn required_field<'a, I>(
 where
     I: Iterator<Item = &'a str>,
 {
-    let line = lines.next().ok_or(HydraMsgError::InvalidEncoding(description))?;
+    let line = lines
+        .next()
+        .ok_or(HydraMsgError::InvalidEncoding(description))?;
     let (got, value) = line
         .split_once('\t')
         .ok_or(HydraMsgError::InvalidEncoding("kdf field"))?;

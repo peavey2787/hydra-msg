@@ -43,7 +43,10 @@ pub(crate) fn encode_contact_card(
     label: Option<&str>,
     public_key: &[u8; ML_DSA_65_VK_SIZE],
 ) -> Vec<u8> {
-    let mut out = format!("{CONTACT_CARD_MAGIC}\npublic_key:{}\n", hex_encode(public_key));
+    let mut out = format!(
+        "{CONTACT_CARD_MAGIC}\npublic_key:{}\n",
+        hex_encode(public_key)
+    );
     if let Some(label) = label.filter(|label| !label.trim().is_empty()) {
         out.push_str("label:");
         out.push_str(&hex_encode(label.trim().as_bytes()));

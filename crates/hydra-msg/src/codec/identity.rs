@@ -1,6 +1,6 @@
 use super::{
-    derive_password_key, encode_kdf_columns, exact_array_from_vec, hex_decode,
-    hex_encode, parse_kdf_columns, random_array, PasswordKdfRecord,
+    derive_password_key, encode_kdf_columns, exact_array_from_vec, hex_decode, hex_encode,
+    parse_kdf_columns, random_array, PasswordKdfRecord,
 };
 use crate::{HydraMsgError, HydraResult, IdentityId, IdentityRecord, ID_EXPORT_MAGIC};
 use hydra_crypto::{CryptoBackend, MlDsaKeyPair, RustCryptoBackend, SecretBytes};

@@ -82,11 +82,8 @@ fn authenticated_hybrid_handshake_rejects_mismatched_answer_transcript() {
     let second_offer_nonce = field_hex(second_offer.as_bytes(), "nonce");
 
     let answer = bob.reply_handshake(first_offer).unwrap();
-    let transcript_swapped_answer = replace_field(
-        answer.into_bytes(),
-        "offer_nonce",
-        &second_offer_nonce,
-    );
+    let transcript_swapped_answer =
+        replace_field(answer.into_bytes(), "offer_nonce", &second_offer_nonce);
 
     assert!(alice
         .finish_handshake(HandshakeAnswer::from_bytes(transcript_swapped_answer))

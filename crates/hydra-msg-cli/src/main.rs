@@ -143,7 +143,9 @@ fn attachment_demo(args: &[String]) -> HydraResult<()> {
 
 fn bench(args: &[String]) -> HydraResult<()> {
     let data_dir = args.first().map_or("hydra-msg-data", String::as_str);
-    let state_password = args.get(1).map_or("developer-state-password", String::as_str);
+    let state_password = args
+        .get(1)
+        .map_or("developer-state-password", String::as_str);
     let hydra = Hydra::open(data_dir, state_password)?;
     let report = hydra.benchmark()?;
     print_benchmark(&report);
@@ -152,7 +154,9 @@ fn bench(args: &[String]) -> HydraResult<()> {
 
 fn doctor(args: &[String]) -> HydraResult<()> {
     let data_dir = args.first().map_or("hydra-msg-data", String::as_str);
-    let state_password = args.get(1).map_or("developer-state-password", String::as_str);
+    let state_password = args
+        .get(1)
+        .map_or("developer-state-password", String::as_str);
     let hydra = Hydra::open(data_dir, state_password)?;
     let status = hydra.storage_status();
     println!("data_dir={}", status.data_dir.display());

@@ -145,11 +145,9 @@ fn decode_expiry(value: &str) -> HydraResult<Option<u64>> {
     if value == "none" {
         return Ok(None);
     }
-    Ok(Some(
-        value
-            .parse()
-            .map_err(|_| HydraMsgError::InvalidEncoding("anonymous auth token expiry"))?,
-    ))
+    Ok(Some(value.parse().map_err(|_| {
+        HydraMsgError::InvalidEncoding("anonymous auth token expiry")
+    })?))
 }
 
 pub(crate) fn encode_anonymous_auth_secret(secret: &SecretBytes<32>) -> String {
@@ -157,7 +155,9 @@ pub(crate) fn encode_anonymous_auth_secret(secret: &SecretBytes<32>) -> String {
 }
 
 pub(crate) fn decode_anonymous_auth_secret(value: &str) -> HydraResult<SecretBytes<32>> {
-    Ok(SecretBytes::from_array(exact_array_from_vec(hex_decode(value)?)?))
+    Ok(SecretBytes::from_array(exact_array_from_vec(hex_decode(
+        value,
+    )?)?))
 }
 
 pub(crate) fn encode_anonymous_auth_spent(nullifier: HydraAnonymousAuthNullifier) -> String {
@@ -165,5 +165,7 @@ pub(crate) fn encode_anonymous_auth_spent(nullifier: HydraAnonymousAuthNullifier
 }
 
 pub(crate) fn decode_anonymous_auth_spent(value: &str) -> HydraResult<HydraAnonymousAuthNullifier> {
-    Ok(HydraAnonymousAuthNullifier(exact_array_from_vec(hex_decode(value)?)?))
+    Ok(HydraAnonymousAuthNullifier(exact_array_from_vec(
+        hex_decode(value)?,
+    )?))
 }

@@ -1,6 +1,6 @@
+use crate::{codec::*, Hydra, HydraMsgError, HydraResult, STATE_SNAPSHOT_MAGIC};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{STATE_FILE_NAME, STATE_ROLLBACK_FILE_NAME};
-use crate::{codec::*, Hydra, HydraMsgError, HydraResult, STATE_SNAPSHOT_MAGIC};
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;
 use std::{

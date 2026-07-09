@@ -65,10 +65,7 @@ pub(crate) fn encode_encrypted_state(
     Ok(out)
 }
 
-pub(crate) fn decode_encrypted_state(
-    bytes: &[u8],
-    key: &SecretBytes<32>,
-) -> HydraResult<Vec<u8>> {
+pub(crate) fn decode_encrypted_state(bytes: &[u8], key: &SecretBytes<32>) -> HydraResult<Vec<u8>> {
     let (aad, _, nonce, ciphertext) = parse_encrypted_state(bytes)?;
     let plaintext = RustCryptoBackend::aead_open(key, &nonce, aad.as_bytes(), &ciphertext)?;
     Ok((*plaintext).clone())
@@ -83,8 +80,8 @@ fn parse_backup(bytes: &[u8]) -> HydraResult<(String, PasswordKdfRecord, [u8; 12
     if !bytes.starts_with(BACKUP_MAGIC) {
         return Err(HydraMsgError::InvalidEncoding("backup magic"));
     }
-    let text = std::str::from_utf8(bytes)
-        .map_err(|_| HydraMsgError::InvalidEncoding("backup utf-8"))?;
+    let text =
+        std::str::from_utf8(bytes).map_err(|_| HydraMsgError::InvalidEncoding("backup utf-8"))?;
     let mut lines = text.lines();
     let magic = lines
         .next()
@@ -95,7 +92,11 @@ fn parse_backup(bytes: &[u8]) -> HydraResult<(String, PasswordKdfRecord, [u8; 12
     let kdf = decode_kdf_fields(&mut lines)?;
     let nonce_hex = required_field(&mut lines, "nonce", "backup nonce")?;
     let nonce = exact_array_from_vec(hex_decode(nonce_hex)?)?;
-    let ciphertext = hex_decode(required_field(&mut lines, "ciphertext", "backup ciphertext")?)?;
+    let ciphertext = hex_decode(required_field(
+        &mut lines,
+        "ciphertext",
+        "backup ciphertext",
+    )?)?;
     Ok((backup_aad(&kdf, nonce_hex), kdf, nonce, ciphertext))
 }
 
@@ -105,8 +106,8 @@ fn parse_encrypted_state(
     if !bytes.starts_with(STATE_MAGIC) {
         return Err(HydraMsgError::InvalidEncoding("state magic"));
     }
-    let text = std::str::from_utf8(bytes)
-        .map_err(|_| HydraMsgError::InvalidEncoding("state utf-8"))?;
+    let text =
+        std::str::from_utf8(bytes).map_err(|_| HydraMsgError::InvalidEncoding("state utf-8"))?;
     let mut lines = text.lines();
     let magic = lines
         .next()
