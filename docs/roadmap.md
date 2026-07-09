@@ -186,10 +186,22 @@ This roadmap succeeds when:
 - Updated benchmark notes so old facade-handshake timing numbers must be regenerated after the authenticated hybrid handshake path.
 - Updated the maintainer privacy invariant map with P1 evidence.
 
+### Completed in P2
+
+- Added versioned encrypted normal state file support as `state-v2.hydra`.
+- Added password-aware open APIs: `open_with_state_password` and `open_default_with_state_password`.
+- Added `enable_encrypted_state` for callers that opened an empty or legacy facade and then want to seal future state.
+- Kept the public `open` path for fresh/demo/legacy plaintext reads, but encrypted state requires the password-aware open path.
+- Sealed identity records, contact records, message plaintext, attachment bytes, lobby records, and local metadata inside the encrypted state payload.
+- Authenticated the state v2 header, KDF profile, nonce, and ciphertext with AEAD associated data.
+- Added legacy plaintext `state-v1.hydra` migration through the password-aware open path, with plaintext removal only after the encrypted v2 write succeeds.
+- Added local rollback guard checks for replayed older state files on the same data directory.
+- Added tests for ciphertext plaintext leakage, wrong state password, corrupted ciphertext, truncated file, replayed old file, backup restore into encrypted state, and legacy migration.
+- Extended privacy-invariant checks so the official `check-all.*` path guards the encrypted state format and does not regress to plaintext normal state.
+
 ### Current known gaps
 
-- Normal local state remains plaintext at rest until P2 is implemented.
-- Identity password protection still needs memory-hard KDF hardening until P3 is implemented.
+- State/password protection still needs memory-hard KDF hardening until P3 is implemented.
 - Contact cards and lobby invites still expose intentional metadata and need first-class one-time/unlinkable API support.
 - Lobby recipient tags remain routing hints and do not provide anonymous routing.
 - Anonymous-to-network requires a carrier/network layer such as Tor, I2P, mixnet, proxy, or a relay design that hides IP/timing metadata.
@@ -197,11 +209,10 @@ This roadmap succeeds when:
 
 ### Active phase
 
-- P2 encrypted local state at rest is ready to start.
+- P3 memory-hard password KDF migration is ready to start.
 
 ### Not started
 
-- P2 encrypted local state at rest.
 - P3 memory-hard password KDF migration.
 - P4 one-time contact-card and invite metadata minimization.
 - P5 lobby recipient-tag privacy boundary hardening.

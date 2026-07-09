@@ -30,7 +30,7 @@ identity -> contact card exchange -> contact -> handshake -> session -> encrypte
 
 ```mermaid
 flowchart LR
-    A[Open local HYDRA store] --> B[Generate or import identity]
+    A[Open encrypted local HYDRA store] --> B[Generate or import identity]
     B --> C[Create contact card]
     C --> D[App carrier exchanges contact cards]
     D --> E[Add peer contact]
@@ -115,8 +115,9 @@ HYDRA should still treat the peer as a key-bearing contact/session internally. T
 Current facade boundaries:
 
 ```text
-state-v1.hydra local file: plaintext local state until encrypted state-at-rest ships
-identity password protection: AEAD seed wrapping, but not memory-hard KDF yet
+state-v2.hydra local file: authenticated-encrypted state when opened with a state password
+legacy state-v1.hydra: migrates through open_with_state_password, then is removed after v2 write
+identity and state passwords: AEAD wrapping, but not memory-hard KDF yet
 contact cards: label, public key, contact id/fingerprint, and safety code are visible
 lobby invites: lobby id, label, max-member policy, and member list are visible
 lobby recipient(): per-member routing hint, not anonymous routing or authentication

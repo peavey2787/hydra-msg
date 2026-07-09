@@ -104,4 +104,4 @@ P13 passes only when:
 - no runtime `hydra-msg-data/` or local identity material is staged;
 - benchmark numbers are recorded or updated in `docs/validation/benchmark-results.md` if they materially differ.
 
-Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit, external interoperability certification, encrypted local state at rest, memory-hard password KDF migration, network anonymity, or anonymous-but-authorized access control unless those properties have separate implementation evidence.
+Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit, external interoperability certification, memory-hard password KDF migration, network anonymity, or anonymous-but-authorized access control unless those properties have separate implementation evidence.

@@ -5,8 +5,14 @@ fn main() -> HydraResult<()> {
     let _ = std::fs::remove_dir_all("target/examples/contact_card/bob");
     let _ = std::fs::remove_dir_all("target/examples/contact_card/restored");
 
-    let mut alice = Hydra::open("target/examples/contact_card/alice")?;
-    let mut bob = Hydra::open("target/examples/contact_card/bob")?;
+    let mut alice = Hydra::open_with_state_password(
+        "target/examples/contact_card/alice",
+        "example-state",
+    )?;
+    let mut bob = Hydra::open_with_state_password(
+        "target/examples/contact_card/bob",
+        "example-state",
+    )?;
 
     let alice_id = alice.generate_id("alice-password")?;
     let bob_id = bob.generate_id("bob-password")?;
@@ -31,7 +37,10 @@ fn main() -> HydraResult<()> {
     );
 
     let exported = bob.export_contacts()?;
-    let mut restored = Hydra::open("target/examples/contact_card/restored")?;
+    let mut restored = Hydra::open_with_state_password(
+        "target/examples/contact_card/restored",
+        "example-state",
+    )?;
     restored.import_contacts(exported)?;
     println!("Restored contact count: {}", restored.list_contacts().len());
 

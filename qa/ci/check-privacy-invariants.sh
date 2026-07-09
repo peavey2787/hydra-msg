@@ -6,9 +6,16 @@ hydra_enter_repo_root
 
 handshake_file="crates/hydra-msg/src/codec/handshake.rs"
 handshake_api_file="crates/hydra-msg/src/handshake.rs"
+storage_file="crates/hydra-msg/src/storage.rs"
+storage_codec_file="crates/hydra-msg/src/codec/storage.rs"
+lib_file="crates/hydra-msg/src/lib.rs"
 
 if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
   echo "hydra-msg handshake files missing" >&2
+  exit 1
+fi
+if [ ! -f "$storage_file" ] || [ ! -f "$storage_codec_file" ] || [ ! -f "$lib_file" ]; then
+  echo "hydra-msg storage files missing" >&2
   exit 1
 fi
 
@@ -49,6 +56,18 @@ require_source_text "$handshake_api_file" "pending.contact_id != ContactId(parse
 
 forbidden_source_text "$handshake_file" "derive_facade_handshake_material" "removed public transcript-only facade secret derivation helper"
 forbidden_source_text "$handshake_file" "public transcript" "facade secret must not be documented as public-transcript derived"
+
+require_source_text "$lib_file" "STATE_V2_MAGIC" "encrypted local state v2 format constant"
+require_source_text "$lib_file" 'const STATE_FILE_NAME: &str = "state-v2.hydra"' "normal local state file uses encrypted v2 path"
+require_source_text "$storage_file" "open_with_state_password" "password-aware encrypted state open path"
+require_source_text "$storage_file" "encode_encrypted_state_v2" "normal state is sealed before writing"
+require_source_text "$storage_file" "decode_encrypted_state_v2" "normal state is opened with authentication"
+require_source_text "$storage_file" "reject_state_rollback" "local replay rollback guard is enforced"
+require_source_text "$storage_file" "fs::remove_file(legacy)?" "legacy plaintext state is removed after encrypted migration"
+require_source_text "$storage_codec_file" "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
+require_source_text "$storage_codec_file" "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
+require_source_text "$storage_codec_file" "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
+forbidden_source_text "$lib_file" 'const STATE_FILE_NAME: &str = "state-v1.hydra"' "normal local state must not use plaintext v1 path"
 
 if grep -RIn "derive_facade_handshake_material" crates/hydra-msg/src; then
   echo "removed public transcript-only facade helper was reintroduced" >&2

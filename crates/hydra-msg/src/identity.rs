@@ -73,6 +73,9 @@ impl Hydra {
             true,
         )?;
         let id = record.id;
+        if self.state_key.is_none() {
+            self.state_key = Some(state_key(password.as_ref()));
+        }
         self.identities.insert(id, record);
         self.persist()?;
         Ok(id)
@@ -91,6 +94,9 @@ impl Hydra {
             false,
         )?;
         let id = record.id;
+        if self.state_key.is_none() {
+            self.state_key = Some(state_key(password.as_ref()));
+        }
         self.identities.insert(id, record);
         self.persist()?;
         Ok(id)
@@ -137,7 +143,11 @@ impl Hydra {
     }
 
     pub fn set_active_id(&mut self, id: IdentityId, password: impl AsRef<str>) -> HydraResult<()> {
-        self.unlock_id(id, password)?;
+        self.unlock_id(id, password.as_ref())?;
+        if self.state_key.is_none() {
+            self.state_key = Some(state_key(password.as_ref()));
+            self.persist()?;
+        }
         self.active_id = Some(id);
         Ok(())
     }

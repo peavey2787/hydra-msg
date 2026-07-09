@@ -16,7 +16,7 @@ It gives apps a simple way to create identities, add contacts, establish session
 ## Simple mental model
 
 ```text
-open local HYDRA store
+open encrypted local HYDRA store
   -> create or import your identity
   -> exchange contact cards over any app carrier
   -> establish a session with the contact
@@ -25,7 +25,7 @@ open local HYDRA store
 
 A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
 
-Current storage boundary: encrypted backups are supported, but the normal local `state-v1.hydra` file is still plaintext at rest and should be treated as sensitive app data. Identity password protection is not memory-hard yet, and contact cards/lobby invites intentionally expose metadata to recipients.
+Current storage boundary: normal local state is sealed into `state-v2.hydra` when the facade has a state password, and legacy `state-v1.hydra` files migrate through `open_with_state_password`. Identity password protection and the state password KDF are not memory-hard yet, and contact cards/lobby invites intentionally expose metadata to recipients.
 
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 
@@ -38,7 +38,7 @@ use hydra_msg::{Hydra, HydraMessage, HydraResult};
 
 fn bob_sends_to_alice() -> HydraResult<()> {
     // Open Bob's local HYDRA store for this app/device.
-    let mut bob = Hydra::open_default()?;
+    let mut bob = Hydra::open_default_with_state_password("bob-state-password")?;
 
     // Create or import Bob's identity, then unlock it for this run.
     let bob_id = bob.generate_id("bob-password")?;
@@ -76,7 +76,7 @@ use hydra_msg::{Hydra, HydraResult};
 
 fn alice_receives_from_bob() -> HydraResult<()> {
     // Open Alice's local HYDRA store for this app/device.
-    let mut alice = Hydra::open_default()?;
+    let mut alice = Hydra::open_default_with_state_password("alice-state-password")?;
 
     // Create or import Alice's identity, then unlock it for this run.
     let alice_id = alice.generate_id("alice-password")?;

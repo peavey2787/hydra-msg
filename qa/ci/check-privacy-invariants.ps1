@@ -11,9 +11,15 @@ Set-Location $RepoRoot
 
 $HandshakeFile = "crates/hydra-msg/src/codec/handshake.rs"
 $HandshakeApiFile = "crates/hydra-msg/src/handshake.rs"
+$StorageFile = "crates/hydra-msg/src/storage.rs"
+$StorageCodecFile = "crates/hydra-msg/src/codec/storage.rs"
+$LibFile = "crates/hydra-msg/src/lib.rs"
 
 if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
     throw "hydra-msg handshake files missing"
+}
+if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $LibFile)) {
+    throw "hydra-msg storage files missing"
 }
 
 function Assert-SourceText {
@@ -53,6 +59,18 @@ Assert-SourceText $HandshakeApiFile "pending.contact_id != ContactId(parsed_answ
 
 Assert-NoSourceText $HandshakeFile "derive_facade_handshake_material" "removed public transcript-only facade secret derivation helper"
 Assert-NoSourceText $HandshakeFile "public transcript" "facade secret must not be documented as public-transcript derived"
+
+Assert-SourceText $LibFile "STATE_V2_MAGIC" "encrypted local state v2 format constant"
+Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v2.hydra`"" "normal local state file uses encrypted v2 path"
+Assert-SourceText $StorageFile "open_with_state_password" "password-aware encrypted state open path"
+Assert-SourceText $StorageFile "encode_encrypted_state_v2" "normal state is sealed before writing"
+Assert-SourceText $StorageFile "decode_encrypted_state_v2" "normal state is opened with authentication"
+Assert-SourceText $StorageFile "reject_state_rollback" "local replay rollback guard is enforced"
+Assert-SourceText $StorageFile "fs::remove_file(legacy)?" "legacy plaintext state is removed after encrypted migration"
+Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_seal" "encrypted state uses AEAD sealing"
+Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_open" "encrypted state uses AEAD opening"
+Assert-SourceText $StorageCodecFile "STATE_V2_KDF_PROFILE" "encrypted state stores versioned KDF profile"
+Assert-NoSourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v1.hydra`"" "normal local state must not use plaintext v1 path"
 
 $reintroduced = Select-String -Path "crates/hydra-msg/src/*.rs", "crates/hydra-msg/src/codec/*.rs" -Pattern "derive_facade_handshake_material" -ErrorAction SilentlyContinue
 if ($reintroduced) {

@@ -55,7 +55,7 @@ qa/ci/check-privacy-invariants.ps1
 | Anonymous to relay/server | Public docs say relays only need opaque bytes but may see timing/IP/routing metadata. | Carrier boundary, `HydraEnvelope`, lobby recipient hints. | Correctly documented. HYDRA encryption does not hide relay-observable metadata. |
 | Anonymous to network | Public docs say Tor/I2P/mixnet/proxy/relay design is required. | Outside HYDRA facade. | Unsupported by HYDRA encryption alone; must stay documented as carrier/network-layer work. |
 | Anonymous-but-authorized | Public docs say proofs/blind credentials/tokens are separate. | No current facade implementation. | Unsupported until P6. |
-| Local state confidentiality | Public API now warns `state-v1.hydra` is plaintext at rest. | `storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Unsupported until P2. Normal state must be treated as sensitive. |
+| Local state confidentiality | Public API states `state-v2.hydra` is authenticated-encrypted when opened with a state password, and legacy `state-v1.hydra` migrates through the password-aware open path. | `storage.rs`, `codec/storage.rs`, `codec/messages.rs`, `codec/contacts.rs`, `codec/lobbies.rs`, `codec/identity.rs`. | Supported for normal facade state in P2, with HKDF/SHA3 password derivation remaining legacy until P3. |
 | Backup confidentiality | Public API exposes encrypted backup export/import. | `export_backup`, `import_backup`, `codec/storage.rs`. | Supported for backup ciphertext, but password KDF is not enterprise-grade until P3. |
 | Identity password hardening | Public API now warns password protection is not memory-hard yet. | `codec/identity.rs`, `codec/storage.rs`. | Partial only: AEAD seed wrapping exists, but HKDF/SHA3-only password derivation is cheap against offline attack. P3 owns Argon2id/scrypt migration. |
 | Contact card metadata | Public API now states cards expose labels, public keys, ids, and safety code. | `codec/contacts.rs`. | Intentional visible metadata. Minimized/one-time helpers remain P4. |
@@ -127,7 +127,6 @@ Invariant: authorization tokens/proofs must stay separate from message encryptio
 
 ## Unsupported properties that must stay marked as future work
 
-- Normal `state-v1.hydra` local state encryption at rest.
 - Memory-hard password KDF for identity records, state encryption, and backup keys.
 - First-class one-time contact-card and one-time lobby-invite APIs.
 - Automatic unlinkability protection across chats/lobbies/mailboxes.
@@ -142,7 +141,7 @@ P1 closes the known facade-handshake confidentiality verification gap, but does 
 
 ```text
 - content encryption and carrier opacity are implementation-backed after session establishment;
-- local state at rest remains plaintext and must be treated as sensitive;
+- local state at rest is now AEAD-sealed in `state-v2.hydra` when a state password is configured;
 - password-derived protection remains legacy/cheap until memory-hard KDF migration;
 - metadata in contact cards, lobby invites, and recipient tags is intentional and visible;
 - network anonymity and anonymous authorization are separate designs, not HYDRA encryption properties.

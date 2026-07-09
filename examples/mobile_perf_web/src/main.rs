@@ -51,7 +51,10 @@ fn main() -> HydraResult<()> {
 }
 
 fn benchmark_json() -> HydraResult<String> {
-    let hydra = Hydra::open("target/examples/mobile_perf_web/server")?;
+    let hydra = Hydra::open_with_state_password(
+        "target/examples/mobile_perf_web/server",
+        "example-state",
+    )?;
     let report = hydra.benchmark()?;
     Ok(format!(
         "{{\"suite\":\"{}\",\"iterations\":{},\"handshakeAvgMs\":{},\"sendReceiveAvgMs\":{}}}",

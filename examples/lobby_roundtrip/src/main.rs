@@ -4,8 +4,14 @@ fn main() -> HydraResult<()> {
     let _ = std::fs::remove_dir_all("target/examples/lobby_roundtrip/alice");
     let _ = std::fs::remove_dir_all("target/examples/lobby_roundtrip/bob");
 
-    let mut alice = Hydra::open("target/examples/lobby_roundtrip/alice")?;
-    let mut bob = Hydra::open("target/examples/lobby_roundtrip/bob")?;
+    let mut alice = Hydra::open_with_state_password(
+        "target/examples/lobby_roundtrip/alice",
+        "example-state",
+    )?;
+    let mut bob = Hydra::open_with_state_password(
+        "target/examples/lobby_roundtrip/bob",
+        "example-state",
+    )?;
 
     let alice_id = alice.generate_id("alice-password")?;
     let bob_id = bob.generate_id("bob-password")?;
