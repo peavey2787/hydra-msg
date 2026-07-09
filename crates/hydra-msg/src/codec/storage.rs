@@ -5,8 +5,8 @@ use super::{
 use crate::{HydraMsgError, HydraResult, BACKUP_MAGIC, STATE_MAGIC};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 
-const STATE_KEY_LABEL: &[u8] = b"HYDRA-MSG/v1/facade/state-key";
-const BACKUP_KEY_LABEL: &[u8] = b"HYDRA-MSG/v1/facade/backup-key";
+const STATE_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/state-key";
+const BACKUP_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/backup-key";
 
 pub(crate) fn new_storage_kdf() -> HydraResult<PasswordKdfRecord> {
     PasswordKdfRecord::new_interactive()
@@ -89,7 +89,7 @@ fn parse_backup(bytes: &[u8]) -> HydraResult<(String, PasswordKdfRecord, [u8; 12
     let magic = lines
         .next()
         .ok_or(HydraMsgError::InvalidEncoding("backup magic line"))?;
-    if magic != "HYDRA-MSG-BACKUP-V1" {
+    if magic != "HYDRA-MSG-BACKUP" {
         return Err(HydraMsgError::InvalidEncoding("backup magic line"));
     }
     let kdf = decode_kdf_fields(&mut lines)?;
@@ -111,7 +111,7 @@ fn parse_encrypted_state(
     let magic = lines
         .next()
         .ok_or(HydraMsgError::InvalidEncoding("state magic line"))?;
-    if magic != "HYDRA-MSG-STATE-V1" {
+    if magic != "HYDRA-MSG-STATE" {
         return Err(HydraMsgError::InvalidEncoding("state magic line"));
     }
     let kdf = decode_kdf_fields(&mut lines)?;

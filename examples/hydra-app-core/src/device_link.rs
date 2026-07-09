@@ -528,7 +528,7 @@ struct RequestCore {
 impl RequestCore {
     fn digest(&self) -> [u8; 64] {
         let mut input = Vec::with_capacity(256 + self.requester_public_key.len());
-        input.extend_from_slice(b"HYDRA-MSG/app/device-link/request/v1");
+        input.extend_from_slice(b"HYDRA-MSG/app/device-link/request");
         input.push(DEVICE_LINK_VERSION);
         input.extend_from_slice(&self.account_identity_fingerprint.0);
         input.extend_from_slice(&self.requester_device_id.0);
@@ -560,7 +560,7 @@ struct ApprovalCore {
 impl ApprovalCore {
     fn digest(&self) -> [u8; 64] {
         let mut input = Vec::with_capacity(320);
-        input.extend_from_slice(b"HYDRA-MSG/app/device-link/approval/v1");
+        input.extend_from_slice(b"HYDRA-MSG/app/device-link/approval");
         input.push(DEVICE_LINK_VERSION);
         input.extend_from_slice(&self.request_digest);
         input.extend_from_slice(&self.approved_device_id.0);

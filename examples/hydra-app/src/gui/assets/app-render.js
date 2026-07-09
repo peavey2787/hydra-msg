@@ -42,7 +42,7 @@ function renderContacts(contacts) {
           <div>mailbox binding: <code>${escapeHtml(contact.mailbox_binding || '')}</code></div>
           <div>QR verification payload: <code>${escapeHtml(contact.qr)}</code></div>
           <form class="verify-contact-qr-form form-grid compact-form" data-alias="${escapeHtml(contact.alias)}">
-            <label>Compare scanned QR payload<textarea name="qr_payload" placeholder="paste hydra-msg-contact-v1|..."></textarea></label>
+            <label>Compare scanned QR payload<textarea name="qr_payload" placeholder="paste hydra-msg-contact|..."></textarea></label>
             <button type="submit">Verify QR against this contact</button>
           </form>
         </details>

@@ -258,7 +258,7 @@ fn verify_offer_signature(offer: &ParsedHandshakeOffer) -> HydraResult<()> {
 
 fn offer_signature_digest(core: &[u8]) -> [u8; TRANSCRIPT_HASH_SIZE] {
     let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/v1/facade-handshake/offer-signature");
+    input.extend_from_slice(b"HYDRA-MSG/facade-handshake/offer-signature");
     input.extend_from_slice(core);
     RustCryptoBackend::sha3_512(&input)
 }
@@ -268,7 +268,7 @@ fn answer_signature_digest(
     answer_core: &[u8],
 ) -> [u8; TRANSCRIPT_HASH_SIZE] {
     let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/v1/facade-handshake/answer-signature");
+    input.extend_from_slice(b"HYDRA-MSG/facade-handshake/answer-signature");
     input.extend_from_slice(&offer.core);
     input.extend_from_slice(&offer.signature);
     input.extend_from_slice(answer_core);
@@ -294,7 +294,7 @@ fn answer_confirmation_tag(
 
 fn confirmation_input(transcript_hash: &[u8; TRANSCRIPT_HASH_SIZE]) -> Vec<u8> {
     let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/v1/facade-handshake/answer-confirmation");
+    input.extend_from_slice(b"HYDRA-MSG/facade-handshake/answer-confirmation");
     input.extend_from_slice(transcript_hash);
     input
 }
@@ -307,7 +307,7 @@ fn derive_material_from_parts(
     kem_secret: &SecretBytes<32>,
 ) -> (SecretBytes<32>, [u8; TRANSCRIPT_HASH_SIZE]) {
     let mut transcript = Vec::new();
-    transcript.extend_from_slice(b"HYDRA-MSG/v1/facade-handshake/hybrid-transcript");
+    transcript.extend_from_slice(b"HYDRA-MSG/facade-handshake/hybrid-transcript");
     transcript.extend_from_slice(&offer.core);
     transcript.extend_from_slice(&offer.signature);
     transcript.extend_from_slice(answer_core);
@@ -315,7 +315,7 @@ fn derive_material_from_parts(
     let transcript_hash = RustCryptoBackend::sha3_512(&transcript);
 
     let mut input_key_material = Vec::new();
-    input_key_material.extend_from_slice(b"HYDRA-MSG/v1/facade-handshake/hybrid-secret");
+    input_key_material.extend_from_slice(b"HYDRA-MSG/facade-handshake/hybrid-secret");
     input_key_material.extend_from_slice(x25519_secret.expose_secret());
     input_key_material.extend_from_slice(kem_secret.expose_secret());
     let secret = RustCryptoBackend::hkdf_extract(&transcript_hash, &input_key_material);

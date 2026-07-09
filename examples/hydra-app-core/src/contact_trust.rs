@@ -18,10 +18,10 @@ const STORE_SALT_SIZE: usize = 32;
 const STORE_NONCE_SIZE: usize = 12;
 const STORE_HEADER_SIZE: usize = 8 + 1 + 1 + 4 + STORE_SALT_SIZE + STORE_NONCE_SIZE;
 const PLAINTEXT_MAGIC: &[u8; 16] = b"HYDRACT-PLAIN-1\n";
-const CONTACT_KDF_LABEL: &[u8] = b"HYDRA-MSG/v1/app/contact-store";
-const SAFETY_LABEL: &[u8] = b"HYDRA-MSG/v1/app/contact/safety-number";
-const MAILBOX_LABEL: &[u8] = b"HYDRA-MSG/v1/app/contact/mailbox-binding";
-const QR_PREFIX: &str = "hydra-msg-contact-v1";
+const CONTACT_KDF_LABEL: &[u8] = b"HYDRA-MSG/app/contact-store";
+const SAFETY_LABEL: &[u8] = b"HYDRA-MSG/app/contact/safety-number";
+const MAILBOX_LABEL: &[u8] = b"HYDRA-MSG/app/contact/mailbox-binding";
+const QR_PREFIX: &str = "hydra-msg-contact";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TrustedContact {

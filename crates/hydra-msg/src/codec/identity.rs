@@ -5,8 +5,8 @@ use super::{
 use crate::{HydraMsgError, HydraResult, IdentityId, IdentityRecord, ID_EXPORT_MAGIC};
 use hydra_crypto::{CryptoBackend, MlDsaKeyPair, RustCryptoBackend, SecretBytes};
 
-const IDENTITY_SEED_KEY_LABEL: &[u8] = b"HYDRA-MSG/v1/facade/identity-seed-key";
-const IDENTITY_PASSWORD_TAG_LABEL: &[u8] = b"HYDRA-MSG/v1/facade/identity-password-tag";
+const IDENTITY_SEED_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/identity-seed-key";
+const IDENTITY_PASSWORD_TAG_LABEL: &[u8] = b"HYDRA-MSG/facade/identity-password-tag";
 
 pub(crate) fn identity_record_from_seed(
     label: String,
@@ -39,7 +39,7 @@ pub(crate) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResu
     let plaintext = RustCryptoBackend::aead_open(
         &key,
         &record.seed_nonce,
-        b"HYDRA-MSG/v1/facade/encrypted-seed",
+        b"HYDRA-MSG/facade/encrypted-seed",
         &record.encrypted_seed,
     )?;
     exact_array_from_vec((*plaintext).clone())
@@ -138,7 +138,7 @@ fn encrypt_seed_with_key(
     seed: &[u8; 32],
     nonce: [u8; 12],
 ) -> HydraResult<Vec<u8>> {
-    RustCryptoBackend::aead_seal(key, &nonce, b"HYDRA-MSG/v1/facade/encrypted-seed", seed)
+    RustCryptoBackend::aead_seal(key, &nonce, b"HYDRA-MSG/facade/encrypted-seed", seed)
         .map_err(Into::into)
 }
 

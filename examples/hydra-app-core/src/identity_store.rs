@@ -427,7 +427,7 @@ fn derive_store_key(
     kdf_policy: StorageKdfPolicy,
 ) -> AppResult<SecretBytes<32>> {
     derive_storage_key(
-        b"HYDRA-MSG/app/identity-store-kdf/v1" as &'static [u8],
+        b"HYDRA-MSG/app/identity-store-kdf" as &'static [u8],
         password,
         salt,
         kdf_policy.kdf_id,
@@ -440,7 +440,7 @@ pub(crate) fn derive_device_fingerprint(
     identity_fingerprint: IdentityFingerprint,
 ) -> DeviceFingerprint {
     let mut input = Vec::with_capacity(32 + 32 + 37);
-    input.extend_from_slice(b"HYDRA-MSG/app/device-fingerprint/v1");
+    input.extend_from_slice(b"HYDRA-MSG/app/device-fingerprint");
     input.extend_from_slice(&device_id.0);
     input.extend_from_slice(&identity_fingerprint.0);
     DeviceFingerprint(RustCryptoBackend::sha3_256(&input))

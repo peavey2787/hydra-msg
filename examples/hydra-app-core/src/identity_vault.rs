@@ -13,7 +13,7 @@ use crate::{
 
 const VAULT_DIR: &str = "identities";
 const REGISTRY_FILE: &str = "identity-vault.txt";
-const REGISTRY_MAGIC: &str = "HYDRA-MSG-IDENTITY-VAULT-v1";
+const REGISTRY_MAGIC: &str = "HYDRA-MSG-IDENTITY-VAULT";
 const IDENTITY_FILE_SUFFIX: &str = ".identity.db";
 const MAX_LABEL_LEN: usize = 64;
 pub const MAX_IDLE_TIMEOUT_SECONDS: u64 = 24 * 60 * 60;

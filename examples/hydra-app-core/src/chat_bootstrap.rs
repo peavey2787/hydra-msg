@@ -6,15 +6,15 @@ use crate::{
     DeviceId, PublicIdentity,
 };
 
-pub const CHAT_BOOTSTRAP_PREFIX: &str = "hydra-msg-chat-v1";
+pub const CHAT_BOOTSTRAP_PREFIX: &str = "hydra-msg-chat";
 pub const DEFAULT_INVITE_TTL_SECONDS: u64 = 24 * 60 * 60;
 pub const MIN_INVITE_TTL_SECONDS: u64 = 60;
 pub const MAX_INVITE_TTL_SECONDS: u64 = 30 * 24 * 60 * 60;
 pub const MAX_JOIN_CODE_LEN: usize = 8_192;
 
-const CONTEXT_LABEL: &[u8] = b"HYDRA-MSG/v1/app/chat-bootstrap/context";
-const SAFETY_LABEL: &[u8] = b"HYDRA-MSG/v1/app/chat-bootstrap/safety";
-const MAILBOX_LABEL: &[u8] = b"HYDRA-MSG/v1/app/chat-bootstrap/mailbox";
+const CONTEXT_LABEL: &[u8] = b"HYDRA-MSG/app/chat-bootstrap/context";
+const SAFETY_LABEL: &[u8] = b"HYDRA-MSG/app/chat-bootstrap/safety";
+const MAILBOX_LABEL: &[u8] = b"HYDRA-MSG/app/chat-bootstrap/mailbox";
 const MAX_LABEL_LEN: usize = 96;
 
 #[derive(Clone, Copy)]

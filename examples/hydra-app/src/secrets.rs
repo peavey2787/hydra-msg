@@ -95,8 +95,8 @@ fn load_local_key_file(data_dir: &Path) -> Result<AppStorageSecret, String> {
 }
 
 fn derive_app_secret(password: &[u8]) -> [u8; 32] {
-    let mut input = Vec::with_capacity(b"HYDRA-MSG/app/storage-secret/v1".len() + password.len());
-    input.extend_from_slice(b"HYDRA-MSG/app/storage-secret/v1");
+    let mut input = Vec::with_capacity(b"HYDRA-MSG/app/storage-secret".len() + password.len());
+    input.extend_from_slice(b"HYDRA-MSG/app/storage-secret");
     input.extend_from_slice(password);
     RustCryptoBackend::sha3_256(&input)
 }

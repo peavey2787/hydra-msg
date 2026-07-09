@@ -39,22 +39,22 @@ use handshake::{PendingOffer, SessionRecord};
 use identity::IdentityRecord;
 use messages::StoredMessage;
 
-pub(crate) const CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V1";
-pub(crate) const ID_EXPORT_MAGIC: &[u8] = b"HYDRA-MSG-ID-V1\n";
-pub(crate) const OFFER_MAGIC: &[u8] = b"HYDRA-MSG-OFFER-V1\n";
-pub(crate) const ANSWER_MAGIC: &[u8] = b"HYDRA-MSG-ANSWER-V1\n";
-pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD-V1\n";
-pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V1";
-pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD-V1\n";
-pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP-V1\n";
-pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT-V1\n";
-pub(crate) const STATE_MAGIC: &[u8] = b"HYDRA-MSG-STATE-V1\n";
-pub(crate) const CONTACTS_MAGIC: &[u8] = b"HYDRA-MSG-CONTACTS-V1\n";
-pub(crate) const MESSAGES_MAGIC: &[u8] = b"HYDRA-MSG-MESSAGES-V1\n";
+pub(crate) const CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT";
+pub(crate) const ID_EXPORT_MAGIC: &[u8] = b"HYDRA-MSG-ID\n";
+pub(crate) const OFFER_MAGIC: &[u8] = b"HYDRA-MSG-OFFER\n";
+pub(crate) const ANSWER_MAGIC: &[u8] = b"HYDRA-MSG-ANSWER\n";
+pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD\n";
+pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE";
+pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD\n";
+pub(crate) const BACKUP_MAGIC: &[u8] = b"HYDRA-MSG-BACKUP\n";
+pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT\n";
+pub(crate) const STATE_MAGIC: &[u8] = b"HYDRA-MSG-STATE\n";
+pub(crate) const CONTACTS_MAGIC: &[u8] = b"HYDRA-MSG-CONTACTS\n";
+pub(crate) const MESSAGES_MAGIC: &[u8] = b"HYDRA-MSG-MESSAGES\n";
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) const STATE_FILE_NAME: &str = "state-v1.hydra";
+pub(crate) const STATE_FILE_NAME: &str = "state.hydra";
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) const STATE_ROLLBACK_FILE_NAME: &str = "state-v1.hydra.rollback";
+pub(crate) const STATE_ROLLBACK_FILE_NAME: &str = "state.hydra.rollback";
 
 /// Public facade result type.
 pub type HydraResult<T> = Result<T, HydraMsgError>;

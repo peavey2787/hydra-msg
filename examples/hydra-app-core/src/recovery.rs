@@ -66,7 +66,7 @@ impl RecoveryKey {
     #[must_use]
     pub fn fingerprint(&self) -> [u8; 32] {
         let mut input = Vec::with_capacity(32 + 37);
-        input.extend_from_slice(b"HYDRA-MSG/app/recovery-key-fp/v1");
+        input.extend_from_slice(b"HYDRA-MSG/app/recovery-key-fp");
         input.extend_from_slice(&self.bytes);
         RustCryptoBackend::sha3_256(&input)
     }
@@ -459,10 +459,10 @@ fn derive_backup_key(
 ) -> AppResult<SecretBytes<32>> {
     let label = match secret.policy() {
         RecoveryKeyPolicy::UserPassphrase => {
-            b"HYDRA-MSG/app/recovery-backup-passphrase-kdf/v1" as &'static [u8]
+            b"HYDRA-MSG/app/recovery-backup-passphrase-kdf" as &'static [u8]
         }
         RecoveryKeyPolicy::RandomRecoveryKey => {
-            b"HYDRA-MSG/app/recovery-backup-random-key-kdf/v1" as &'static [u8]
+            b"HYDRA-MSG/app/recovery-backup-random-key-kdf" as &'static [u8]
         }
     };
     derive_storage_key(

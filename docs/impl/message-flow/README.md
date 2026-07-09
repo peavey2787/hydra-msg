@@ -115,7 +115,7 @@ HYDRA should still treat the peer as a key-bearing contact/session internally. T
 Current facade boundaries:
 
 ```text
-state-v1.hydra local file: authenticated-encrypted state opened with a required state password
+state.hydra local file: authenticated-encrypted state opened with a required state password
 identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters
 contact cards: default cards expose the public verification key only; labeled cards intentionally expose a label; contact id/fingerprint and safety code are derived locally from the key
 lobby invites: default invites expose lobby id and max-member policy only; labeled/member invites intentionally expose label and member list

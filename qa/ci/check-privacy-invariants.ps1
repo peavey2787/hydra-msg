@@ -61,7 +61,7 @@ Assert-SourceText $HandshakeFile "x25519_secret.expose_secret()" "ephemeral X255
 Assert-SourceText $HandshakeFile "kem_secret.expose_secret()" "ephemeral ML-KEM shared secret included in facade handshake secret"
 Assert-SourceText $HandshakeFile "answer_confirmation_tag" "answer confirmation tag before initiator session installation"
 Assert-SourceText $HandshakeFile "verify_answer_confirmation" "initiator/responder confirmation verification helper"
-Assert-SourceText $HandshakeFile "HYDRA-MSG/v1/facade-handshake/hybrid-secret" "domain-separated hybrid facade secret derivation"
+Assert-SourceText $HandshakeFile "HYDRA-MSG/facade-handshake/hybrid-secret" "domain-separated hybrid facade secret derivation"
 Assert-SourceText $HandshakeApiFile "verify_answer_signature(&parsed_answer, &pending.offer)?" "initiator verifies answer signature against pending offer"
 Assert-SourceText $HandshakeApiFile "verify_answer_confirmation(" "initiator/responder verify derived hybrid material before session install"
 Assert-SourceText $HandshakeApiFile "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects answers from swapped identities"
@@ -70,7 +70,7 @@ Assert-NoSourceText $HandshakeFile "derive_facade_handshake_material" "removed p
 Assert-NoSourceText $HandshakeFile "public transcript" "facade secret must not be documented as public-transcript derived"
 
 Assert-SourceText $LibFile "STATE_MAGIC" "encrypted local state format constant"
-Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state-v1.hydra`"" "normal local state file uses encrypted current path"
+Assert-SourceText $LibFile "const STATE_FILE_NAME: &str = `"state.hydra`"" "normal local state file uses encrypted current path"
 Assert-SourceText $StorageFile "pub fn open(data_dir: impl AsRef<Path>, state_password: impl AsRef<str>)" "state password is required when opening local state"
 Assert-SourceText $StorageFile "encode_encrypted_state" "normal state is sealed before writing"
 Assert-SourceText $StorageFile "decode_encrypted_state" "normal state is opened with authentication"
@@ -80,20 +80,20 @@ Assert-SourceText $StorageCodecFile "RustCryptoBackend::aead_open" "encrypted st
 Assert-SourceText $StorageCodecFile "parse_state_kdf" "encrypted state reads stored KDF parameters before deriving the state key"
 Assert-SourceText $StorageCodecFile "encode_kdf_fields" "encrypted state stores explicit KDF parameters"
 Assert-SourceText $KdfCodecFile "scrypt::" "memory-hard scrypt KDF implementation is used"
-Assert-SourceText $KdfCodecFile "KDF_ALGORITHM_SCRYPT_V1" "current memory-hard KDF algorithm id"
+Assert-SourceText $KdfCodecFile "KDF_ALGORITHM_SCRYPT" "current memory-hard KDF algorithm id"
 Assert-SourceText $KdfCodecFile "kdf_log_n" "explicit scrypt log_n parameter is stored"
 Assert-SourceText $KdfCodecFile "kdf_salt" "per-record random KDF salt is stored"
 Assert-SourceText $IdentityCodecFile "PasswordKdfRecord::new_interactive()?" "identity password records use per-record KDF parameters"
 Assert-SourceText $IdentityCodecFile "derive_password_key" "identity seed wrapping uses memory-hard password derivation"
-Assert-NoSourceText $StorageCodecFile "hkdf-sha3-256-v1" "encrypted state must not use the old cheap KDF profile"
+Assert-NoSourceText $StorageCodecFile "hkdf-sha3-256" "encrypted state must not use the cheap KDF profile"
 Assert-NoSourceText $StorageCodecFile "hkdf_extract" "encrypted state password key must not use HKDF directly"
 Assert-NoSourceText $IdentityCodecFile "sha3_256(password" "identity password tag must not be direct SHA3 over the password"
-Assert-NoSourceText $LibFile "STATE_V1" "normal local state must not use plaintext v1 constants"
+Assert-NoSourceText $LibFile "STATE_V" "normal local state must not use numbered state constants"
 
 Assert-NoSourceText $StorageFile "load_state_without_password" "state must never open without a state password"
 Assert-NoSourceText $StorageFile "state_key: Option" "state encryption must not be optional"
 Assert-NoSourceText $StorageFile "state_v1" "current state path must not include plaintext alternate-format helpers"
-Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete old plaintext files"
+Assert-NoSourceText $StorageFile "remove_file" "current state path must not delete plaintext files"
 
 $reintroduced = Select-String -Path "crates/hydra-msg/src/*.rs", "crates/hydra-msg/src/codec/*.rs" -Pattern "derive_facade_handshake_material" -ErrorAction SilentlyContinue
 if ($reintroduced) {
@@ -102,8 +102,8 @@ if ($reintroduced) {
 }
 
 
-Assert-SourceText $LibFile 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT-V1"' "current minimized contact-card format"
-Assert-SourceText $LibFile 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE-V1"' "current minimized lobby-invite format"
+Assert-SourceText $LibFile 'CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT"' "current minimized contact-card format"
+Assert-SourceText $LibFile 'LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE"' "current minimized lobby-invite format"
 Assert-SourceText $ContactFile "pub fn create_labeled_contact_card" "explicit labeled contact-card API"
 Assert-SourceText $ContactFile "pub fn create_one_time_contact_card" "first-class one-time contact-card API"
 Assert-SourceText $ContactFile "identity_record_from_seed(String::new()" "one-time contact cards use empty local label by default"
@@ -117,5 +117,30 @@ Assert-SourceText $LobbyFile "pub fn create_one_time_lobby_invite" "first-class 
 Assert-SourceText $LobbyCodecFile "include_label: bool" "lobby invite label exposure is explicit"
 Assert-SourceText $LobbyCodecFile "members: Option<&[ContactId]>" "lobby invite member exposure is explicit"
 Assert-NoSourceText $LobbyCodecFile "placeholder invite" "lobby invite current decoder must not include placeholder alternate-format handling"
+
+$versionTagSearchPaths = @(
+    "crates/hydra-msg",
+    "examples/hydra-app",
+    "examples/hydra-app-core",
+    "README.md",
+    "crates/hydra-msg/README.md",
+    "docs/roadmap.md",
+    "docs/impl/message-flow",
+    "docs/project/audit/privacy-baseline-invariant-map.md",
+    "docs/validation/benchmark-results.md"
+)
+$versionTagFiles = @()
+foreach ($searchPath in $versionTagSearchPaths) {
+    if (Test-Path $searchPath -PathType Container) {
+        $versionTagFiles += Get-ChildItem -Path $searchPath -Recurse -File | ForEach-Object { $_.FullName }
+    } elseif (Test-Path $searchPath -PathType Leaf) {
+        $versionTagFiles += (Resolve-Path $searchPath).Path
+    }
+}
+$versionTagMatches = Select-String -Path $versionTagFiles -Pattern "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" -ErrorAction SilentlyContinue
+if ($versionTagMatches) {
+    $versionTagMatches | ForEach-Object { Write-Host $_ }
+    throw "facade/app format labels must not carry version tags"
+}
 
 Write-Host "privacy invariant checks passed" -ForegroundColor Green

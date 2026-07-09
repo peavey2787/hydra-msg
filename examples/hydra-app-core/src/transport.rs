@@ -350,7 +350,7 @@ fn validate_upload_request(request: &TransportUploadRequest) -> AppResult<()> {
 
 fn request_commitment(request: &TransportUploadRequest) -> AppResult<[u8; 32]> {
     let mut input = Vec::new();
-    input.extend_from_slice(b"HYDRA-MSG/app/transport/upload/v1");
+    input.extend_from_slice(b"HYDRA-MSG/app/transport/upload");
     input.extend_from_slice(&request.sender.0);
     input.extend_from_slice(&request.recipient.0);
     input.extend_from_slice(&request.created_at_ms.to_be_bytes());

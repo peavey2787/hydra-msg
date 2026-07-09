@@ -8,9 +8,9 @@ use crate::{
     AppResult,
 };
 
-const ATTACHMENT_KEY_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/key-commitment/v1";
-const ATTACHMENT_NONCE_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/chunk-nonce/v1";
-const ATTACHMENT_AAD_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/chunk-aad/v1";
+const ATTACHMENT_KEY_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/key-commitment";
+const ATTACHMENT_NONCE_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/chunk-nonce";
+const ATTACHMENT_AAD_LABEL: &[u8] = b"HYDRA-MSG/app/attachment/chunk-aad";
 
 pub const DEFAULT_ATTACHMENT_CHUNK_SIZE: usize = 64 * 1024;
 pub const MAX_ATTACHMENT_CHUNK_SIZE: usize = 1024 * 1024;

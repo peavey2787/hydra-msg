@@ -4,7 +4,7 @@ use hydra_crypto::SecretBytes;
 use scrypt::{scrypt, Params as ScryptParams};
 use zeroize::Zeroize;
 
-pub(crate) const KDF_ALGORITHM_SCRYPT_V1: &str = "scrypt-v1";
+pub(crate) const KDF_ALGORITHM_SCRYPT: &str = "scrypt";
 pub(crate) const KDF_PROFILE_MOBILE: &str = "mobile";
 pub(crate) const KDF_PROFILE_INTERACTIVE: &str = "interactive";
 pub(crate) const KDF_PROFILE_HIGH_SECURITY: &str = "high-security";
@@ -71,7 +71,7 @@ pub(crate) fn derive_password_key(
 pub(crate) fn encode_kdf_fields(kdf: &PasswordKdfRecord) -> String {
     format!(
         "kdf\t{}\nkdf_profile\t{}\nkdf_log_n\t{}\nkdf_r\t{}\nkdf_p\t{}\nkdf_salt\t{}\n",
-        KDF_ALGORITHM_SCRYPT_V1,
+        KDF_ALGORITHM_SCRYPT,
         kdf.profile,
         kdf.log_n,
         kdf.r,
@@ -85,7 +85,7 @@ where
     I: Iterator<Item = &'a str>,
 {
     let algorithm = required_field(lines, "kdf", "kdf algorithm")?;
-    if algorithm != KDF_ALGORITHM_SCRYPT_V1 {
+    if algorithm != KDF_ALGORITHM_SCRYPT {
         return Err(HydraMsgError::Unsupported("kdf algorithm"));
     }
     let profile = required_field(lines, "kdf_profile", "kdf profile")?.to_owned();
@@ -115,7 +115,7 @@ where
 }
 
 pub(crate) fn parse_kdf_columns(parts: &[&str]) -> HydraResult<PasswordKdfRecord> {
-    if parts.len() != 6 || parts[0] != KDF_ALGORITHM_SCRYPT_V1 {
+    if parts.len() != 6 || parts[0] != KDF_ALGORITHM_SCRYPT {
         return Err(HydraMsgError::InvalidEncoding("kdf columns"));
     }
     let record = PasswordKdfRecord {
@@ -137,7 +137,7 @@ pub(crate) fn parse_kdf_columns(parts: &[&str]) -> HydraResult<PasswordKdfRecord
 
 pub(crate) fn encode_kdf_columns(kdf: &PasswordKdfRecord) -> [String; 6] {
     [
-        KDF_ALGORITHM_SCRYPT_V1.to_owned(),
+        KDF_ALGORITHM_SCRYPT.to_owned(),
         kdf.profile.clone(),
         kdf.log_n.to_string(),
         kdf.r.to_string(),

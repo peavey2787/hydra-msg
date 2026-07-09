@@ -14,7 +14,7 @@ use crate::{
     PublicIdentity,
 };
 
-const CHECKPOINT_TEXT_MAGIC: &str = "HYDRA-MSG SIGNED BACKUP CHECKPOINT v1";
+const CHECKPOINT_TEXT_MAGIC: &str = "HYDRA-MSG SIGNED BACKUP CHECKPOINT";
 const CHECKPOINT_FILE_PREFIX: &str = "hydra-checkpoint-";
 const CHECKPOINT_FILE_SUFFIX: &str = ".hcpt";
 
@@ -165,7 +165,7 @@ impl SignedBackupCheckpoint {
 
     fn signing_digest(&self) -> [u8; 64] {
         let mut body = Vec::with_capacity(64 + 8 + 8 + 32 + 32 + ML_DSA_65_VK_SIZE);
-        body.extend_from_slice(b"HYDRA-MSG/v1/signed-backup-checkpoint");
+        body.extend_from_slice(b"HYDRA-MSG/signed-backup-checkpoint");
         body.extend_from_slice(&self.backup_sequence.to_be_bytes());
         body.extend_from_slice(&self.local_rollback_counter.to_be_bytes());
         body.extend_from_slice(&self.encrypted_state_hash);
@@ -347,7 +347,7 @@ fn encrypted_live_state_hash(path: impl AsRef<Path>, sequence: u64) -> AppResult
         AppError::InvalidInput("live state database cannot be read for signed checkpoint")
     })?;
     let mut body = Vec::with_capacity(64 + 8 + file.len());
-    body.extend_from_slice(b"HYDRA-MSG/v1/signed-backup-state-hash");
+    body.extend_from_slice(b"HYDRA-MSG/signed-backup-state-hash");
     body.extend_from_slice(&sequence.to_be_bytes());
     body.extend_from_slice(&file);
     Ok(RustCryptoBackend::sha3_256(&body))

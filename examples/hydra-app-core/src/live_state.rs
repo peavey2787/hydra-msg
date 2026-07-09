@@ -218,7 +218,7 @@ fn derive_live_key(
     policy: StorageKdfPolicy,
 ) -> AppResult<hydra_crypto::SecretBytes<32>> {
     derive_storage_key(
-        b"HYDRA-MSG/v1/app/live-state-store",
+        b"HYDRA-MSG/app/live-state-store",
         password,
         salt,
         policy.kdf_id,
@@ -230,7 +230,7 @@ fn derive_rollback_key(password: &[u8]) -> AppResult<hydra_crypto::SecretBytes<3
     const ROLLBACK_KEY_SALT: [u8; STORE_SALT_SIZE] = [0x52_u8; STORE_SALT_SIZE];
     let policy = StorageKdfPolicy::scrypt_interactive();
     derive_storage_key(
-        b"HYDRA-MSG/v1/app/live-state-rollback-log",
+        b"HYDRA-MSG/app/live-state-rollback-log",
         password,
         &ROLLBACK_KEY_SALT,
         policy.kdf_id,
