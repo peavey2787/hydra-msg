@@ -359,16 +359,28 @@ fn backup_export_verify_import_and_state_password_rotation_work() {
 }
 
 #[test]
-fn locked_identity_misuse_fails_closed() {
+fn locking_active_identity_clears_selection_and_send_fails_closed() {
     let mut pair = connected_pair("locked-misuse");
+    let stored_before = pair
+        .alice
+        .stored_messages(pair.bob_contact)
+        .expect("history before locked send")
+        .len();
+
     pair.alice.lock_active_identity().expect("lock");
+    assert_eq!(pair.alice.active_identity(), None);
+
     let error = pair
         .alice
         .send_message(pair.bob_contact, HydraMessage::text("must fail"))
         .expect_err("locked send must fail");
+    assert_eq!(error, HydraMsgError::IdentityNotFound);
     assert_eq!(
-        error,
-        HydraMsgError::InvalidInput("active identity is locked")
+        pair.alice
+            .stored_messages(pair.bob_contact)
+            .expect("history after locked send")
+            .len(),
+        stored_before
     );
 }
 
