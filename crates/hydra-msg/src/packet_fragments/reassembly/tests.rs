@@ -230,12 +230,9 @@ fn global_pending_byte_budget_allows_the_exact_boundary() {
         kind: FragmentKind::Direct,
         fragment_id: [17; 32],
     };
-    assert!(reject_global_fragment_budget(
-        &pending,
-        &key,
-        &direct_part([17; 32], 2, 0, 1),
-    )
-    .is_ok());
+    assert!(
+        reject_global_fragment_budget(&pending, &key, &direct_part([17; 32], 2, 0, 1),).is_ok()
+    );
 }
 
 #[test]
@@ -262,11 +259,7 @@ fn global_pending_byte_budget_rejects_the_first_byte_over_the_boundary() {
         fragment_id: [21; 32],
     };
     assert!(matches!(
-        reject_global_fragment_budget(
-            &pending,
-            &key,
-            &direct_part([21; 32], 2, 0, 1),
-        ),
+        reject_global_fragment_budget(&pending, &key, &direct_part([21; 32], 2, 0, 1),),
         Err(HydraMsgError::InvalidInput(
             "pending fragment byte budget exceeded"
         ))
