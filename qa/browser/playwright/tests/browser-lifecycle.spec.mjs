@@ -33,20 +33,40 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     await installIndexedDbHarness(pageA);
     await installIndexedDbHarness(pageB);
 
-    await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
-    const revisionA = await pageA.evaluate(() => window.__hydraLifecycle.save('same-profile', [1, 2, 3], 0));
-    expect(revisionA).toBe(1);
-    const loadedB = await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'));
-    expect(loadedB.revision).toBe(1);
-    const revisionA2 = await pageA.evaluate(() => window.__hydraLifecycle.save('same-profile', [4, 5, 6], 1));
-    expect(revisionA2).toBe(2);
+    await test.step('establish two-tab revision divergence', async () => {
+      await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
+      const revisionA = await pageA.evaluate(
+        () => window.__hydraLifecycle.save('same-profile', [1, 2, 3], 0)
+      );
+      expect(revisionA).toBe(1);
+      const loadedB = await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'));
+      expect(loadedB.revision).toBe(1);
+      const revisionA2 = await pageA.evaluate(
+        () => window.__hydraLifecycle.save('same-profile', [4, 5, 6], 1)
+      );
+      expect(revisionA2).toBe(2);
+    });
 
-    await expect(pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [7, 8, 9], 1)))
-      .rejects.toThrow(/stale profile revision/);
+    await test.step('reject the stale page only after its transaction aborts', async () => {
+      await expect(
+        pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [7, 8, 9], 1))
+      ).rejects.toThrow(/stale profile revision/);
+      expect(await pageA.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
+        bytes: [4, 5, 6],
+        revision: 2
+      });
+    });
 
-    await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
-    await expect(pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [10], 1)))
-      .rejects.toThrow(/stale profile revision/);
+    await test.step('delete while the second page remains open and reject its stale write', async () => {
+      await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
+      await expect(
+        pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [10], 1))
+      ).rejects.toThrow(/stale profile revision/);
+      expect(await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
+        bytes: null,
+        revision: 0
+      });
+    });
   });
 
   test('QuotaExceededError is surfaced and does not commit partial data', async ({ page }) => {
@@ -219,37 +239,44 @@ async function installIndexedDbHarness(page, options = {}) {
           throw new DOMException('HYDRA test quota exceeded', 'QuotaExceededError');
         }
         const db = await openDb();
-        let outcome;
         try {
-          outcome = await new Promise((resolve, reject) => {
+          return await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
             let nextRevision = null;
-            let staleMessage = null;
-            let transactionError = null;
+            let operationError = null;
 
-            tx.oncomplete = () => resolve({ nextRevision, staleMessage });
+            tx.oncomplete = () => {
+              if (operationError) {
+                reject(operationError);
+                return;
+              }
+              if (nextRevision === null) {
+                reject(new Error('IndexedDB transaction completed without a revision'));
+                return;
+              }
+              resolve(nextRevision);
+            };
             tx.onerror = () => {
-              transactionError = tx.error || transactionError
+              operationError = operationError || tx.error
                 || new Error('IndexedDB transaction failed');
             };
             tx.onabort = () => reject(
-              tx.error || transactionError || new Error('IndexedDB transaction abort')
+              operationError || tx.error || new Error('IndexedDB transaction abort')
             );
 
             const get = store.get(name);
             get.onerror = () => {
-              transactionError = get.error || new Error('IndexedDB get failed');
+              operationError = get.error || new Error('IndexedDB get failed');
             };
             get.onsuccess = () => {
               const current = get.result || null;
               const currentRevision = current ? current.revision : 0;
               if (currentRevision !== expectedRevision) {
-                staleMessage =
-                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`;
-                if (typeof tx.commit === 'function') {
-                  tx.commit();
-                }
+                operationError = new Error(
+                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
+                );
+                tx.abort();
                 return;
               }
 
@@ -260,21 +287,13 @@ async function installIndexedDbHarness(page, options = {}) {
                 revision: nextRevision
               });
               put.onerror = () => {
-                transactionError = put.error || new Error('IndexedDB put failed');
+                operationError = put.error || new Error('IndexedDB put failed');
               };
             };
           });
         } finally {
           db.close();
         }
-
-        if (outcome.staleMessage !== null) {
-          throw new Error(outcome.staleMessage);
-        }
-        if (outcome.nextRevision === null) {
-          throw new Error('IndexedDB transaction completed without a revision');
-        }
-        return outcome.nextRevision;
       },
 
       async deleteProfile(name) {

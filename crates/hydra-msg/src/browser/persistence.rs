@@ -87,18 +87,18 @@ function openHydraIndexedDb() {
         db.createObjectStore(HYDRA_STORE_NAME, { keyPath: 'name' });
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
     request.onblocked = () => reject(new Error('IndexedDB open blocked by another tab'));
   });
 }
 
-function transactionDone(tx) {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction aborted'));
-    tx.onerror = () => reject(tx.error || new Error('IndexedDB transaction failed'));
-  });
+function transactionFailure(tx, operationError, fallback) {
+  return operationError || tx.error || fallback;
 }
 
 export async function hydraIndexedDbLoad(name) {
@@ -107,22 +107,38 @@ export async function hydraIndexedDbLoad(name) {
   try {
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(HYDRA_STORE_NAME, 'readonly');
+      let record;
+      let operationError = null;
+
+      tx.oncomplete = () => {
+        try {
+          const result = [];
+          if (!record) {
+            result[0] = undefined;
+            result[1] = 0;
+          } else {
+            result[0] = new Uint8Array(record.snapshot);
+            result[1] = hydraRecordRevision(record);
+          }
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      tx.onerror = () => {
+        operationError = transactionFailure(tx, operationError, new Error('IndexedDB read failed'));
+      };
+      tx.onabort = () => reject(
+        transactionFailure(tx, operationError, new Error('IndexedDB read transaction aborted'))
+      );
+
       const request = tx.objectStore(HYDRA_STORE_NAME).get(name);
       request.onsuccess = () => {
-        const record = request.result;
-        const result = [];
-        if (!record) {
-          result[0] = undefined;
-          result[1] = 0;
-          resolve(result);
-          return;
-        }
-        result[0] = new Uint8Array(record.snapshot);
-        result[1] = hydraRecordRevision(record);
-        resolve(result);
+        record = request.result;
       };
-      request.onerror = () => reject(request.error || tx.error || new Error('IndexedDB read failed'));
-      tx.onabort = () => reject(tx.error || new Error('IndexedDB read transaction aborted'));
+      request.onerror = () => {
+        operationError = request.error || new Error('IndexedDB read failed');
+      };
     });
   } finally {
     db.close();
@@ -136,50 +152,67 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
   const db = await openHydraIndexedDb();
   try {
     return await new Promise((resolve, reject) => {
-      let settled = false;
       const tx = db.transaction(HYDRA_STORE_NAME, 'readwrite');
       const store = tx.objectStore(HYDRA_STORE_NAME);
-      const fail = (error) => {
-        if (settled) {
+      let nextRevision = null;
+      let operationError = null;
+
+      tx.oncomplete = () => {
+        if (operationError) {
+          reject(operationError);
           return;
         }
-        settled = true;
-        try { tx.abort(); } catch (_) { /* transaction may already be finished */ }
-        reject(error);
+        if (nextRevision === null) {
+          reject(new Error('IndexedDB transaction completed without a revision'));
+          return;
+        }
+        resolve(nextRevision);
       };
+      tx.onerror = () => {
+        operationError = transactionFailure(
+          tx,
+          operationError,
+          new Error('IndexedDB transaction failed')
+        );
+      };
+      tx.onabort = () => reject(
+        transactionFailure(tx, operationError, new Error('IndexedDB transaction aborted'))
+      );
+
       const request = store.get(name);
       request.onsuccess = () => {
         try {
           const currentRevision = request.result ? hydraRecordRevision(request.result) : 0;
           if (currentRevision !== expectedRevision) {
-            fail(staleHydraProfileError(name, expectedRevision, currentRevision));
+            operationError = staleHydraProfileError(
+              name,
+              expectedRevision,
+              currentRevision
+            );
+            tx.abort();
             return;
           }
-          const nextRevision = currentRevision + 1;
+          nextRevision = currentRevision + 1;
           const putRequest = store.put({
             name,
             snapshot,
             revision: nextRevision,
             adapterVersion: HYDRA_ADAPTER_VERSION
           });
-          putRequest.onerror = () => fail(putRequest.error || tx.error || new Error('IndexedDB write failed'));
-          tx.oncomplete = () => {
-            if (!settled) {
-              settled = true;
-              resolve(nextRevision);
-            }
+          putRequest.onerror = () => {
+            operationError = putRequest.error || new Error('IndexedDB write failed');
           };
         } catch (error) {
-          fail(error);
+          operationError = error;
+          try {
+            tx.abort();
+          } catch (_) {
+            // The transaction may already be completing; oncomplete reports operationError.
+          }
         }
       };
-      request.onerror = () => fail(request.error || tx.error || new Error('IndexedDB read-before-write failed'));
-      tx.onerror = () => fail(tx.error || new Error('IndexedDB transaction failed'));
-      tx.onabort = () => {
-        if (!settled) {
-          settled = true;
-          reject(tx.error || new Error('IndexedDB transaction aborted'));
-        }
+      request.onerror = () => {
+        operationError = request.error || new Error('IndexedDB read-before-write failed');
       };
     });
   } finally {
@@ -191,9 +224,23 @@ export async function hydraIndexedDbDelete(name) {
   name = validateHydraSnapshotName(name);
   const db = await openHydraIndexedDb();
   try {
-    const tx = db.transaction(HYDRA_STORE_NAME, 'readwrite');
-    tx.objectStore(HYDRA_STORE_NAME).delete(name);
-    await transactionDone(tx);
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(HYDRA_STORE_NAME, 'readwrite');
+      let operationError = null;
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => {
+        operationError = transactionFailure(tx, operationError, new Error('IndexedDB delete failed'));
+      };
+      tx.onabort = () => reject(
+        transactionFailure(tx, operationError, new Error('IndexedDB delete aborted'))
+      );
+
+      const request = tx.objectStore(HYDRA_STORE_NAME).delete(name);
+      request.onerror = () => {
+        operationError = request.error || new Error('IndexedDB delete failed');
+      };
+    });
   } finally {
     db.close();
   }

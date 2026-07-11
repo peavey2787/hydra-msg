@@ -47,10 +47,16 @@ if (unknownProjects.length > 0) {
 
 const projects = requestedProjectNames.map((name) => projectDefinitions.get(name));
 
+const workerCount = Number.parseInt(process.env.HYDRA_BROWSER_WORKERS || '1', 10);
+if (!Number.isInteger(workerCount) || workerCount < 1) {
+  throw new Error(`invalid HYDRA_BROWSER_WORKERS value: ${process.env.HYDRA_BROWSER_WORKERS}`);
+}
+
 export default defineConfig({
   testDir: './tests',
   timeout: 60_000,
   fullyParallel: false,
+  workers: workerCount,
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['json', { outputFile: 'test-results/browser-lifecycle.json' }]],
   use: {

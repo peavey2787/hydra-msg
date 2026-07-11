@@ -17,6 +17,7 @@ require_file qa/browser/playwright/playwright.config.mjs
 require_file qa/browser/playwright/scripts/install-browsers.mjs
 require_file qa/browser/playwright/scripts/serve-test-origin.mjs
 require_file qa/browser/playwright/tests/browser-lifecycle.spec.mjs
+require_file crates/hydra-msg/src/browser/persistence.rs
 
 if ! grep -Fq "@playwright/test" qa/browser/playwright/package.json; then
   echo "Playwright test dependency missing" >&2
@@ -28,7 +29,28 @@ if grep -Fq "about:blank" qa/browser/playwright/tests/browser-lifecycle.spec.mjs
   exit 1
 fi
 
-for required_config in "baseURL" "webServer" "serve-test-origin.mjs"; do
+if grep -Fq "tx.commit()" qa/browser/playwright/tests/browser-lifecycle.spec.mjs \
+  || grep -Fq "tx.commit()" crates/hydra-msg/src/browser/persistence.rs; then
+  echo "browser IndexedDB stale-write handling must settle through abort, not explicit commit" >&2
+  exit 1
+fi
+
+for transaction_marker in \
+  "operationError || tx.error" \
+  "tx.onabort = () => reject" \
+  "tx.abort();"
+do
+  if ! grep -Fq "$transaction_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
+    echo "browser E2E transaction-settlement marker missing: $transaction_marker" >&2
+    exit 1
+  fi
+  if ! grep -Fq "$transaction_marker" crates/hydra-msg/src/browser/persistence.rs; then
+    echo "production browser adapter transaction-settlement marker missing: $transaction_marker" >&2
+    exit 1
+  fi
+done
+
+for required_config in "baseURL" "webServer" "serve-test-origin.mjs" "HYDRA_BROWSER_WORKERS" "workers: workerCount"; do
   if ! grep -Fq "$required_config" qa/browser/playwright/playwright.config.mjs; then
     echo "browser E2E real-origin configuration missing: $required_config" >&2
     exit 1

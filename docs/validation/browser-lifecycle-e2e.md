@@ -44,6 +44,8 @@ WebKit remains available as an explicit project, but it is not part of the porta
 
 The Playwright package is exact-version pinned and committed with `package-lock.json`. The gate uses `npm ci` and installs only the browser binaries selected by `HYDRA_BROWSER_PROJECTS`; the mobile Chromium project reuses the Chromium binary.
 
+The durability matrix runs with one Playwright worker by default. Browser engines are therefore exercised sequentially, which avoids making IndexedDB correctness evidence depend on cross-engine CPU and I/O scheduling—especially when Playwright is using an unsupported-distribution fallback browser build. Set `HYDRA_BROWSER_WORKERS` only for diagnostic stress runs; release evidence should retain the deterministic default.
+
 The full WASM app probe is enabled by setting `HYDRA_BROWSER_TEST_URL` to a running `examples/mobile_perf_web` host. Without that URL, the browser-level lifecycle tests still run, and the WASM app probe is skipped.
 
 ## Run
@@ -86,6 +88,13 @@ Run a narrower project while debugging:
 
 ```bash
 HYDRA_BROWSER_PROJECTS=chromium HYDRA_RUN_BROWSER_E2E=1 \
+./qa/ci/reliability/check-browser-e2e.sh
+```
+
+Run an explicit parallel stress pass without changing the release-evidence default:
+
+```bash
+HYDRA_BROWSER_WORKERS=3 HYDRA_RUN_BROWSER_E2E=1 \
 ./qa/ci/reliability/check-browser-e2e.sh
 ```
 

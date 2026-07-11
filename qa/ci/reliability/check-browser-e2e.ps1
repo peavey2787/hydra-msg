@@ -22,17 +22,28 @@ $Config = "qa/browser/playwright/playwright.config.mjs"
 $BrowserInstaller = "qa/browser/playwright/scripts/install-browsers.mjs"
 $OriginServer = "qa/browser/playwright/scripts/serve-test-origin.mjs"
 $Spec = "qa/browser/playwright/tests/browser-lifecycle.spec.mjs"
+$Persistence = "crates/hydra-msg/src/browser/persistence.rs"
 Assert-FileExists $Package
 Assert-FileExists $PackageLock
 Assert-FileExists $Config
 Assert-FileExists $BrowserInstaller
 Assert-FileExists $OriginServer
 Assert-FileExists $Spec
+Assert-FileExists $Persistence
 Assert-Text $Package "@playwright/test"
 if (Select-String -LiteralPath $Spec -SimpleMatch "about:blank" -Quiet) {
     throw "Browser E2E storage tests must use a real HTTP origin, not about:blank"
 }
-foreach ($Text in @("baseURL", "webServer", "serve-test-origin.mjs")) {
+
+if ((Select-String -LiteralPath $Spec -SimpleMatch "tx.commit()" -Quiet) -or
+    (Select-String -LiteralPath $Persistence -SimpleMatch "tx.commit()" -Quiet)) {
+    throw "Browser IndexedDB stale-write handling must settle through abort, not explicit commit"
+}
+foreach ($Text in @("operationError || tx.error", "tx.onabort = () => reject", "tx.abort();")) {
+    Assert-Text $Spec $Text
+    Assert-Text $Persistence $Text
+}
+foreach ($Text in @("baseURL", "webServer", "serve-test-origin.mjs", "HYDRA_BROWSER_WORKERS", "workers: workerCount")) {
     Assert-Text $Config $Text
 }
 
