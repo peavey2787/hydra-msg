@@ -1,12 +1,9 @@
 use crate::{gui, text::hex_encode};
-use hydra_app_core::{
-    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId,
-};
+use hydra_app_core::{ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId};
 use std::{
     env,
     error::Error,
-    fmt,
-    fs,
+    fmt, fs,
     net::SocketAddr,
     path::{Path, PathBuf},
 };
@@ -163,7 +160,11 @@ fn identity(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
             let id = IdentityId::from_hex(required(args, 1, "identity id")?)?;
             app.delete_identity(id, required(args, 2, "identity password")?)?;
         }
-        action => return Err(Box::new(CliError(format!("unknown identity action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown identity action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -194,7 +195,11 @@ fn contacts(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
         }
         "export" => fs::write(required(args, 1, "output path")?, app.export_contacts()?)?,
         "import" => app.import_contacts(fs::read(required(args, 1, "contacts file")?)?)?,
-        action => return Err(Box::new(CliError(format!("unknown contacts action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown contacts action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -207,10 +212,17 @@ fn handshake(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
         }
         "answer" => {
             let offer = fs::read(required(args, 1, "offer path")?)?;
-            fs::write(required(args, 2, "answer path")?, app.handshake_answer(offer)?)?;
+            fs::write(
+                required(args, 2, "answer path")?,
+                app.handshake_answer(offer)?,
+            )?;
         }
         "finish" => app.finish_handshake(fs::read(required(args, 1, "answer path")?)?)?,
-        action => return Err(Box::new(CliError(format!("unknown handshake action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown handshake action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -230,7 +242,11 @@ fn messages(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
                 None => println!("fragment accepted; message incomplete"),
             }
         }
-        action => return Err(Box::new(CliError(format!("unknown messages action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown messages action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -250,7 +266,10 @@ fn lobbies(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
         }
         "invite" => {
             let lobby = LobbyId::from_hex(required(args, 1, "lobby id")?)?;
-            fs::write(required(args, 2, "invite path")?, app.create_lobby_invite(lobby)?)?;
+            fs::write(
+                required(args, 2, "invite path")?,
+                app.create_lobby_invite(lobby)?,
+            )?;
         }
         "join" => {
             let lobby = app.join_lobby(fs::read(required(args, 1, "invite path")?)?)?;
@@ -284,7 +303,11 @@ fn lobbies(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
         "leave" => {
             app.leave_lobby(LobbyId::from_hex(required(args, 1, "lobby id")?)?)?;
         }
-        action => return Err(Box::new(CliError(format!("unknown lobbies action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown lobbies action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -308,7 +331,11 @@ fn backup(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
             required(args, 2, "new state password")?,
         )?,
         "status" => print_storage_status(app),
-        action => return Err(Box::new(CliError(format!("unknown backup action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown backup action: {action}"
+            ))))
+        }
     }
     Ok(())
 }
@@ -327,7 +354,11 @@ fn storage(app: &HydraApp, args: &[String]) -> CliResult<()> {
             println!("lobby_count={}", status.lobby_count);
             println!("state_generation={}", status.state_generation);
         }
-        action => return Err(Box::new(CliError(format!("unknown storage action: {action}")))),
+        action => {
+            return Err(Box::new(CliError(format!(
+                "unknown storage action: {action}"
+            ))))
+        }
     }
     Ok(())
 }

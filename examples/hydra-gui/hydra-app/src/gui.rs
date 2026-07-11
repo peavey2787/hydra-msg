@@ -1,7 +1,6 @@
 use crate::text::{hex_decode, hex_encode, json_escape, parse_form};
 use hydra_app_core::{
-    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId,
-    ReceivedHydraMessage,
+    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId, ReceivedHydraMessage,
 };
 use std::{
     collections::HashMap,
@@ -206,11 +205,7 @@ fn handle_post(
         "/api/identity/import" => {
             let bytes = bytes_field(fields, "identity_hex")?;
             let id = app
-                .import_identity(
-                    bytes,
-                    field(fields, "password")?,
-                    field(fields, "label")?,
-                )
+                .import_identity(bytes, field(fields, "password")?, field(fields, "label")?)
                 .map_err(sdk_error)?;
             Ok(format!("{{\"id\":\"{}\"}}", id.hex()))
         }
@@ -263,7 +258,9 @@ fn handle_post(
             ok_json()
         }
         "/api/handshake/offer" => {
-            let bytes = app.handshake_offer(contact_id(fields)?).map_err(sdk_error)?;
+            let bytes = app
+                .handshake_offer(contact_id(fields)?)
+                .map_err(sdk_error)?;
             bytes_json("offer", &bytes)
         }
         "/api/handshake/answer" => {
@@ -302,10 +299,7 @@ fn handle_post(
                 .parse::<usize>()
                 .map_err(|_| "max_members is invalid")?;
             let lobby = app
-                .create_lobby(HydraLobbyPolicy::new(
-                    field(fields, "label")?,
-                    max_members,
-                ))
+                .create_lobby(HydraLobbyPolicy::new(field(fields, "label")?, max_members))
                 .map_err(sdk_error)?;
             Ok(lobby_json(&lobby))
         }
@@ -414,7 +408,10 @@ fn read_request(stream: &mut TcpStream) -> Result<Request, Box<dyn Error>> {
     let mut lines = header_text.split("\r\n");
     let request_line = lines.next().ok_or("missing HTTP request line")?;
     let mut request_parts = request_line.split_whitespace();
-    let method = request_parts.next().ok_or("missing HTTP method")?.to_owned();
+    let method = request_parts
+        .next()
+        .ok_or("missing HTTP method")?
+        .to_owned();
     let raw_path = request_parts.next().ok_or("missing HTTP path")?;
     let path = raw_path.split('?').next().unwrap_or(raw_path).to_owned();
     let mut headers = HashMap::new();
@@ -581,7 +578,9 @@ fn received_json(message: Option<&ReceivedHydraMessage>) -> String {
     match message {
         None => "{\"complete\":false}".to_owned(),
         Some(message) => {
-            let text = message.text().unwrap_or_else(|_| "<binary message>".to_owned());
+            let text = message
+                .text()
+                .unwrap_or_else(|_| "<binary message>".to_owned());
             let lobby = message
                 .lobby_id()
                 .map(|id| format!("\"{}\"", id.hex()))
@@ -665,7 +664,10 @@ mod tests {
 
     #[test]
     fn http_header_boundary_is_detected() {
-        assert_eq!(find_header_end(b"GET / HTTP/1.1\r\nHost: local\r\n\r\n"), Some(27));
+        assert_eq!(
+            find_header_end(b"GET / HTTP/1.1\r\nHost: local\r\n\r\n"),
+            Some(27)
+        );
         assert_eq!(find_header_end(b"incomplete"), None);
     }
 

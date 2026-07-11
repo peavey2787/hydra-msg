@@ -61,7 +61,9 @@ fn connected_pair(label: &str) -> Pair {
     let mut alice = active_app(root.child("alice"), "alice-state", "alice-id");
     let mut bob = active_app(root.child("bob"), "bob-state", "bob-id");
 
-    let alice_card = alice.create_labeled_contact_card("Alice").expect("alice card");
+    let alice_card = alice
+        .create_labeled_contact_card("Alice")
+        .expect("alice card");
     let bob_card = bob.create_labeled_contact_card("Bob").expect("bob card");
     let alice_contact = bob.add_contact(alice_card).expect("add alice");
     let bob_contact = alice.add_contact(bob_card).expect("add bob");
@@ -234,11 +236,15 @@ fn contact_card_preview_add_verify_export_import_flow_uses_sdk_format() {
 fn handshake_roundtrip_establishes_public_sdk_sessions() {
     let pair = connected_pair("handshake");
     assert_eq!(
-        pair.alice.session_status(pair.bob_contact).expect("alice status"),
+        pair.alice
+            .session_status(pair.bob_contact)
+            .expect("alice status"),
         HydraSessionStatus::Active
     );
     assert_eq!(
-        pair.bob.session_status(pair.alice_contact).expect("bob status"),
+        pair.bob
+            .session_status(pair.alice_contact)
+            .expect("bob status"),
         HydraSessionStatus::Active
     );
 }
@@ -254,12 +260,28 @@ fn direct_packets_are_opaque_at_the_carrier_boundary() {
 
     let mut received = None;
     for packet in packets {
-        received = pair.bob.receive_message(packet).expect("receive").or(received);
+        received = pair
+            .bob
+            .receive_message(packet)
+            .expect("receive")
+            .or(received);
     }
     let received = received.expect("complete message");
     assert_eq!(received.text().expect("text"), "hello");
-    assert_eq!(pair.alice.stored_messages(pair.bob_contact).expect("alice history").len(), 1);
-    assert_eq!(pair.bob.stored_messages(pair.alice_contact).expect("bob history").len(), 1);
+    assert_eq!(
+        pair.alice
+            .stored_messages(pair.bob_contact)
+            .expect("alice history")
+            .len(),
+        1
+    );
+    assert_eq!(
+        pair.bob
+            .stored_messages(pair.alice_contact)
+            .expect("bob history")
+            .len(),
+        1
+    );
     assert_eq!(pair.alice.ui().display_history.len(), 1);
     assert_eq!(pair.bob.ui().display_history.len(), 1);
 
@@ -286,10 +308,7 @@ fn lobby_invite_join_send_receive_roundtrip_uses_public_sdk() {
     pair.alice
         .add_lobby_member(lobby.id(), pair.bob_contact)
         .expect("add bob");
-    let invite = pair
-        .alice
-        .create_lobby_invite(lobby.id())
-        .expect("invite");
+    let invite = pair.alice.create_lobby_invite(lobby.id()).expect("invite");
     let joined = pair.bob.join_lobby(invite).expect("join");
     pair.bob
         .add_lobby_member(joined.id(), pair.alice_contact)
@@ -316,7 +335,9 @@ fn lobby_invite_join_send_receive_roundtrip_uses_public_sdk() {
 fn backup_export_verify_import_and_state_password_rotation_work() {
     let root = TestDir::new("backup");
     let mut source = active_app(root.child("source"), "old-state", "identity");
-    let backup = source.export_backup("backup-password").expect("export backup");
+    let backup = source
+        .export_backup("backup-password")
+        .expect("export backup");
     source
         .verify_backup(&backup, "backup-password")
         .expect("verify backup");

@@ -71,10 +71,7 @@ fn percent_decode(value: &str) -> Result<String, String> {
                 }
                 let pair = std::str::from_utf8(&bytes[index + 1..index + 3])
                     .map_err(|_| "invalid percent encoding")?;
-                out.push(
-                    u8::from_str_radix(pair, 16)
-                        .map_err(|_| "invalid percent encoding")?,
-                );
+                out.push(u8::from_str_radix(pair, 16).map_err(|_| "invalid percent encoding")?);
                 index += 3;
             }
             byte => {

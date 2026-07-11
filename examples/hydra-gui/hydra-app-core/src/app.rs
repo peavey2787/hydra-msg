@@ -79,11 +79,7 @@ impl HydraApp {
         self.ui.drafts.remove(&conversation)
     }
 
-    pub fn set_remember_me(
-        &mut self,
-        id: IdentityId,
-        policy: RememberMePolicy,
-    ) -> HydraResult<()> {
+    pub fn set_remember_me(&mut self, id: IdentityId, policy: RememberMePolicy) -> HydraResult<()> {
         self.hydra.get_id(id)?;
         if policy == RememberMePolicy::Never {
             let _ = self.ui.remember_me.remove(&id);
@@ -238,17 +234,12 @@ impl HydraApp {
         &mut self,
         identity_password: impl AsRef<str>,
     ) -> HydraResult<HydraOneTimeContactCard> {
-        let card = self
-            .hydra
-            .create_one_time_contact_card(identity_password)?;
+        let card = self.hydra.create_one_time_contact_card(identity_password)?;
         self.ui.selected_profile = Some(card.identity_id());
         Ok(card)
     }
 
-    pub fn preview_contact_card(
-        &self,
-        bytes: impl AsRef<[u8]>,
-    ) -> HydraResult<HydraContact> {
+    pub fn preview_contact_card(&self, bytes: impl AsRef<[u8]>) -> HydraResult<HydraContact> {
         self.hydra.preview_contact_card(bytes)
     }
 
@@ -272,10 +263,7 @@ impl HydraApp {
     pub fn remove_contact(&mut self, contact_id: ContactId) -> HydraResult<()> {
         self.hydra.remove_contact(contact_id)?;
         let _ = self.ui.contact_aliases.remove(&contact_id);
-        let _ = self
-            .ui
-            .drafts
-            .remove(&ConversationRef::Direct(contact_id));
+        let _ = self.ui.drafts.remove(&ConversationRef::Direct(contact_id));
         if self.ui.selected_conversation == Some(ConversationRef::Direct(contact_id)) {
             self.ui.selected_conversation = None;
         }
@@ -331,10 +319,7 @@ impl HydraApp {
         Ok(packets)
     }
 
-    pub fn stored_messages(
-        &self,
-        contact_id: ContactId,
-    ) -> HydraResult<Vec<ReceivedHydraMessage>> {
+    pub fn stored_messages(&self, contact_id: ContactId) -> HydraResult<Vec<ReceivedHydraMessage>> {
         self.hydra
             .list_messages(contact_id)
             .into_iter()
@@ -515,7 +500,6 @@ fn received_display_message(
         attachment_count: message.attachments().len(),
     }
 }
-
 
 fn validate_identity_label(label: &str) -> HydraResult<()> {
     if label.len() > MAX_IDENTITY_LABEL_BYTES {
