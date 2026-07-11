@@ -56,6 +56,10 @@ impl<'a> BytesReader<'a> {
             self.read(8)?.to_vec(),
         )?))
     }
+
+    pub(crate) const fn is_finished(&self) -> bool {
+        self.offset == self.bytes.len()
+    }
 }
 
 pub(crate) fn write_u32(out: &mut Vec<u8>, value: u32) {

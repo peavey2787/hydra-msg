@@ -2,15 +2,17 @@
 name = "hydra-session"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [features]
 test-support = []
 
 [dependencies]
-hydra-core = { path = "../hydra-core" }
-hydra-crypto = { path = "../hydra-crypto" }
-hydra-envelope = { path = "../hydra-envelope" }
+hydra-core = { version = "0.1.0", path = "../hydra-core" }
+hydra-crypto = { version = "0.1.0", path = "../hydra-crypto" }
+hydra-envelope = { version = "0.1.0", path = "../hydra-envelope" }
 
 [lints]
 workspace = true

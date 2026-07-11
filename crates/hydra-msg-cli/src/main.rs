@@ -110,8 +110,12 @@ fn send_demo(args: &[String]) -> HydraResult<()> {
         .get(1)
         .map_or("hello from hydra-msg-cli", String::as_str);
     let (mut alice, mut bob, bob_id) = setup_two_party_demo(&base)?;
-    let envelope = alice.send(bob_id, HydraMessage::text(message))?;
-    let received = bob.receive(envelope)?;
+    let packets = alice.send(bob_id, HydraMessage::text(message))?;
+    let mut received = None;
+    for packet in packets {
+        received = bob.receive(packet)?.or(received);
+    }
+    let received = received.ok_or(HydraMsgError::InvalidEncoding("message did not complete"))?;
     println!("sent={message}");
     println!("received={}", received.text()?);
     println!("attachment_count={}", received.attachments().len());
@@ -127,8 +131,12 @@ fn attachment_demo(args: &[String]) -> HydraResult<()> {
         .attach_bytes("named-bytes.txt", b"named bytes".to_vec())?;
     let mut message = message;
     message.attachments.push(raw_attachment);
-    let envelope = alice.send(bob_id, message)?;
-    let received = bob.receive(envelope)?;
+    let packets = alice.send(bob_id, message)?;
+    let mut received = None;
+    for packet in packets {
+        received = bob.receive(packet)?.or(received);
+    }
+    let received = received.ok_or(HydraMsgError::InvalidEncoding("message did not complete"))?;
     println!("text={}", received.text()?);
     for attachment in received.attachments() {
         println!(
@@ -158,7 +166,7 @@ fn doctor(args: &[String]) -> HydraResult<()> {
         .get(1)
         .map_or("developer-state-password", String::as_str);
     let hydra = Hydra::open(data_dir, state_password)?;
-    let status = hydra.storage_status();
+    let status = hydra.storage_debug_status();
     println!("data_dir={}", status.data_dir.display());
     println!("identities={}", status.identity_count);
     println!("contacts={}", status.contact_count);

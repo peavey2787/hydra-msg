@@ -159,7 +159,7 @@
     document.getElementById('init-hydra').addEventListener('click', async () => {
       try {
         await loadHydra();
-        hydra = mod.WasmHydra.openDefault();
+        hydra = mod.WasmHydra.openEphemeral('webrtc-manual-demo-ephemeral', 'state-password');
         const password = 'demo-password-change-me';
         const id = hydra.generateId(password);
         hydra.setActiveId(id, password);
@@ -310,9 +310,11 @@
         requireRtcReady();
         if (!sessionReady) throw new Error('HYDRA session is not established yet.');
         const text = document.getElementById('message-text').value;
-        const envelope = hydra.send(peerId, mod.WasmHydraMessage.text(text));
-        dc.send(JSON.stringify({ type: 'hydra-envelope', bytes: bytesToBase64(envelope) }));
-        log(`Sent encrypted HYDRA envelope over WebRTC carrier: ${text}`);
+        const packets = hydra.send(peerId, mod.WasmHydraMessage.text(text));
+        for (const packet of packets) {
+          dc.send(JSON.stringify({ type: 'hydra-envelope', bytes: bytesToBase64(packet) }));
+        }
+        log(`Sent ${packets.length} encrypted HYDRA packet(s) over WebRTC carrier: ${text}`);
       } catch (error) {
         log(`Send message failed: ${error}`);
       }
@@ -334,7 +336,11 @@
           log('Received HYDRA answer and finished handshake.');
         } else if (message.type === 'hydra-envelope') {
           const data = hydra.receive(base64ToBytes(message.bytes));
-          log(`Received encrypted envelope, decrypted text: ${data.text()}`);
+          if (data) {
+            log(`Received encrypted message: ${data.text()}`);
+          } else {
+            log('Received encrypted HYDRA packet; waiting for remaining packets.');
+          }
         } else {
           log(`Ignored unknown carrier message type: ${message.type}`);
         }

@@ -42,21 +42,35 @@ fn main() -> HydraResult<()> {
 
     alice.finish_handshake(fs::read(carrier.join("bob-to-alice.handshake-answer"))?)?;
 
-    let envelope = alice.send(
+    let packets = alice.send(
         bob_contact.id(),
         HydraMessage::text("hello through manual file carrier")
             .attach_bytes("note.bin", b"opaque attachment bytes".to_vec())?,
     )?;
-    fs::write(carrier.join("alice-to-bob.envelope"), envelope.as_bytes())?;
+    for (index, packet) in packets.iter().enumerate() {
+        fs::write(
+            carrier.join(format!("alice-to-bob-{index}.packet")),
+            packet.as_bytes(),
+        )?;
+    }
 
-    let received = bob.receive(fs::read(carrier.join("alice-to-bob.envelope"))?)?;
-    println!("Bob decrypted: {}", received.text()?);
-    for attachment in received.attachments() {
-        println!(
-            "Attachment {}: {} bytes",
-            attachment.filename(),
-            attachment.bytes().len()
-        );
+    let mut received = None;
+    for index in 0..packets.len() {
+        received = bob
+            .receive(fs::read(
+                carrier.join(format!("alice-to-bob-{index}.packet")),
+            )?)?
+            .or(received);
+    }
+    if let Some(received) = received {
+        println!("Bob decrypted: {}", received.text()?);
+        for attachment in received.attachments() {
+            println!(
+                "Attachment {}: {} bytes",
+                attachment.filename(),
+                attachment.bytes().len()
+            );
+        }
     }
 
     println!("Carrier files written to {}", carrier.display());

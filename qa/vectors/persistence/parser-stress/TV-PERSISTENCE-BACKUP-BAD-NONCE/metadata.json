@@ -1,0 +1,1 @@
+{"artifact":"backup.bin","expected_result":"reject","kind":"parser-stress","length":184,"purpose":"backup envelope with wrong nonce length must fail closed","schema":1,"sha3_256":"00922b4f0cfc0d967b96b6f764991ae761b08f81808b552808aca40e73216129","vector_id":"TV-PERSISTENCE-BACKUP-BAD-NONCE"}

@@ -29,8 +29,10 @@ app_send_to_peer(offer.as_bytes())?;
 let answer = app_wait_for_peer_answer()?;
 hydra.finish_handshake(answer)?;
 
-let envelope = hydra.send(peer.id(), HydraMessage::text("hello"))?;
-app_send_to_peer(envelope.as_bytes())?;
+let packets = hydra.send(peer.id(), HydraMessage::text("hello"))?;
+for packet in packets {
+    app_send_to_peer(packet.as_bytes())?;
+}
 ```
 
 For the full two-device explanation, see [How HYDRA messaging works](../../docs/impl/message-flow/README.md).

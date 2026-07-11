@@ -25,6 +25,10 @@
 /validation-logs/
 /test-output/
 /test-results/
+/qa/browser/playwright/node_modules/
+/qa/browser/playwright/test-results/
+/qa/browser/playwright/playwright-report/
+/qa/browser/playwright/blob-report/
 
 *.long-type-*.txt
 
@@ -53,6 +57,8 @@
 *.log
 *.pid
 *.sock
+__pycache__/
+*.py[cod]
 
 # Example runtime artifacts must stay under target/ or docs/project/.
 /hydra-live-state*.hydralive
@@ -126,6 +132,12 @@ node-config.local.json
 !examples/**/*.toml
 !examples/**/*.yaml
 !examples/**/*.yml
+
+# -----------------------------------------------------------------------------
+# Generated release evidence / artifacts
+# -----------------------------------------------------------------------------
+/release-artifacts/
+/release-evidence/
 
 # -----------------------------------------------------------------------------
 # Generated archives / patches / release bundles

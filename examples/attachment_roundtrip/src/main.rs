@@ -32,8 +32,14 @@ fn main() -> HydraResult<()> {
     let mut message = message;
     message.attachments.push(anonymous_bytes);
 
-    let envelope = alice.send(bob_contact.id(), message)?;
-    let data = bob.receive(envelope)?;
+    let packets = alice.send(bob_contact.id(), message)?;
+    let mut data = None;
+    for packet in packets {
+        data = bob.receive(packet)?.or(data);
+    }
+    let data = data.ok_or(hydra_msg::HydraMsgError::InvalidEncoding(
+        "message did not complete",
+    ))?;
 
     println!("Bob received from {}: {}", data.from().hex(), data.text()?);
     for attachment in data.attachments() {

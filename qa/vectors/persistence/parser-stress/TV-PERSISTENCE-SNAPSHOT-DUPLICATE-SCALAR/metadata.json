@@ -1,0 +1,1 @@
+{"artifact":"snapshot.bin","expected_result":"reject","kind":"parser-stress","length":168,"purpose":"plaintext snapshot with duplicate scalar must fail validation before apply","schema":1,"sha3_256":"4954c70db70aac79bc656751ac59abbf2741003a9d8d686c3c414a8db784c265","vector_id":"TV-PERSISTENCE-SNAPSHOT-DUPLICATE-SCALAR"}

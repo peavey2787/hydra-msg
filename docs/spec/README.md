@@ -14,10 +14,13 @@
 - [Group modes](group-modes.md)
 - [Group rekey](group-rekey.md)
 - [Anonymous authorization](anonymous-authorization.md)
+- [Canonical encrypted local snapshot persistence](canonical-snapshot-persistence.md)
 
 This document is the project structure map. It explains where files belong so the repository stays organized, consistent, and easy to maintain.
 
 ## Spec document index
+
+The persistence contract is specified in [Canonical encrypted local snapshot persistence](canonical-snapshot-persistence.md).
 
 The Navigation section above is the canonical spec-side index for protocol specs and repository structure. Public API entry points stay on the main README navigation.
 
@@ -25,8 +28,8 @@ The Navigation section above is the canonical spec-side index for protocol specs
 
 ```text
 crates/      maintained Rust components and system modules
-docs/        specifications, implementation notes, validation notes, future work, and AI working notes
-qa/          local correctness scripts, fixtures, vectors, fuzzing, and validation tools
+docs/        specifications, implementation notes, validation notes, and future-work notes
+qa/          local correctness scripts, fixtures, vectors, fuzzing, release evidence, and validation tools
 examples/    runnable examples and small demo entry points
 external/    third-party apps, libraries, or vendored external material when needed
 scripts/     automation that is not part of QA
@@ -58,7 +61,7 @@ crates/hydra-group/src/state/      live group state, private membership state, s
 crates/hydra-group/src/commit/    commit preparation, validation, transition, payload, key-schedule, tree-update, application, and install flow
 ```
 
-New `hydra-group` and `hydra-msg` source files should usually stay under 400 lines. Any file that must exceed that threshold needs a documented exception in `qa/ci/rust-size-allowlist.txt`, including a max line ceiling and a specific ownership reason. This is a drift guard, not a substitute for SRP: remove allow-list entries when a file is split below the threshold.
+New Rust source files should usually stay under 400 lines. Any file that must exceed that threshold needs a documented exception in `qa/ci/policy/rust-size-allowlist.txt`, including a max line ceiling and a specific ownership reason. This is a drift guard, not a substitute for SRP: remove allow-list entries when a file is split below the threshold.
 
 
 ## `hydra-msg` facade ownership notes
@@ -66,13 +69,13 @@ New `hydra-group` and `hydra-msg` source files should usually stay under 400 lin
 `crates/hydra-msg` is the app-developer facade. Its root `lib.rs` keeps the public API surface and re-exports stable, while focused private modules own the implementation details:
 
 ```text
-crates/hydra-msg/src/identity.rs    identity ids, summaries, encrypted identity records, and identity lifecycle methods
-crates/hydra-msg/src/contacts.rs    contact ids, contact metadata, contact cards, import/export, verification, and blocking
-crates/hydra-msg/src/handshake.rs   signed hybrid handshake orchestration, session status, session records, and contact payload sealing/opening
-crates/hydra-msg/src/messages.rs    message ids, attachments, message builders, received messages, and message persistence helpers
-crates/hydra-msg/src/lobbies.rs     lobby ids, lobby policy, invites, member management, and per-member lobby sends
-crates/hydra-msg/src/storage.rs     local open/persist/load behavior, backups, snapshots, and storage status
-crates/hydra-msg/src/benchmark.rs   facade benchmark surface
+crates/hydra-msg/src/api/identity.rs    identity ids, summaries, encrypted identity records, and identity lifecycle methods
+crates/hydra-msg/src/api/contacts.rs    contact ids, contact metadata, contact cards, import/export, verification, and blocking
+crates/hydra-msg/src/handshake/mod.rs   signed hybrid handshake orchestration, session status, session records, and contact payload sealing/opening
+crates/hydra-msg/src/messages/mod.rs    message ids, attachments, message builders, received messages, and message persistence helpers
+crates/hydra-msg/src/api/lobbies.rs     lobby ids, lobby policy, invites, member management, and per-member lobby sends
+crates/hydra-msg/src/api/storage.rs     local open/persist/load behavior, backups, snapshots, and storage status
+crates/hydra-msg/src/api/benchmark.rs   facade benchmark surface
 crates/hydra-msg/src/codec/         private wire/state/contact/message/lobby/handshake encoding helpers by domain
 ```
 
@@ -83,25 +86,24 @@ The public API remains available through the crate root; the modules are impleme
 `docs/` is split by purpose:
 
 ```text
-docs/future-work/  ideas, future features, and long-term plans
 docs/impl/         implementation-focused docs and scaffolding
 docs/spec/         foundational specifications and public behavior contracts
-docs/validation/   checks, release criteria, proofs, vectors, and benchmark evidence
-docs/project/      AI working notes, audits, temporary assistant summaries, and helper artifacts
+docs/validation/   checks, release criteria, proofs, vectors, release-governance docs, and benchmark evidence
 ```
 
-Important product docs must not live in `docs/project/`. That folder is only for assistant working material such as audits and temporary project notes.
+Important product docs and release evidence must not live in assistant working-note folders. Long-lived validation evidence belongs in `qa/evidence/` or `docs/validation/`, depending on whether it is a gate-owned evidence note or public release-governance documentation.
 
 ## `qa/`
 
 `qa/` owns correctness-related tooling:
 
 ```text
-qa/ci/       local CI scripts and one-command check gates
-qa/fuzz/     fuzzing harnesses
-qa/tools/    internal QA utilities
-qa/vectors/  protocol fixtures and test vectors
-qa/tests/    global or system-level tests when needed
+qa/ci/        local CI scripts and one-command check gates
+qa/evidence/  gate-owned evidence notes used by validation scripts
+qa/fuzz/      fuzzing harnesses
+qa/tools/     internal QA utilities
+qa/vectors/   protocol fixtures and test vectors
+qa/tests/     global or system-level tests when needed
 ```
 
 The master local validation command lives in `qa/ci/`.

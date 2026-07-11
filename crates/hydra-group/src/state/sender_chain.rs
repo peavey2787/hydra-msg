@@ -1,7 +1,6 @@
-use super::{
-    active_sender_entries, route_tag_eq, SenderChainCursorSnapshot, SenderChainStateSnapshot,
-    SkippedGroupMessageKeySnapshot,
-};
+mod snapshot_restore;
+
+use super::{active_sender_entries, route_tag_eq};
 use crate::{
     derive_sender_chain_key, derive_sender_message_step, sender_chain_commitment, EpochKeyContext,
     GroupError, GroupResult, MemberId, RosterEntry, SenderMessageStep,
@@ -303,72 +302,6 @@ impl SenderChainState {
     #[must_use]
     pub fn skipped_len(&self) -> usize {
         self.skipped.len()
-    }
-
-    #[must_use]
-    pub fn export_snapshot(&self) -> SenderChainStateSnapshot {
-        SenderChainStateSnapshot {
-            senders: self
-                .senders
-                .iter()
-                .map(|sender| SenderChainCursorSnapshot {
-                    sender: sender.sender,
-                    next_index: sender.next_index,
-                    chain_key: *sender.chain_key.expose_for_backend(),
-                })
-                .collect(),
-            skipped: self
-                .skipped
-                .iter()
-                .map(|skipped| SkippedGroupMessageKeySnapshot {
-                    sender: skipped.sender,
-                    index: skipped.index,
-                    route_tag: skipped.route_tag,
-                    message_key: *skipped.message_key.expose_for_backend(),
-                })
-                .collect(),
-        }
-    }
-
-    #[must_use]
-    pub fn from_snapshot(snapshot: SenderChainStateSnapshot) -> Self {
-        Self {
-            senders: snapshot
-                .senders
-                .into_iter()
-                .map(|sender| SenderChainCursor {
-                    sender: sender.sender,
-                    next_index: sender.next_index,
-                    chain_key: Secret32::new(sender.chain_key),
-                })
-                .collect(),
-            skipped: snapshot
-                .skipped
-                .into_iter()
-                .map(|skipped| SkippedGroupMessageKey {
-                    sender: skipped.sender,
-                    index: skipped.index,
-                    route_tag: skipped.route_tag,
-                    message_key: Secret32::new(skipped.message_key),
-                })
-                .collect(),
-        }
-    }
-
-    pub fn append_test_commitment(&self, output: &mut Vec<u8>) {
-        output.extend_from_slice(&(self.senders.len() as u64).to_be_bytes());
-        for sender in &self.senders {
-            output.extend_from_slice(&sender.sender.0);
-            output.extend_from_slice(&sender.next_index.to_be_bytes());
-            output.extend_from_slice(&sender.chain_key_commitment());
-        }
-        output.extend_from_slice(&(self.skipped.len() as u64).to_be_bytes());
-        for skipped in &self.skipped {
-            output.extend_from_slice(&skipped.sender.0);
-            output.extend_from_slice(&skipped.index.to_be_bytes());
-            output.extend_from_slice(&skipped.route_tag);
-            output.extend_from_slice(&skipped.key_commitment());
-        }
     }
 }
 

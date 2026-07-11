@@ -10,7 +10,7 @@
 - [Public developer API](../spec/public-developer-api.md)
 - [Benchmark notes](../validation/benchmark-results.md)
 
-Status: P7 developer utility over `hydra-msg`.
+Status: developer utility over the public `hydra-msg` facade.
 
 `hydra-msg-cli` is a thin command-line helper for trying the simple
 facade API from a terminal. It is not protocol authority and it does not add any

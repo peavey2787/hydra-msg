@@ -1,0 +1,15 @@
+ac428e6454ab5e4d921a70407449d6865877de10f2bc7f67002d9a5efaa438e5  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-KDF/backup.bin
+227e81e241110ab928d5ad46dda4f665589f76600dde177c2afd8ca697d1d767  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-KDF/backup.hex
+8e260fad880d70b107e044afd0d6e9061ff86c9555a629008acfbafeceee0ea8  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-KDF/metadata.json
+00922b4f0cfc0d967b96b6f764991ae761b08f81808b552808aca40e73216129  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-NONCE/backup.bin
+a5ad1b2b0eebb3e9ba9d0fab4048a1c3fa4ea08258fb65c7e36b3bfc6b5ee16c  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-NONCE/backup.hex
+e5a5a2fee66abe00f3c0e60f3019c66437696b83f94beedd5d842164977e06a1  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-BACKUP-BAD-NONCE/metadata.json
+b106a1fd109a2bac80b349311943dfc8f73f752285e4d77a1a7b55520389ef23  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-SNAPSHOT-DUPLICATE-SCALAR/metadata.json
+4954c70db70aac79bc656751ac59abbf2741003a9d8d686c3c414a8db784c265  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-SNAPSHOT-DUPLICATE-SCALAR/snapshot.bin
+13dd3400356047e063ec3ec51a2f1f81f580dffc9c36bd6878744b7c19ec0e1d  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-SNAPSHOT-DUPLICATE-SCALAR/snapshot.hex
+c05b9e5402bcd656b30de5e1ec478181db25adcfff74910bd9ede143b82028cd  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-BAD-MAGIC/encrypted_state.bin
+fc0366d339d666a9180db76446a3e006d09fb732653dbdd3f28a11e841672283  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-BAD-MAGIC/encrypted_state.hex
+436d3f667c0990347b8e5e66cd30ceac0bd181ffd6f26feb01bbd25601ced0bc  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-BAD-MAGIC/metadata.json
+85fd812f2a89e3685401eabe92d95eabee1afc214999e84ec6bb25c42874d97e  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/encrypted_state.bin
+dd76c3ba55970b7fdffddb7e06a86d174f1801ef5726d5404315d2a427c827f9  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/encrypted_state.hex
+98168d4332d6b216eb9ca40998e5ec0ef4625f363f4de8511fe7050d9cdf772a  qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/metadata.json

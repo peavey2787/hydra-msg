@@ -2,17 +2,20 @@
 name = "hydra-vector-gen"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88"
+license = "GPL-2.0-or-later"
+repository = "https://github.com/peavey2787/hydra-msg"
 publish = false
 
 [workspace]
 
 [dependencies]
 hex = "=0.4.3"
-hydra-core = { path = "../../../crates/hydra-core" }
-hydra-crypto = { path = "../../../crates/hydra-crypto" }
-hydra-envelope = { path = "../../../crates/hydra-envelope" }
-hydra-group = { path = "../../../crates/hydra-group" }
-hydra-session = { path = "../../../crates/hydra-session", features = ["test-support"] }
+hydra-core = { version = "0.1.0", path = "../../../crates/hydra-core" }
+hydra-crypto = { version = "0.1.0", path = "../../../crates/hydra-crypto" }
+hydra-envelope = { version = "0.1.0", path = "../../../crates/hydra-envelope" }
+hydra-group = { version = "0.1.0", path = "../../../crates/hydra-group" }
+hydra-session = { version = "0.1.0", path = "../../../crates/hydra-session", features = ["test-support"] }
 ml-dsa = { version = "=0.1.1", default-features = false, features = ["alloc"] }
 ml-kem = { version = "=0.3.2", features = ["hazmat"] }
 shake = "=0.1.0"

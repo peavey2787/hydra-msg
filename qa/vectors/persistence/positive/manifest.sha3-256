@@ -1,0 +1,14 @@
+2eaa4c4cbc1ba8b0f1c4e8dfbcdaa9a7da4b9113fd2e057e0bb03386867d844b  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/backup.bin
+a2b896278b3169730103fdc2f2ed624735bc8e97582764a64dfe8c7c5922686b  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/backup.hex
+31d15327aad2d3b4163e46cc3da5d59227424de497aaf7bd7945f62224f0c202  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/metadata.json
+484cdaee3381a55a2d2425fddb2c140022e962db9c073e8e5a26812a1d958247  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/snapshot.bin
+ed13bf42195b140f17d20dd6dc6de92dfe8d26dc3f98f5811890cb8a122031bd  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/snapshot.hex
+c1e62b73d930e30a685b27c5345cb14d333b8f89a5618028e716618972b1a761  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/state_envelope.bin
+a79ce227201c55722dda8eeca36d92967058396ba1dd816d2920f12e2b0120ae  qa/vectors/persistence/positive/TV-PERSIST-EMPTY-000/state_envelope.hex
+d3f1ad9398e9055c8773ad68f7426d27bb8549c12705deee0f8b898db7891165  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/backup.bin
+2865786a7b4732763cf6ec8e92fff38dbde99ba4ea2a9cd684dac608b9951ca0  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/backup.hex
+257fef3bf46b5d8f8336381f639ec71c75852e517eac0580aed7ce3dec453daa  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/metadata.json
+7ab6227d5bfda99cb5388937e38cdbe6cd9649a67e6e15a5780dbb5232e76ba4  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/snapshot.bin
+585f7b715b94add6ceeb9ff14afdb04e27c120c17c661396cc4d7aa1d610b4a6  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/snapshot.hex
+a785e283a61d6867cbedac1e5c1b5e1ceda80b0eec55cfc6665c89e2abdcfe7b  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/state_envelope.bin
+a767833a86a8ef4a859c41803b948d811e6b7c76bed357e8037945ff4dedd6c5  qa/vectors/persistence/positive/TV-PERSIST-FULL-000/state_envelope.hex

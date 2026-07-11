@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=HYDRA-MSG Check All
-Comment=Open a terminal and run ./qa/ci/check-all.sh from the first hydra* repo under Downloads
-Exec=sh -c "script_dir=$(dirname \"$1\"); exec \"$script_dir/run-check-all-linux.sh\"" sh %k
-Terminal=false
+Comment=Open a terminal and run the full HYDRA-MSG release validation gate
+Exec=sh -c "script_dir=$(dirname \"$1\"); cd \"$script_dir\" && HYDRA_CHECK_ALL_INSIDE_TERMINAL=1 ./run-check-all-linux.sh" sh %k
+Terminal=true
 Categories=Development;

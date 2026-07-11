@@ -1,0 +1,9 @@
+HYDRA-MSG-STATE
+kdf	scrypt
+kdf_profile	interactive
+kdf_log_n	14
+kdf_r	8
+kdf_p	1
+kdf_salt	1111111111111111111111111111111111111111111111111111111111111111
+nonce	222222222222222222222222
+ciphertext	

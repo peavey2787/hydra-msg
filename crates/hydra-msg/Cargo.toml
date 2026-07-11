@@ -2,18 +2,28 @@
 name = "hydra-msg"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
+
+[features]
+default = []
 
 [dependencies]
 getrandom = { version = "=0.4.3", features = ["sys_rng"] }
-hydra-core = { path = "../hydra-core" }
-hydra-crypto = { path = "../hydra-crypto" }
-hydra-envelope = { path = "../hydra-envelope" }
-hydra-group = { path = "../hydra-group" }
-hydra-session = { path = "../hydra-session" }
+hydra-core = { version = "0.1.0", path = "../hydra-core" }
+hydra-crypto = { version = "0.1.0", path = "../hydra-crypto" }
+hydra-envelope = { version = "0.1.0", path = "../hydra-envelope" }
+hydra-group = { version = "0.1.0", path = "../hydra-group" }
+hydra-session = { version = "0.1.0", path = "../hydra-session" }
 rand_core = "=0.10.1"
 scrypt = { version = "=0.11.0", default-features = false }
 zeroize = "=1.9.0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "=0.3.77"
+wasm-bindgen = "=0.2.100"
+wasm-bindgen-futures = "=0.4.50"
 
 [lints]
 workspace = true

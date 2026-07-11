@@ -1,0 +1,36 @@
+# HYDRA-MSG dependency supply-chain policy.
+# This file is consumed by `cargo deny check advisories bans licenses sources`.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+skip = []
+skip-tree = []
+
+[licenses]
+version = 2
+confidence-threshold = 0.8
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "GPL-2.0-or-later",
+    "MIT",
+    "Unicode-3.0",
+]
+unused-allowed-license = "warn"
+
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

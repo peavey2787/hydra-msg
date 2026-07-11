@@ -1,0 +1,10 @@
+# HYDRA-MSG Rust source-size allow-list.
+#
+# Format:
+# relative/path/to/file.rs|max_allowed_lines|reason
+#
+# The default SRP threshold is 400 lines. A listed file may exceed that
+# threshold only up to its documented max. Keep every reason specific and
+# remove entries when the file is split below the threshold.
+
+crates/hydra-msg-wasm/src/lib.rs|980|WASM binding facade intentionally centralizes JS bindings and browser lifecycle helpers; accepted large-file exception.

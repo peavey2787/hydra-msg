@@ -46,13 +46,13 @@ cargo run --manifest-path examples/hydra-app/Cargo.toml -- help
 Unix:
 
 ```bash
-./qa/ci/check-examples.sh
+./qa/ci/core/check-examples.sh
 ```
 
 PowerShell:
 
 ```powershell
-.\qa\ci\check-examples.ps1
+.\qa\ci\core\check-examples.ps1
 ```
 
 Use `--skip-wasm` on Unix or `-SkipWasm` on PowerShell for native-only example checks.
@@ -64,7 +64,7 @@ The real browser/mobile component lives in `crates/hydra-msg-wasm`.
 Build reusable web output for your own app:
 
 ```bash
-./qa/ci/build-wasm-web.sh
+./qa/ci/core/build-wasm-web.sh
 ```
 
 Output:

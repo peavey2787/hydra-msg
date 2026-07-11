@@ -2,7 +2,7 @@
 
 HYDRA-MSG is a Rust/WASM encrypted messaging SDK for app developers.
 
-It gives apps a simple way to create identities, add contacts, establish sessions, send encrypted messages, receive encrypted messages, attach files/bytes, use small lobbies, and export encrypted backups.
+It gives apps a small public API for identities, contacts, handshakes, encrypted messages, attachments, small lobbies, anonymous authorization tokens, encrypted local state, and encrypted backups.
 
 ## Navigation
 
@@ -23,9 +23,11 @@ open encrypted local HYDRA store
   -> send encrypted HYDRA envelopes over any app carrier
 ```
 
-A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
+A normal HYDRA message is key/session based: the receiver needs peer key material and an active session to decrypt. Apps can support anonymous-feeling chats by using one-time HYDRA identities and contact cards, but unlinkability across chats requires fresh identities per chat/lobby and no contact-card reuse. Relays only see opaque HYDRA bytes, but they may still see timing, IP, and routing metadata unless the carrier layer hides that too.
 
-Current storage boundary: normal local state is always opened with a state password and sealed into `state.hydra`. State passwords, backup passwords, and identity seed passwords use per-record scrypt parameters and random salts before AEAD wrapping. Current contact cards expose only the public verification key by default; labeled cards are explicit. Current lobby invites expose the lobby id and max-member policy by default; labels and member lists are explicit. Current anonymous authorization is a one-time bearer-token stopgap for scope/action checks, separate from contact identity and not a blind-credential system.
+Current storage boundary: normal Native/CLI local state is always opened with a state password and sealed into `state.hydra`. Browser/WASM apps that need durable state use IndexedDB through `WasmHydra.openPersistent(name, password)` and explicitly commit changes with `await hydra.flush()`; tests and benchmarks can choose `WasmHydra.openEphemeral(name, password)` for in-memory state. State passwords, backup passwords, and identity seed passwords use per-record scrypt parameters and random salts before AEAD wrapping. Current contact cards expose only the public verification key by default; labeled cards are explicit. Current lobby invites expose the lobby id and max-member policy by default; labels and member lists are explicit. Current anonymous authorization is a one-time bearer-token stopgap for scope/action checks, separate from contact identity and not a blind-credential system.
+
+Transport sizing boundary: apps configure only `hydra.set_packet_size(bytes)`. HYDRA then picks the largest padded packet class that fits, splits larger messages internally, and returns one or more opaque HYDRA packets from `send()`. App code sends every returned packet and feeds each incoming packet to `receive()`; it never sees fragment ids, part counts, chunk records, or session internals.
 
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 
@@ -61,9 +63,11 @@ fn bob_sends_to_alice() -> HydraResult<()> {
     let answer = app_wait_for_alice_answer()?;
     bob.finish_handshake(answer)?;
 
-    // Encrypt a message for Alice. The app carrier only moves the envelope bytes.
-    let envelope = bob.send(alice.id(), HydraMessage::text("hello Alice"))?;
-    app_send_to_alice(envelope.as_bytes())?;
+    // Encrypt a message for Alice. The app carrier sends each opaque packet.
+    let packets = bob.send(alice.id(), HydraMessage::text("hello Alice"))?;
+    for packet in packets {
+        app_send_to_alice(packet.as_bytes())?;
+    }
 
     Ok(())
 }
@@ -91,11 +95,11 @@ fn alice_receives_from_bob() -> HydraResult<()> {
     let answer = alice.reply_handshake(offer)?;
     app_send_to_bob(answer.as_bytes())?;
 
-    // Wait for Bob's encrypted HYDRA envelope and decrypt it locally.
-    let envelope = app_wait_for_bob_message()?;
-    let message = alice.receive(envelope)?;
-
-    println!("Alice received: {}", message.text()?);
+    // Feed each incoming HYDRA packet into the SDK until a message completes.
+    let packet = app_wait_for_bob_message()?;
+    if let Some(message) = alice.receive(packet)? {
+        println!("Alice received: {}", message.text()?);
+    }
     Ok(())
 }
 ```
@@ -104,13 +108,24 @@ The `app_*` functions are your app's carrier layer. HYDRA does not care whether 
 
 Runnable examples are in [examples](examples/README.md).
 
+## Release validation
+
+`./qa/ci/check-all.sh` is the release-complete validation gate. It runs the normal workspace/static/example checks first, then the long release-evidence gates, and leaves the overnight coverage-guided fuzz campaign last.
+
+```bash
+./qa/ci/check-all.sh
+```
+
+The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` only when intentionally changing the release campaign length.
+
 ## Repository layout
 
 ```text
 crates/      maintained Rust components
 examples/    runnable examples over the public SDK
-qa/          local check scripts and validation tooling
-docs/        specs, implementation notes, validation notes, future work, and AI working notes
+qa/          local check scripts, fixtures, fuzzing, browser tests, and release evidence
+scripts/     developer setup and release packaging/signing helpers
+docs/        specs, implementation notes, validation notes, and release-governance docs
 ```
 
 For the full folder map, see [Repository structure](docs/spec/README.md).
@@ -118,22 +133,63 @@ For the full folder map, see [Repository structure](docs/spec/README.md).
 ## Benchmark snapshot
 
 ```text
-Samsung Galaxy S20 Ultra, browser WASM, 1 KiB payload:
-  handshake avg:      10.0 ms
-  send+receive avg:    0.0775 ms
+Latest manual release-candidate browser/server spot checks, 1 KiB payload:
 
-ASUS TUF Ryzen 7 A16 laptop, browser WASM, 1 KiB payload:
-  handshake avg:       5.7333 ms
-  send+receive avg:    0.0521 ms
+Samsung Galaxy browser WASM:
+  handshake avg:       ~17 ms
+  send+receive avg:    ~0.2 ms
 
-Desktop PC, browser WASM, 1 KiB payload:
-  handshake avg:       4.6633 ms
-  send+receive avg:    0.0412 ms
+ASUS TUF A16 laptop, browser WASM:
+  handshake avg:       ~10 ms
+  send+receive avg:    ~0.2 ms
 
-BLU M8L (Original), released August 2020, 1GB RAM, Android 11 Go edition,
-browser WASM, 1 KiB payload:
-  handshake avg:     162.5 ms
-  send+receive avg:    1.27 ms
+ASUS TUF A16 laptop, native/server:
+  handshake avg:        5.5286 ms
+  send+receive avg:     0.0421 ms
+
+Older development snapshots also include desktop browser WASM and
+BLU M8L Android Go measurements. Sub-millisecond send/receive differences
+are benchmark-noise/harness dominated and should not be used to claim that one
+runtime is universally faster than another.
 ```
 
-See [Benchmark notes](docs/validation/benchmark-results.md) for the full table.
+See [Benchmark notes](docs/validation/benchmark-results.md) for the full table and evidence expectations.
+
+## First-time developer setup
+
+Install HYDRA's Rust QA tools, WASM tooling, Playwright browser binaries, optional nightly Miri/sanitizer components, and release-tool reminders with:
+
+```bash
+./scripts/setup-dev-env.sh
+```
+
+PowerShell:
+
+```powershell
+.\scripts\setup-dev-env.ps1
+```
+
+## Validation
+
+The full release-complete gate is:
+
+```bash
+./qa/ci/check-all.sh
+```
+
+It includes workspace format/test/clippy checks, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last. Archive the generated logs and reports for release candidates as described in [Release criteria](docs/validation/release-criteria.md).
+
+## Security and release governance
+
+Security reporting and release governance are documented separately so the app-developer path stays simple:
+
+- [Security policy](SECURITY.md)
+- [Changelog](CHANGELOG.md)
+- [Release criteria](docs/validation/release-criteria.md)
+- [Release checklist](docs/validation/release-checklist.md)
+- [Release artifacts](docs/validation/release-artifacts.md)
+- [SBOM policy](docs/validation/sbom.md)
+- [Reproducible builds](docs/validation/reproducible-builds.md)
+- [Release signing](docs/validation/release-signing.md)
+
+The public repository is `https://github.com/peavey2787/hydra-msg`. Security reports use GitHub Private Vulnerability Reporting through [SECURITY.md](SECURITY.md). Production release artifacts are created per signed tag with the release scripts under `scripts/release/`.

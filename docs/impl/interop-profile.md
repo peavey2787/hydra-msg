@@ -77,8 +77,7 @@ backend provenance and reproduction commands
 ```
 
 Binary and hex forms must decode identically. A vector is accepted only when
-the two pinned backends independently produce the listed primitive outputs and
-two complete protocol implementations produce every protocol/state result.
+the current implementation and an independent primitive/vector oracle produce the listed primitive outputs, and two complete protocol implementations produce every protocol/state result.
 
 `qa/vectors/candidate/` is explicitly outside the frozen bundle until those
 conditions hold. Candidate provenance may name one backend and must never be
@@ -88,5 +87,5 @@ presented as interoperability evidence.
 
 Before freeze, tests cover both send directions for every pair of independent
 implementations on little- and big-endian hosts where available, 32/64-bit
-targets, and fragmented/coalesced stream delivery. Every negative vector must
+targets, and fragmented/coalesced fragment delivery. Every negative vector must
 be rejected without state divergence.

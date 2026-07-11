@@ -1,7 +1,7 @@
 use hydra_core::MAX_SKIP;
 use hydra_crypto::SecretBytes;
 
-use crate::{Direction, SessionError, SessionResult};
+use crate::{ratchet::derive_route_tag, Direction, SessionError, SessionResult};
 
 pub struct SkippedMessageKey {
     session_id: [u8; 32],
@@ -97,6 +97,20 @@ impl SkippedKeyStore {
         self.entries.clear();
     }
 
+    pub(crate) fn append_receive_route_tags(
+        &self,
+        session_id: &[u8; 32],
+        direction: Direction,
+        output: &mut Vec<[u8; 16]>,
+    ) {
+        output.extend(
+            self.entries
+                .iter()
+                .filter(|entry| &entry.session_id == session_id && entry.direction == direction)
+                .map(|entry| derive_route_tag(&entry.key, session_id, entry.index)),
+        );
+    }
+
     #[must_use]
     pub fn export_snapshot(&self) -> Vec<SkippedMessageKeySnapshot> {
         self.entries
@@ -110,19 +124,24 @@ impl SkippedKeyStore {
             .collect()
     }
 
-    #[must_use]
-    pub fn from_snapshot(entries: Vec<SkippedMessageKeySnapshot>) -> Self {
-        Self {
-            entries: entries
-                .into_iter()
-                .map(|entry| SkippedMessageKey {
-                    session_id: entry.session_id,
-                    direction: entry.direction,
-                    index: entry.index,
-                    key: SecretBytes::from_array(entry.key),
-                })
-                .collect(),
+    pub fn from_snapshot(entries: Vec<SkippedMessageKeySnapshot>) -> SessionResult<Self> {
+        if entries.len() > MAX_SKIP {
+            return Err(SessionError::SkippedKeyLimit);
         }
+        let mut seen = std::collections::HashSet::new();
+        let mut restored = Vec::with_capacity(entries.len());
+        for entry in entries {
+            if !seen.insert((entry.session_id, entry.direction, entry.index)) {
+                return Err(SessionError::InvalidState);
+            }
+            restored.push(SkippedMessageKey {
+                session_id: entry.session_id,
+                direction: entry.direction,
+                index: entry.index,
+                key: SecretBytes::from_array(entry.key),
+            });
+        }
+        Ok(Self { entries: restored })
     }
 
     #[cfg(any(test, feature = "test-support"))]

@@ -1,5 +1,5 @@
 use super::{exact_array_from_vec, hex_decode, hex_encode, random_array};
-use crate::{HydraMsgError, HydraResult};
+use crate::{limits::MAX_PASSWORD_BYTES, HydraMsgError, HydraResult};
 use hydra_crypto::SecretBytes;
 use scrypt::{scrypt, Params as ScryptParams};
 use zeroize::Zeroize;
@@ -54,6 +54,9 @@ pub(crate) fn derive_password_key(
     if password.is_empty() {
         return Err(HydraMsgError::InvalidPassword);
     }
+    if password.len() > MAX_PASSWORD_BYTES {
+        return Err(HydraMsgError::InvalidInput("password size"));
+    }
     kdf.validate()?;
     let params = ScryptParams::new(kdf.log_n, kdf.r, kdf.p, 32)
         .map_err(|_| HydraMsgError::InvalidEncoding("kdf parameters"))?;
@@ -88,7 +91,11 @@ where
     if algorithm != KDF_ALGORITHM_SCRYPT {
         return Err(HydraMsgError::Unsupported("kdf algorithm"));
     }
-    let profile = required_field(lines, "kdf_profile", "kdf profile")?.to_owned();
+    let profile_value = required_field(lines, "kdf_profile", "kdf profile")?;
+    if profile_value.len() > 32 {
+        return Err(HydraMsgError::InvalidEncoding("kdf profile"));
+    }
+    let profile = profile_value.to_owned();
     let log_n = required_field(lines, "kdf_log_n", "kdf log_n")?
         .parse::<u8>()
         .map_err(|_| HydraMsgError::InvalidEncoding("kdf log_n"))?;
@@ -98,7 +105,7 @@ where
     let p = required_field(lines, "kdf_p", "kdf p")?
         .parse::<u32>()
         .map_err(|_| HydraMsgError::InvalidEncoding("kdf p"))?;
-    let salt = exact_array_from_vec(hex_decode(required_field(lines, "kdf_salt", "kdf salt")?)?)?;
+    let salt = decode_kdf_salt(required_field(lines, "kdf_salt", "kdf salt")?)?;
     let record = PasswordKdfRecord {
         profile,
         log_n,
@@ -111,7 +118,7 @@ where
 }
 
 pub(crate) fn parse_kdf_columns(parts: &[&str]) -> HydraResult<PasswordKdfRecord> {
-    if parts.len() != 6 || parts[0] != KDF_ALGORITHM_SCRYPT {
+    if parts.len() != 6 || parts[0] != KDF_ALGORITHM_SCRYPT || parts[1].len() > 32 {
         return Err(HydraMsgError::InvalidEncoding("kdf columns"));
     }
     let record = PasswordKdfRecord {
@@ -125,7 +132,7 @@ pub(crate) fn parse_kdf_columns(parts: &[&str]) -> HydraResult<PasswordKdfRecord
         p: parts[4]
             .parse::<u32>()
             .map_err(|_| HydraMsgError::InvalidEncoding("kdf p"))?,
-        salt: exact_array_from_vec(hex_decode(parts[5])?)?,
+        salt: decode_kdf_salt(parts[5])?,
     };
     record.validate()?;
     Ok(record)
@@ -161,6 +168,13 @@ where
     } else {
         Err(HydraMsgError::InvalidEncoding("kdf field name"))
     }
+}
+
+fn decode_kdf_salt(value: &str) -> HydraResult<[u8; 32]> {
+    if value.len() != 64 {
+        return Err(HydraMsgError::InvalidEncoding("kdf salt"));
+    }
+    exact_array_from_vec(hex_decode(value)?)
 }
 
 fn params_for_profile(profile: &str) -> HydraResult<(u8, u32, u32)> {

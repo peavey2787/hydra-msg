@@ -1,0 +1,5 @@
+HYDRA-MSG-STATE-SNAPSHOT
+state_generation	1
+next_message_id	1
+anonymous_auth_secret	6666666666666666666666666666666666666666666666666666666666666666
+future_state_record	010203

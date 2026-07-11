@@ -1,5 +1,7 @@
 use super::{exact_array_from_vec, hex_decode, hex_encode, required_field};
 use crate::{
+    anonymous_auth::validate_anonymous_auth_policy,
+    limits::{reject_encoded_size, MAX_ANONYMOUS_AUTH_TOKEN_BYTES, MAX_LABEL_BYTES},
     HydraAnonymousAuthNullifier, HydraAnonymousAuthPolicy, HydraMsgError, HydraResult,
     AUTH_TOKEN_MAGIC,
 };
@@ -37,6 +39,11 @@ pub(crate) fn encode_anonymous_auth_token(
 }
 
 pub(crate) fn decode_anonymous_auth_token(bytes: &[u8]) -> HydraResult<ParsedAnonymousAuthToken> {
+    reject_encoded_size(
+        bytes.len(),
+        MAX_ANONYMOUS_AUTH_TOKEN_BYTES,
+        "anonymous auth token size",
+    )?;
     let text = std::str::from_utf8(bytes)
         .map_err(|_| HydraMsgError::InvalidEncoding("anonymous auth token utf-8"))?;
     let mut lines = text.lines();
@@ -61,30 +68,27 @@ pub(crate) fn decode_anonymous_auth_token(bytes: &[u8]) -> HydraResult<ParsedAno
         "expires_at",
         "anonymous auth token expiry",
     )?)?;
-    let nonce = exact_array_from_vec(hex_decode(required_field(
-        &mut lines,
-        "nonce",
+    let nonce = decode_fixed_hex(
+        required_field(&mut lines, "nonce", "anonymous auth token nonce")?,
         "anonymous auth token nonce",
-    )?)?)?;
-    let tag = exact_array_from_vec(hex_decode(required_field(
-        &mut lines,
-        "tag",
+    )?;
+    let tag = decode_fixed_hex(
+        required_field(&mut lines, "tag", "anonymous auth token tag")?,
         "anonymous auth token tag",
-    )?)?)?;
+    )?;
     if lines.any(|line| !line.trim().is_empty()) {
         return Err(HydraMsgError::InvalidEncoding(
             "anonymous auth token trailing data",
         ));
     }
-    Ok(ParsedAnonymousAuthToken {
-        policy: HydraAnonymousAuthPolicy {
-            scope,
-            action,
-            expires_at_unix_seconds: expires_at,
-        },
-        nonce,
-        tag,
-    })
+    let policy = HydraAnonymousAuthPolicy {
+        scope,
+        action,
+        expires_at_unix_seconds: expires_at,
+    };
+    validate_anonymous_auth_policy(&policy)
+        .map_err(|_| HydraMsgError::InvalidEncoding("anonymous auth token policy"))?;
+    Ok(ParsedAnonymousAuthToken { policy, nonce, tag })
 }
 
 pub(crate) fn anonymous_auth_token_tag(
@@ -137,8 +141,20 @@ fn write_field(out: &mut Vec<u8>, value: &[u8]) {
 }
 
 fn decode_string_field(value: &str) -> HydraResult<String> {
+    reject_encoded_size(
+        value.len(),
+        MAX_LABEL_BYTES * 2,
+        "anonymous auth token text size",
+    )?;
     String::from_utf8(hex_decode(value)?)
         .map_err(|_| HydraMsgError::InvalidEncoding("anonymous auth token text"))
+}
+
+fn decode_fixed_hex(value: &str, description: &'static str) -> HydraResult<[u8; 32]> {
+    if value.len() != 64 {
+        return Err(HydraMsgError::InvalidEncoding(description));
+    }
+    exact_array_from_vec(hex_decode(value)?)
 }
 
 fn decode_expiry(value: &str) -> HydraResult<Option<u64>> {
@@ -155,9 +171,10 @@ pub(crate) fn encode_anonymous_auth_secret(secret: &SecretBytes<32>) -> String {
 }
 
 pub(crate) fn decode_anonymous_auth_secret(value: &str) -> HydraResult<SecretBytes<32>> {
-    Ok(SecretBytes::from_array(exact_array_from_vec(hex_decode(
+    Ok(SecretBytes::from_array(decode_fixed_hex(
         value,
-    )?)?))
+        "anonymous auth secret",
+    )?))
 }
 
 pub(crate) fn encode_anonymous_auth_spent(nullifier: HydraAnonymousAuthNullifier) -> String {
@@ -165,7 +182,8 @@ pub(crate) fn encode_anonymous_auth_spent(nullifier: HydraAnonymousAuthNullifier
 }
 
 pub(crate) fn decode_anonymous_auth_spent(value: &str) -> HydraResult<HydraAnonymousAuthNullifier> {
-    Ok(HydraAnonymousAuthNullifier(exact_array_from_vec(
-        hex_decode(value)?,
+    Ok(HydraAnonymousAuthNullifier(decode_fixed_hex(
+        value,
+        "anonymous auth nullifier",
     )?))
 }

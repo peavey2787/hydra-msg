@@ -23,7 +23,7 @@ This document defines implementation controls beyond wire correctness.
 - `unsafe_code = "deny"` except one separately audited backend FFI crate.
 - Reproducible release build with recorded compiler, linker, target, flags,
   source revision, dependency/SBOM hash, and backend evidence.
-- Dependency license, advisory, provenance, and abandoned-package checks.
+- Dependency license, advisory, provenance, and abandoned-package checks through the supply-chain gate.
 - No default feature may silently select another primitive or encoding.
 
 ## 2. Parser policy

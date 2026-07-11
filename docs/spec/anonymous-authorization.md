@@ -117,3 +117,7 @@ rate-limit credentials with expiry and revocation accumulators
 ```
 
 That layer must remain separate from the normal message encryption path and contact identity model.
+
+## Linkability warning
+
+This bearer-token anonymous authorization is not fully unlinkable. Nullifiers prevent replay, but token reuse, nullifier logging, and issuer/carrier timing can link activity. Stronger anonymity claims require future blind credentials, ZK nullifier proofs, unlinkable issuance/redemption, and scope-specific unlinkable nullifiers.

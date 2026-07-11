@@ -26,8 +26,14 @@ fn main() -> HydraResult<()> {
     let answer = bob.reply_handshake(offer)?;
     alice.finish_handshake(answer)?;
 
-    let envelope = alice.send(bob_contact.id(), HydraMessage::text("hello from Alice"))?;
-    let received = bob.receive(envelope)?;
+    let packets = alice.send(bob_contact.id(), HydraMessage::text("hello from Alice"))?;
+    let mut received = None;
+    for packet in packets {
+        received = bob.receive(packet)?.or(received);
+    }
+    let received = received.ok_or(hydra_msg::HydraMsgError::InvalidEncoding(
+        "message did not complete",
+    ))?;
 
     println!(
         "Bob received from {}: {}",

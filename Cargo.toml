@@ -18,13 +18,17 @@ members = [
     "examples/webrtc_manual_carrier",
     "examples/hydra-app-core",
     "examples/hydra-app",
+    "qa/fuzz/hydra-fuzz-gate",
+    "qa/tests/cross-version-compat",
+    "qa/tests/interop",
 ]
 
 [workspace.package]
 edition = "2021"
 version = "0.1.0"
-license = "MIT OR Apache-2.0"
-repository = "https://example.invalid/hydra-msg"
+rust-version = "1.88"
+license = "GPL-2.0-or-later"
+repository = "https://github.com/peavey2787/hydra-msg"
 
 [workspace.lints.rust]
 unsafe_code = "deny"

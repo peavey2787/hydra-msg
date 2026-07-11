@@ -17,12 +17,42 @@
 
 Status: not frozen. Symmetric, class, and serialization values below are
 normative. ML-KEM/ML-DSA/TreeKEM vectors require complete deterministic
-outputs reproduced by the two pinned backends in `backend-profile.md` before
+outputs reproduced by the current RustCrypto backend and an independent release oracle described in `backend-profile.md` before
 the wire format is frozen. Missing output is a release blocker and is never
 represented by invented or truncated bytes.
 
 Hex is lowercase and contiguous. Integers are big-endian unless their primitive
 standard specifies otherwise.
+
+## Persistence vector requirements
+
+Persistence vectors for the canonical encrypted local snapshot contract live under `qa/vectors/persistence/`. HYDRA is still pre-v1, so the current storage implementation defines the first production-candidate chunked padded envelope format. Older unpadded persistence fixtures are retained only as fail-closed regression inputs until fresh v1-candidate fixtures are frozen. Active runtime tests generate current chunked state/backup fixtures, verify chunked round trips, verify backup import/restore, and still exercise wrong-password rejection, bad-KDF-parameter rejection, ciphertext/tag mutation rejection, truncated-envelope rejection, authenticated malformed-snapshot rejection, stale-generation rollback rejection, and restore generation-floor preservation.
+
+These vectors record KDF profile/parameters, deterministic test-only salts/nonces, ciphertext lengths through metadata artifacts, decrypted snapshot hashes when authentication is expected to succeed, expected result, and purpose. They use fixture-only passwords and deterministic test-only entropy. They must not be regenerated with production randomness.
+
+
+## Cross-version compatibility vector requirements
+
+Cross-version compatibility fixtures live under `qa/vectors/cross-version/` and are exercised by the separate QA crate `qa/tests/cross-version-compat/`. These tests are intentionally outside production crates. Because HYDRA has not shipped v1 yet, old unpadded local-state/backup fixtures fail closed; current tests generate the first production-candidate chunked fixtures at runtime until those artifacts are frozen.
+
+The active compatibility gate covers:
+
+- current chunked encrypted local state opens in the current runtime;
+- current chunked backup imports in the current runtime;
+- old unpadded persistence fixtures fail closed instead of migrating silently;
+- authenticated unknown future snapshot records fail closed until a future spec explicitly supports them;
+- old rollback-generation evidence still rejects stale local state;
+- restoring a current backup preserves the newer local generation floor;
+- packet-fragment delivery remains compatible through the public `set_packet_size`, `send`, and `receive` contract.
+
+The current unknown-field policy is reject-by-default. Future fields require an explicit spec update and corresponding vectors before they may be accepted.
+
+
+## Interop harness fixture requirements
+
+The broader interop harness lives under `qa/tests/interop/` and is run by `qa/ci/reliability/check-interop.sh`. It consumes frozen protocol artifacts and current runtime-generated persistence artifacts while HYDRA remains pre-v1. The harness verifies fixed protocol packets, canonical header bytes, current encrypted-state fixtures, current backup fixtures, native/WASM snapshot compatibility, CLI fixture opening, and old-fixture fail-closed behavior.
+
+`qa/fixtures/interop/manifest.sha3-256` pins protocol/static artifacts used by the harness. Updating any pinned interop fixture is a compatibility event: update the vector metadata, manifest hash, interop tests, browser probe contract, and release notes together.
 
 ## 0. Vector bundle and deterministic entropy
 
@@ -131,7 +161,7 @@ public/ciphertext/signature lengths and the mutated-signature rejection byte.
 The PQ artifacts are single-backend candidates from RustCrypto `ml-kem 0.3.2`
 and `ml-dsa 0.1.1`; they are not frozen or independently corroborated.
 
-The M4 candidate adds complete 32,768-byte INIT and RESP envelopes and a
+The current handshake candidate adds complete 32,768-byte INIT and RESP envelopes and a
 complete 4,096-byte authenticated FINISH envelope. Executable generation
 checks the canonical core lengths, Pure-ML-DSA signatures, `init_hash`,
 `transcript_hash`, both roles' X25519 and ML-KEM agreement, hybrid KDF outputs,

@@ -36,7 +36,7 @@ flowchart LR
     D --> E[Add peer contact]
     E --> F[Handshake offer and answer]
     F --> G[Active session]
-    G --> H[Send and receive encrypted envelopes]
+    G --> H[Send and receive encrypted packets]
 ```
 
 ## Two-device message flow
@@ -66,11 +66,11 @@ sequenceDiagram
     BobApp->>BobHydra: finish_handshake(answer)
 
     BobApp->>BobHydra: send(Alice, message)
-    BobHydra-->>BobApp: encrypted envelope bytes
-    BobApp->>Carrier: send envelope bytes
-    Carrier->>AliceApp: deliver envelope bytes
-    AliceApp->>AliceHydra: receive(envelope)
-    AliceHydra-->>AliceApp: plaintext message
+    BobHydra-->>BobApp: one or more encrypted packet bytes
+    BobApp->>Carrier: send each packet
+    Carrier->>AliceApp: deliver packet bytes
+    AliceApp->>AliceHydra: receive(packet)
+    AliceHydra-->>AliceApp: None until complete, then plaintext message
 ```
 
 ## Do users need contacts first?
@@ -82,7 +82,7 @@ That does not mean your app has to expose a traditional contact list. The app ca
 Internally, the clean model is still:
 
 ```text
-peer key material -> contact record -> session -> encrypted envelope
+peer key material -> contact record -> session -> encrypted packet
 ```
 
 ## Can an app support anonymous chats?
@@ -176,7 +176,7 @@ For a normal 1:1 app:
 3. Let the user share a contact card.
 4. Let the user add another contact card.
 5. Carry handshake offer/answer bytes through the app.
-6. Carry encrypted envelope bytes through the app.
+6. Carry encrypted packet bytes through the app.
 7. Display received plaintext and attachments.
 ```
 

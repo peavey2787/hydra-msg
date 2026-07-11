@@ -2,7 +2,10 @@ use super::{
     active_sender_entries, route_tag_eq, GroupReplayStateSnapshot, SenderReplayStateSnapshot,
 };
 use crate::{GroupError, GroupMode, GroupResult, MemberId, RosterEntry};
-use hydra_core::protocol::replay::{ReplayError, ReplayWindow};
+use hydra_core::{
+    protocol::replay::{ReplayError, ReplayWindow},
+    REPLAY_WINDOW_WIDTH,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AcceptedGroupMessage {
@@ -63,6 +66,9 @@ impl GroupReplayState {
             .find(|entry| entry.sender == sender)
             .ok_or(GroupError::InvalidSenderChain)?;
         replay.replay.mark(index).map_err(map_replay_error)?;
+        let minimum_index = index.saturating_sub((REPLAY_WINDOW_WIDTH - 1) as u64);
+        self.accepted_messages
+            .retain(|entry| entry.sender != sender || entry.index >= minimum_index);
         self.accepted_messages.push(AcceptedGroupMessage {
             sender,
             index,
@@ -94,9 +100,50 @@ impl GroupReplayState {
         }
     }
 
-    #[must_use]
-    pub fn from_snapshot(snapshot: GroupReplayStateSnapshot) -> Self {
-        Self {
+    pub fn from_snapshot(
+        snapshot: GroupReplayStateSnapshot,
+        mode: GroupMode,
+        roster: &[RosterEntry],
+    ) -> GroupResult<Self> {
+        let allowed = active_sender_entries(mode, roster)
+            .into_iter()
+            .map(|entry| entry.member_id)
+            .collect::<std::collections::HashSet<_>>();
+        if snapshot.senders.len() > allowed.len() {
+            return Err(GroupError::InvalidSenderChain);
+        }
+        let mut sender_ids = std::collections::HashSet::new();
+        if snapshot
+            .senders
+            .iter()
+            .any(|sender| !allowed.contains(&sender.sender) || !sender_ids.insert(sender.sender))
+        {
+            return Err(GroupError::InvalidSenderChain);
+        }
+        let max_accepted = allowed
+            .len()
+            .checked_mul(REPLAY_WINDOW_WIDTH)
+            .ok_or(GroupError::InvalidSenderChain)?;
+        if snapshot.accepted_messages.len() > max_accepted {
+            return Err(GroupError::InvalidSenderChain);
+        }
+        let mut accepted_ids = std::collections::HashSet::new();
+        let mut accepted_routes = std::collections::HashSet::new();
+        let mut accepted_per_sender = std::collections::HashMap::new();
+        for message in &snapshot.accepted_messages {
+            if !allowed.contains(&message.sender)
+                || !accepted_ids.insert((message.sender, message.index))
+                || !accepted_routes.insert((message.index, message.route_tag))
+            {
+                return Err(GroupError::InvalidSenderChain);
+            }
+            let count = accepted_per_sender.entry(message.sender).or_insert(0usize);
+            *count += 1;
+            if *count > REPLAY_WINDOW_WIDTH {
+                return Err(GroupError::InvalidSenderChain);
+            }
+        }
+        Ok(Self {
             senders: snapshot
                 .senders
                 .into_iter()
@@ -106,7 +153,7 @@ impl GroupReplayState {
                 })
                 .collect(),
             accepted_messages: snapshot.accepted_messages,
-        }
+        })
     }
 }
 

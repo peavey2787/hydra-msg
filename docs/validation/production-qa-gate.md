@@ -1,4 +1,4 @@
-# HYDRA-MSG manual validation gate
+# HYDRA-MSG production QA gate
 
 ## Navigation
 
@@ -15,94 +15,53 @@
 - [Group rekey](../spec/group-rekey.md)
 - [Anonymous authorization](../spec/anonymous-authorization.md)
 
-Status: P13 manual validation gate.
+The production QA gate is `qa/ci/check-all.*`. It now includes the normal workspace/static/example checks plus the heavy release-evidence gates. The final step is the long coverage-guided fuzz campaign.
 
-P13 is intentionally manual. It does not add product features or change the public API. It verifies that the maintainer-selected release-candidate worktree is clean on a real developer machine with Rust/Cargo/WASM tools installed.
+## Full release gate
 
-## Required local checks
-
-Run the full workspace validation from the repository root. `check-all` is the top-level gate; it calls `check-tests` first, then `check-examples`.
-
-Windows PowerShell:
-
-```powershell
-.\qa\ci\check-all.ps1
-```
-
-Unix shell:
+Run from a clean checkout after first-time setup:
 
 ```bash
 ./qa/ci/check-all.sh
 ```
 
-Run the tests/static gate without examples when isolating test failures.
-
-Windows PowerShell:
+PowerShell:
 
 ```powershell
-.\qa\ci\check-tests.ps1
+.\qa\ci\check-all.ps1
 ```
 
-Unix shell:
+This proves that:
 
-```bash
-./qa/ci/check-tests.sh
-```
-
-Run runnable examples and browser package checks directly when isolating example failures.
-
-Windows PowerShell:
-
-```powershell
-.\qa\ci\check-examples.ps1
-```
-
-Unix shell:
-
-```bash
-./qa/ci/check-examples.sh
-```
-
-The example script runs every package under `examples/`: native facade examples, all `hydra-app-core` examples, the `hydra-app` help path, browser host compile checks, loopback smoke runs for long-running browser hosts, and example-local WASM package builds. If you are isolating native examples only, pass `-SkipWasm` on PowerShell or `--skip-wasm` on Unix.
-
-Build the reusable web package separately when validating app-facing WASM output:
-
-```powershell
-.\qa\ci\build-wasm-web.ps1
-```
-
-Unix shell:
-
-```bash
-./qa/ci/build-wasm-web.sh
-```
-
-That package is written to `target/hydra-msg-wasm/web/`.
-
-The WebRTC carrier example still requires a manual browser run to confirm manual contact-card exchange and DataChannel message flow:
-
-```bash
-cargo run --release --manifest-path examples/webrtc_manual_carrier/Cargo.toml -- 0.0.0.0:8789
-```
-
-The mobile benchmark host can be run manually after the example package build:
-
-```bash
-cargo run --release --manifest-path examples/mobile_perf_web/Cargo.toml -- 0.0.0.0:8788
-```
-
-## Pass condition
-
-P13 passes only when:
-
-- formatting is clean;
-- workspace tests pass;
-- clippy passes with `-D warnings`;
-- active examples run;
+- Rust formatting, tests, and clippy warnings are clean;
+- docs, Markdown links, lockfiles, vectors, and source-size gates pass;
+- supply-chain advisory/license/source checks pass through `check-supply-chain.*`;
+- resource-limit, metadata-leakage, crash-consistency, persistence, privacy, interop, cross-version, and browser-lifecycle gates pass;
+- examples build and smoke-run as configured;
 - reusable WASM web package builds;
-- example-local WASM packages build during example validation;
-- WebRTC carrier host serves and manual contact-card exchange works;
-- no runtime `hydra-msg-data/` or local identity material is staged;
-- benchmark numbers are recorded or updated in `docs/validation/benchmark-results.md` if they materially differ.
+- Miri release evidence runs;
+- sanitizer release evidence runs;
+- real-browser Playwright lifecycle evidence runs;
+- coverage report evidence runs;
+- mutation testing evidence runs;
+- overnight coverage-guided fuzz evidence runs last; and
+- no runtime `hydra-msg-data/` or local identity material is staged.
 
-Passing P13 means the repository is ready to consider a release tag. It does not imply independent cryptographic audit, external interoperability certification, network anonymity, blind-credential privacy, zero-knowledge anonymous authorization, enterprise-grade certification, SBOM/signing readiness, or browser persistent-state safety unless those properties have separate implementation evidence.
+The default coverage-guided fuzz campaign is `HYDRA_COVERAGE_FUZZ_RUNS=100000` per target. Override that environment variable only when intentionally changing release campaign length.
+
+Archive the command line, tool versions, logs, generated reports, crash artifacts, minimized fuzz reproducers, and exit status under `release-evidence/<version>/`.
+
+## Release package gate
+
+After validation evidence is archived, create and verify release artifacts with:
+
+```bash
+scripts/release/create-release-package.sh vX.Y.Z
+scripts/release/sign-release-artifacts.sh vX.Y.Z [gpg-key-id]
+scripts/release/verify-release-artifacts.sh vX.Y.Z
+scripts/release/create-signed-tag.sh vX.Y.Z [gpg-key-id]
+```
+
+## What this gate does not prove
+
+Passing these gates does not hide carrier/network metadata, prove third-party service security, or replace external cryptographic review. Those claims require separate evidence and release-note wording.

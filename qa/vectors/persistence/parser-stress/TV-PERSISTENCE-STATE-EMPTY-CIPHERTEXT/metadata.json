@@ -1,0 +1,1 @@
+{"artifact":"encrypted_state.bin","expected_result":"reject","kind":"parser-stress","length":197,"purpose":"state envelope with empty ciphertext must fail closed","schema":1,"sha3_256":"85fd812f2a89e3685401eabe92d95eabee1afc214999e84ec6bb25c42874d97e","vector_id":"TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT"}

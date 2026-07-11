@@ -2,12 +2,14 @@
 name = "hydra-group"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
-hydra-core = { path = "../hydra-core" }
-hydra-crypto = { path = "../hydra-crypto" }
-hydra-envelope = { path = "../hydra-envelope" }
+hydra-core = { version = "0.1.0", path = "../hydra-core" }
+hydra-crypto = { version = "0.1.0", path = "../hydra-crypto" }
+hydra-envelope = { version = "0.1.0", path = "../hydra-envelope" }
 ml-kem = { version = "=0.3.2", default-features = false, features = ["alloc", "zeroize"] }
 
 [lints]

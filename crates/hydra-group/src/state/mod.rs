@@ -78,6 +78,17 @@ impl GroupState {
             validate_roster_for_mode(snapshot.mode, snapshot.epoch, &snapshot.roster)?;
             validate_governance_for_roster(&snapshot.governance_policy, &snapshot.roster)?;
         }
+        let membership = MembershipPrivateState::from_snapshot(snapshot.membership, snapshot.mode)?;
+        let sender_chains = SenderChainState::from_snapshot(
+            snapshot.sender_chains,
+            snapshot.mode,
+            &snapshot.roster,
+        )?;
+        let replay_state = GroupReplayState::from_snapshot(
+            snapshot.replay_state,
+            snapshot.mode,
+            &snapshot.roster,
+        )?;
         Ok(Self {
             group_id: snapshot.group_id,
             mode: snapshot.mode,
@@ -91,9 +102,9 @@ impl GroupState {
             governance_policy: snapshot.governance_policy,
             mode_policy: snapshot.mode_policy,
             roster: snapshot.roster,
-            membership: MembershipPrivateState::from_snapshot(snapshot.membership),
-            sender_chains: SenderChainState::from_snapshot(snapshot.sender_chains),
-            replay_state: GroupReplayState::from_snapshot(snapshot.replay_state),
+            membership,
+            sender_chains,
+            replay_state,
             phase: snapshot.phase,
         })
     }

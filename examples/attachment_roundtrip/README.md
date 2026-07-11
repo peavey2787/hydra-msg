@@ -15,17 +15,20 @@ Shows text plus file and byte attachments through the public send/receive API.
 ## Shape
 
 ```rust
-let envelope = hydra.send(
+let packets = hydra.send(
     contact_id,
     HydraMessage::text("hello")
         .attach_file("./photo.jpg")?
         .attach_bytes("data.bin", bytes_here)?,
 )?;
 
-let data = hydra.receive(envelope)?;
-println!("{}", data.text()?);
-for attachment in data.attachments() {
-    std::fs::write(attachment.filename(), attachment.bytes())?;
+for packet in packets {
+    if let Some(data) = hydra.receive(packet)? {
+        println!("{}", data.text()?);
+        for attachment in data.attachments() {
+            std::fs::write(attachment.filename(), attachment.bytes())?;
+        }
+    }
 }
 ```
 

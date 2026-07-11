@@ -1,5 +1,8 @@
 use super::{handshake_fields::parse_fields, hex_encode};
-use crate::{HydraMsgError, HydraResult, IdentityId, ANSWER_MAGIC, OFFER_MAGIC};
+use crate::{
+    limits::{reject_encoded_size, MAX_HANDSHAKE_ANSWER_BYTES, MAX_HANDSHAKE_OFFER_BYTES},
+    HydraMsgError, HydraResult, IdentityId, ANSWER_MAGIC, OFFER_MAGIC,
+};
 use hydra_core::{
     ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, ML_KEM_768_CT_SIZE, ML_KEM_768_EK_SIZE,
     TRANSCRIPT_HASH_SIZE, X25519_SIZE,
@@ -85,6 +88,11 @@ pub(crate) fn encode_handshake_answer(parts: HandshakeAnswerParts<'_>) -> HydraR
 }
 
 pub(crate) fn decode_handshake_offer(bytes: &[u8]) -> HydraResult<ParsedHandshakeOffer> {
+    reject_encoded_size(
+        bytes.len(),
+        MAX_HANDSHAKE_OFFER_BYTES,
+        "handshake offer size",
+    )?;
     let values = parse_fields(bytes, OFFER_MAGIC)?;
     let public_key = values.public_key()?;
     let id = values.identity_id()?;
@@ -113,6 +121,11 @@ pub(crate) fn decode_handshake_offer(bytes: &[u8]) -> HydraResult<ParsedHandshak
 }
 
 pub(crate) fn decode_handshake_answer(bytes: &[u8]) -> HydraResult<ParsedHandshakeAnswer> {
+    reject_encoded_size(
+        bytes.len(),
+        MAX_HANDSHAKE_ANSWER_BYTES,
+        "handshake answer size",
+    )?;
     let values = parse_fields(bytes, ANSWER_MAGIC)?;
     let public_key = values.public_key()?;
     let id = values.identity_id()?;

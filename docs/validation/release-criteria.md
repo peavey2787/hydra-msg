@@ -1,4 +1,4 @@
-# HYDRA-MSG specification freeze and release criteria
+# HYDRA-MSG release criteria
 
 ## Navigation
 
@@ -15,182 +15,79 @@
 - [Group rekey](../spec/group-rekey.md)
 - [Anonymous authorization](../spec/anonymous-authorization.md)
 
-The specification is frozen only when every mandatory gate below has dated,
-hashed evidence. Prose declaring success is not evidence.
+This document defines what evidence a HYDRA-MSG release must have before it is published.
 
-## 1. Canonical documentation gate
+## Release levels
 
-- One canonical document set organized by authority under `docs/spec/`,
-  `docs/impl/`, and `docs/validation/`. Internal roadmap notes are not
-  release evidence.
-- No contradictory protocol draft in the repository.
-- All domain labels, enums, sizes, bounds, encodings, state transitions,
-  errors, and security limits defined.
-- Internal links, terminology scan, code fences, and arithmetic checks pass.
-- Only release-candidate workspace crates may be treated as reference
-  implementation evidence. Reserved future crate code is not conformance or
-  interoperability evidence until its milestone is completed and validated.
-
-## 2. Vector gate
-
-- Every ID in `test-vectors.md` has complete input and expected bytes.
-- INIT, RESP, FINISH, refresh, commits, welcomes, fragments, rotation, and
-  revocation include complete raw envelopes, not only hashes or prefixes.
-- Every negative vector names exact mutated bytes, expected rejection phase,
-  and unchanged state hash.
-- OpenSSL and liboqs pinned in `backend-profile.md` independently agree on all
-  ML-KEM/ML-DSA primitive outputs.
-- Two independent protocol implementations agree on every intermediate,
-  envelope, accept/reject decision, and state transition.
-- Bundle manifest and reproduction log hashes verify.
-
-## 3. Cryptographic review gate
-
-Independent written review covers `security-proof-sketch.md`, hybrid AKE,
-refresh, signatures, TreeKEM, group governance, domain separation, entropy,
-and compromise claims. Every finding has a disposition; unresolved critical
-or high findings block freeze.
-
-## 4. Backend and platform gate
-
-The pinned backend evidence in `backend-profile.md` exists for each supported
-target. KATs, exact encodings, deterministic vector APIs, constant-time claims,
-unsafe/FFI audit, stack/heap scratch, failure cleanup, RNG routing, and advisory
-status are recorded.
-
-## 5. Implementation verification gate
-
-Two independent implementations pass:
-
-```text
-complete vectors and interoperability matrix
-state-machine model/concurrency tests
-property and negative tests
-parser/state fuzzing
-sanitizers and fault injection
-zeroization/log-secret tests
-rollback/restart tests
-resource-limit/abuse tests
-```
-
-## 6. Freeze procedure
-
-1. Resolve all gates.
-2. Assign the vector-bundle hash.
-3. Record canonical documentation tree hash and source commit.
-4. Obtain cryptographic and implementation reviewer sign-off.
-5. Tag the freeze commit with a signed annotated tag.
-6. Permit wire-affecting changes only through an incompatible suite/version
-   process; editorial changes cannot alter normative behavior.
-
-## 7. Current status
-
-As of 2026-06-28:
-
-| Gate | Status |
+| Level | Meaning |
 |---|---|
-| canonical documentation | local structural/consistency checks passed; freeze blocked by evidence gates below |
-| executable vector tooling | partial: deterministic primitive, envelope, and 1:1 handshake generator passed |
-| candidate primitive vectors | partial: complete ML-KEM/ML-DSA bytes from one backend |
-| first crypto adapter | local RustCrypto fixed-suite adapter passed targeted tests; pinned OpenSSL backend absent |
-| 1:1 session core | M5 atomic ratchet/replay/refresh-cutover/close tests passed locally |
-| complete full-protocol vectors | blocked: M4 handshake candidates exist; refresh/group/TreeKEM/identity and negative protocol generators absent |
-| pinned backend reproduction | blocked: OpenSSL 3.5.7 and liboqs 0.15.0 runs absent |
-| independent cryptographic review | blocked: reviewer report absent |
-| backend/platform evidence | blocked: implementation measurements absent |
-| two implementations/interoperability | blocked: implementations absent |
+| Development build | Local code under active development. No artifact guarantee. |
+| Release candidate | Mandatory gates pass and heavy evidence is being archived for a specific version. |
+| Production release | Signed tag, release artifacts, hashes, SBOM, signatures, changelog, and evidence are published. |
+| Externally reviewed release | Production release plus archived independent review evidence for the claimed scope. |
 
-HYDRA is therefore a design specification, not a frozen standard or
-production-security claim.
+## Mandatory release gate
 
-## 8. Local checkpoint evidence
+Run from the repository root on a clean checkout:
 
-The 2026-06-27 checkpoint recorded:
-
-```text
-PASS cargo fmt --check (isolated vector tool)
-PASS cargo clippy --release --locked --offline -D warnings
-PASS cargo test --release --locked --offline (isolated vector tool)
-PASS two identical candidate-generation runs
-PASS independent Python manifest, JSON, hex/binary, length, round-trip,
-     implicit-rejection, and mutated-signature checks
-PASS documentation links, code fences, domain-label inventory, stale-term
-     scan, changed-file scope, and git diff whitespace check
-FAIL cargo test --workspace --all-targets
+```bash
+./qa/ci/check-all.sh
 ```
 
-That root-workspace failure records the state of the earlier documentation
-checkpoint and is not rewritten as a pass. M1 subsequently corrected workspace
-ownership to `hydra-core` and `hydra-envelope`; their targeted format, test, and
-Clippy checks pass. This limited M1 evidence does not satisfy the complete
-implementation-verification gate or alter any external gate above. The
-isolated vector tool remains independently buildable through its own workspace
-and lockfile.
+PowerShell:
 
-The M2 envelope-vector checkpoint additionally recorded:
-
-```text
-PASS TV-HDR-000 exact documented bytes reproduced by hydra-envelope
-PASS TV-HDR-001 public-field and exact class-length rejections executed
-PASS Lite/Standard/Full class arithmetic executed
-PASS two locked offline release generations produced an identical manifest
-PASS manifest inventory, ordering, SHA3-256 hashes, and binary/hex mirrors
+```powershell
+.\qa\ci\check-all.ps1
 ```
 
-This is local reference-implementation evidence only. It does not complete
-the full vector gate, PQ reproduction, independent implementation, or review
-requirements.
+`check-all` is release-complete. It includes workspace fmt/test/clippy, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last.
 
-The M3 crypto-adapter checkpoint additionally recorded:
+The final fuzz campaign defaults to 100,000 libFuzzer runs per target. For publication, save the logs and generated reports under `release-evidence/<version>/`.
 
-```text
-PASS SHA3-256/SHA3-512 and HMAC/HKDF known answers
-PASS ChaCha20-Poly1305 round trip and authenticated mutation rejection
-PASS X25519 agreement, wrong-size rejection, and all-zero rejection
-PASS ML-KEM-768 key generation, encapsulation/decapsulation, and implicit rejection
-PASS ML-DSA-65 randomized sign/verify and malformed-signature rejection
-PASS strict public byte-size checks and fixed compile-time suite binding
-PASS non-clone secret compile-fail test, targeted rustfmt, tests, and Clippy -D warnings
-```
+Individual lower-level scripts may still be run while debugging a failure, but they are no longer separate release steps.
 
-These passes cover the RustCrypto candidate adapter only. The release remains
-blocked on the pinned OpenSSL/liboqs evidence, complete vectors, platform
-measurements, independent implementation, and cryptographic review.
+## Evidence matrix
 
-The M4 primitive-and-handshake-vector checkpoint additionally recorded:
+| Area | Required evidence |
+|---|---|
+| Public API | Rust/WASM API docs, API misuse tests, and frozen developer surface checks. |
+| Protocol correctness | Handshake, session, group/lobby, cross-context, replay, rekey, and domain-separation tests. |
+| Persistence | Encrypted state/backup tests, chunk tamper tests, rollback evidence, crash consistency, native lock, and browser CAS. |
+| Resource limits | Exact-edge tests and static gates tied to `crates/hydra-msg/src/limits.rs`. |
+| Browser lifecycle | Playwright tests for IndexedDB denial, quota, stale tabs, delete while open, reload, pagehide, and persistent storage. |
+| Fuzzing | Deterministic CI fuzz plus coverage-guided cargo-fuzz campaigns with saved run logs. |
+| Memory safety | Fault-injection tests plus optional Miri/sanitizer evidence. |
+| Supply chain | `cargo-audit`, `cargo-deny`, lockfile, license, and duplicate-version review. |
+| Metadata leakage | metadata-leakage gate green; release notes must not claim HYDRA is metadata-free, traffic-flow private, or fully unlinkable through bearer anonymous auth. |
+| Release provenance | Signed Git tag, source archive, SBOM, checksums, signatures, and verification commands. |
+| Security reporting | Root `SECURITY.md` with GitHub Private Vulnerability Reporting. |
 
-```text
-PASS complete Standard INIT and RESP candidate envelopes generated
-PASS complete Lite protected FINISH candidate envelope generated and opened
-PASS canonical INIT_CORE and RESP_CORE lengths and signatures checked
-PASS init hash and full transcript hash recomputed
-PASS both roles' X25519 and ML-KEM shared secrets matched
-PASS hybrid PRK, handshake secret, session ID, confirmation, chain, and refresh-root outputs generated
-PASS RESP confirmation generated and verified
-PASS two release generation runs produced an identical manifest
-PASS manifest inventory, ordering, SHA3-256 hashes, and binary/hex mirrors
-PASS independent Python structural, metadata, transcript, HMAC, and HKDF verification
-```
+## Production blockers
 
-These are local, single-RustCrypto-backend candidate vectors. They do not
-complete independent PQ reproduction, negative/full-protocol vectors, runtime
-erasure evidence, platform evidence, interoperability, or review gates.
-
-The M5 session-state checkpoint additionally recorded:
+Do not publish a production release if any of these are true:
 
 ```text
-PASS atomic send commits one immutable envelope and consumes one key/index
-PASS ordered and bounded out-of-order receive
-PASS replay and one-use skipped-key rejection
-PASS gaps 255 and 256 accepted; delayed oldest key accepted once
-PASS gap 257 rejected without state advancement
-PASS authentication and protected-record failures preserve parent state
-PASS fixed-zero nonce paired only with independently derived one-use AEAD keys
-PASS confirmed refresh FINISH atomically resets session ID, chains, replay, and skipped keys
-PASS invalid refresh FINISH preserves parent state; lower concurrent refresh ID wins
-PASS authenticated close blocks sends and erases receiver session state
-PASS targeted format, tests, and Clippy with warnings denied
+full release `check-all` gate fails
+known high/critical advisory is unresolved
+SECURITY.md is missing or does not point to GitHub Private Vulnerability Reporting
+SBOM is missing
+signed Git tag is missing
+artifact checksum file is missing
+checksum signature is missing
+release artifact provenance is unknown
+heavy-gate crash or fuzz reproducer is unresolved
+wire/API-breaking change is undocumented
 ```
 
-This is local implementation evidence, not the complete M6 protocol-vector
-bundle, pinned-backend evidence, interoperability evidence, or external review.
+External review is tracked separately. Do not claim a release is externally reviewed unless the review evidence is archived.
+
+## Release workflow summary
+
+```bash
+./qa/ci/check-all.sh
+# archive the check-all logs and generated release evidence
+scripts/release/create-signed-tag.sh vX.Y.Z [gpg-key-id]
+scripts/release/create-release-package.sh vX.Y.Z
+scripts/release/sign-release-artifacts.sh vX.Y.Z [gpg-key-id]
+scripts/release/verify-release-artifacts.sh vX.Y.Z
+```

@@ -2,7 +2,12 @@ use super::{
     derive_password_key, encode_kdf_columns, exact_array_from_vec, hex_decode, hex_encode,
     parse_kdf_columns, random_array, PasswordKdfRecord,
 };
-use crate::{HydraMsgError, HydraResult, IdentityId, IdentityRecord, ID_EXPORT_MAGIC};
+use crate::{
+    limits::{
+        reject_encoded_size, validate_label_encoding, MAX_IDENTITY_EXPORT_BYTES, MAX_LABEL_BYTES,
+    },
+    HydraMsgError, HydraResult, IdentityId, IdentityRecord, ID_EXPORT_MAGIC,
+};
 use hydra_crypto::{CryptoBackend, MlDsaKeyPair, RustCryptoBackend, SecretBytes};
 
 const IDENTITY_SEED_KEY_LABEL: &[u8] = b"HYDRA-MSG/facade/identity-seed-key";
@@ -32,6 +37,24 @@ pub(crate) fn identity_record_from_seed(
         encrypted_seed,
         unlocked,
     })
+}
+
+pub(crate) fn rewrap_identity_record(
+    record: &mut IdentityRecord,
+    old_password: &str,
+    new_password: &str,
+) -> HydraResult<()> {
+    let seed = decrypt_seed(record, old_password)?;
+    let kdf = PasswordKdfRecord::new_interactive()?;
+    let seed_key = derive_identity_seed_key(new_password, &kdf)?;
+    let seed_nonce = random_array::<12>()?;
+    let encrypted_seed = encrypt_seed_with_key(&seed_key, &seed, seed_nonce)?;
+    record.password_kdf = kdf;
+    record.password_tag = password_tag(record.id, &seed_key);
+    record.seed_nonce = seed_nonce;
+    record.encrypted_seed = encrypted_seed;
+    record.seed = record.unlocked.then_some(seed);
+    Ok(())
 }
 
 pub(crate) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResult<[u8; 32]> {
@@ -70,13 +93,26 @@ pub(crate) fn encode_identity_line(record: &IdentityRecord) -> String {
 }
 
 pub(crate) fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
-    let parts = line.split('\t').collect::<Vec<_>>();
+    let parts = line.split('\t').take(14).collect::<Vec<_>>();
     if parts.len() != 13 || parts[0] != "identity" {
         return Err(HydraMsgError::InvalidEncoding("identity state record"));
     }
+    reject_encoded_size(
+        parts[1].len(),
+        hydra_core::HASH_SIZE * 2,
+        "identity id size",
+    )?;
+    if parts[1].len() != hydra_core::HASH_SIZE * 2 {
+        return Err(HydraMsgError::InvalidEncoding("identity id size"));
+    }
     let id = IdentityId(exact_array_from_vec(hex_decode(parts[1])?)?);
+    reject_encoded_size(parts[2].len(), MAX_LABEL_BYTES * 2, "identity label size")?;
     let label = String::from_utf8(hex_decode(parts[2])?)
         .map_err(|_| HydraMsgError::InvalidEncoding("identity label"))?;
+    validate_label_encoding(&label, "identity label size")?;
+    if parts[3].len() != hydra_core::ML_DSA_65_VK_SIZE * 2 {
+        return Err(HydraMsgError::InvalidEncoding("identity public key size"));
+    }
     let public_key = exact_array_from_vec(hex_decode(parts[3])?)?;
     let expected_id = IdentityId(RustCryptoBackend::sha3_256(&public_key));
     if id != expected_id {
@@ -90,9 +126,18 @@ pub(crate) fn decode_identity_line(line: &str) -> HydraResult<IdentityRecord> {
         seed: None,
         public_key,
         password_kdf: parse_kdf_columns(&parts[4..10])?,
-        password_tag: exact_array_from_vec(hex_decode(parts[10])?)?,
-        seed_nonce: exact_array_from_vec(hex_decode(parts[11])?)?,
-        encrypted_seed: hex_decode(parts[12])?,
+        password_tag: decode_fixed_hex::<32>(parts[10], "identity password tag")?,
+        seed_nonce: decode_fixed_hex::<12>(parts[11], "identity seed nonce")?,
+        encrypted_seed: {
+            reject_encoded_size(parts[12].len(), 128, "encrypted identity seed size")?;
+            let encrypted_seed = hex_decode(parts[12])?;
+            if encrypted_seed.len() != 48 {
+                return Err(HydraMsgError::InvalidEncoding(
+                    "encrypted identity seed size",
+                ));
+            }
+            encrypted_seed
+        },
         unlocked: false,
     })
 }
@@ -106,12 +151,27 @@ pub(crate) fn encode_identity_export(seed: &[u8; 32]) -> Vec<u8> {
 }
 
 pub(crate) fn decode_identity_export(bytes: &[u8]) -> HydraResult<[u8; 32]> {
+    reject_encoded_size(
+        bytes.len(),
+        MAX_IDENTITY_EXPORT_BYTES,
+        "identity export size",
+    )?;
     if !bytes.starts_with(ID_EXPORT_MAGIC) {
         return Err(HydraMsgError::InvalidEncoding("identity export magic"));
     }
     let text = std::str::from_utf8(&bytes[ID_EXPORT_MAGIC.len()..])
         .map_err(|_| HydraMsgError::InvalidEncoding("identity export utf-8"))?;
-    exact_array_from_vec(hex_decode(text.trim())?)
+    decode_fixed_hex::<32>(text.trim(), "identity export seed")
+}
+
+fn decode_fixed_hex<const N: usize>(
+    value: &str,
+    description: &'static str,
+) -> HydraResult<[u8; N]> {
+    if value.len() != N * 2 {
+        return Err(HydraMsgError::InvalidEncoding(description));
+    }
+    exact_array_from_vec(hex_decode(value)?)
 }
 
 fn verified_identity_seed_key(

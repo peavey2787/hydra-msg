@@ -1,0 +1,1 @@
+{"artifact":"backup.bin","expected_result":"reject","kind":"parser-stress","length":202,"purpose":"backup envelope with unsupported KDF algorithm must fail closed","schema":1,"sha3_256":"ac428e6454ab5e4d921a70407449d6865877de10f2bc7f67002d9a5efaa438e5","vector_id":"TV-PERSISTENCE-BACKUP-BAD-KDF"}

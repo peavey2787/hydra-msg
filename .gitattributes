@@ -1,0 +1,2 @@
+# Parser-stress fixtures intentionally encode empty tab-delimited values.
+qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/encrypted_state.bin -whitespace

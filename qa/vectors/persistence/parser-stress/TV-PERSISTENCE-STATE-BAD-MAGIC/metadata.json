@@ -1,0 +1,1 @@
+{"artifact":"encrypted_state.bin","expected_result":"reject","kind":"parser-stress","length":20,"purpose":"state envelope with unsupported magic must fail before decryption","schema":1,"sha3_256":"c05b9e5402bcd656b30de5e1ec478181db25adcfff74910bd9ede143b82028cd","vector_id":"TV-PERSISTENCE-STATE-BAD-MAGIC"}

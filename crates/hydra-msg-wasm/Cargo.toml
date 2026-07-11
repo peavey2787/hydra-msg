@@ -2,16 +2,19 @@
 name = "hydra-msg-wasm"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 getrandom = { version = "=0.4.3", features = ["sys_rng", "wasm_js"] }
-hydra-msg = { path = "../hydra-msg" }
+hydra-msg = { version = "0.1.0", path = "../hydra-msg" }
 js-sys = "=0.3.77"
 wasm-bindgen = "=0.2.100"
+wasm-bindgen-futures = "=0.4.50"
 
 [lints]
 workspace = true

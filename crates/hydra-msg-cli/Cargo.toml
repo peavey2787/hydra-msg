@@ -2,10 +2,12 @@
 name = "hydra-msg-cli"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
-hydra-msg = { path = "../hydra-msg" }
+hydra-msg = { version = "0.1.0", path = "../hydra-msg" }
 
 [lints]
 workspace = true

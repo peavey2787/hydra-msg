@@ -2,10 +2,12 @@
 name = "manual_file_carrier"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
+repository.workspace = true
 
 [dependencies]
-hydra-msg = { path = "../../crates/hydra-msg" }
+hydra-msg = { version = "0.1.0", path = "../../crates/hydra-msg" }
 
 [lints]
 workspace = true

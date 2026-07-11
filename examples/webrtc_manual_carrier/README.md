@@ -34,7 +34,7 @@ This writes the example package to:
 examples/webrtc_manual_carrier/web/pkg/
 ```
 
-For a reusable package for your own app, use `qa/ci/build-wasm-web.sh` or `qa/ci/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
+For a reusable package for your own app, use `qa/ci/core/build-wasm-web.sh` or `qa/ci/core/build-wasm-web.ps1`; that output goes to `target/hydra-msg-wasm/web/`.
 
 ## Run
 

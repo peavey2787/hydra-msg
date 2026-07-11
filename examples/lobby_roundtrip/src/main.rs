@@ -31,16 +31,19 @@ fn main() -> HydraResult<()> {
     )?;
 
     for copy in outbound {
-        // The app/carrier uses this recipient hint to deliver each opaque envelope.
+        // Privacy-oriented carriers should route by copy.routing_hint() or a mailbox alias.
+        // This demo uses recipient() only for direct in-process delivery to Bob.
+        let _mailbox_alias = copy.routing_hint();
         if copy.recipient() == bob_contact.id() {
-            let received = bob.receive_lobby(copy.into_envelope())?;
-            println!(
-                "Bob received lobby {} from {}: {}",
-                received.lobby_id().unwrap_or(joined.id()).hex(),
-                received.from().hex(),
-                received.text()?
-            );
-            println!("attachment: {}", received.attachments()[0].filename());
+            if let Some(received) = bob.receive_lobby(copy.into_envelope())? {
+                println!(
+                    "Bob received lobby {} from {}: {}",
+                    received.lobby_id().unwrap_or(joined.id()).hex(),
+                    received.from().hex(),
+                    received.text()?
+                );
+                println!("attachment: {}", received.attachments()[0].filename());
+            }
         }
     }
 

@@ -1,8 +1,7 @@
 //! Fixed-suite cryptographic backend abstraction and RustCrypto adapter.
 //!
-//! This M3 adapter provides executable reference behavior. It is not the
-//! pinned OpenSSL release backend and is not independent interoperability,
-//! platform, or constant-time evidence.
+//! This adapter provides executable reference behavior. It is not a substitute
+//! for external interoperability, platform, or constant-time evidence.
 
 #![forbid(unsafe_code)]
 

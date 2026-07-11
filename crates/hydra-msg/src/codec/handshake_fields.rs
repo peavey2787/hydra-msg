@@ -1,8 +1,12 @@
 use super::{exact_array_from_vec, hex_decode};
 use crate::{HydraMsgError, HydraResult, IdentityId};
 use hydra_core::{
-    ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, ML_KEM_768_CT_SIZE, ML_KEM_768_EK_SIZE, X25519_SIZE,
+    HASH_SIZE, ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, ML_KEM_768_CT_SIZE, ML_KEM_768_EK_SIZE,
+    X25519_SIZE,
 };
+
+const MAX_HANDSHAKE_FIELDS: usize = 8;
+const MAX_HANDSHAKE_FIELD_LINE_BYTES: usize = ML_DSA_65_SIG_SIZE * 2 + 32;
 
 #[derive(Default)]
 pub(super) struct ParsedFields {
@@ -71,7 +75,14 @@ pub(super) fn parse_fields(bytes: &[u8], magic: &[u8]) -> HydraResult<ParsedFiel
     let text = std::str::from_utf8(&bytes[magic.len()..])
         .map_err(|_| HydraMsgError::InvalidEncoding("handshake utf-8"))?;
     let mut fields = ParsedFields::default();
+    let mut field_count = 0;
     for line in text.lines() {
+        field_count += 1;
+        if field_count > MAX_HANDSHAKE_FIELDS || line.len() > MAX_HANDSHAKE_FIELD_LINE_BYTES {
+            return Err(HydraMsgError::InvalidEncoding(
+                "handshake field count or size",
+            ));
+        }
         let Some((name, value)) = line.split_once(':') else {
             return Err(HydraMsgError::InvalidEncoding("handshake field"));
         };
@@ -82,39 +93,55 @@ pub(super) fn parse_fields(bytes: &[u8], magic: &[u8]) -> HydraResult<ParsedFiel
 
 fn set_field(fields: &mut ParsedFields, name: &str, value: &str) -> HydraResult<()> {
     match name {
-        "id" => set_once(&mut fields.id, IdentityId::from_hex(value)?)?,
+        "id" => set_once(
+            &mut fields.id,
+            IdentityId::from_bytes(decode_fixed_hex::<HASH_SIZE>(value, "handshake id")?),
+        )?,
         "public_key" => set_once(
             &mut fields.public_key,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<ML_DSA_65_VK_SIZE>(value, "handshake public key")?,
         )?,
-        "nonce" => set_once(&mut fields.nonce, exact_array_from_vec(hex_decode(value)?)?)?,
+        "nonce" => set_once(
+            &mut fields.nonce,
+            decode_fixed_hex::<32>(value, "handshake nonce")?,
+        )?,
         "offer_nonce" => set_once(
             &mut fields.offer_nonce,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<32>(value, "handshake offer nonce")?,
         )?,
         "x25519" => set_once(
             &mut fields.x25519_public,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<X25519_SIZE>(value, "handshake x25519")?,
         )?,
         "kem_public_key" => set_once(
             &mut fields.kem_public_key,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<ML_KEM_768_EK_SIZE>(value, "handshake kem public key")?,
         )?,
         "kem_ciphertext" => set_once(
             &mut fields.kem_ciphertext,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<ML_KEM_768_CT_SIZE>(value, "handshake kem ciphertext")?,
         )?,
         "signature" => set_once(
             &mut fields.signature,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<ML_DSA_65_SIG_SIZE>(value, "handshake signature")?,
         )?,
         "confirmation_tag" => set_once(
             &mut fields.confirmation_tag,
-            exact_array_from_vec(hex_decode(value)?)?,
+            decode_fixed_hex::<32>(value, "handshake confirmation")?,
         )?,
         _ => return Err(HydraMsgError::InvalidEncoding("handshake field")),
     }
     Ok(())
+}
+
+fn decode_fixed_hex<const N: usize>(
+    value: &str,
+    description: &'static str,
+) -> HydraResult<[u8; N]> {
+    if value.len() != N * 2 {
+        return Err(HydraMsgError::InvalidEncoding(description));
+    }
+    exact_array_from_vec(hex_decode(value)?)
 }
 
 fn set_once<T>(slot: &mut Option<T>, value: T) -> HydraResult<()> {

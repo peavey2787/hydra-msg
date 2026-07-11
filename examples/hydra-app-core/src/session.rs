@@ -185,7 +185,7 @@ impl AppSession {
             ));
         }
         Ok(Self {
-            state: SessionState::from_snapshot(snapshot.state),
+            state: SessionState::from_snapshot(snapshot.state)?,
             local_identity: snapshot.local_identity,
             peer_identity: snapshot.peer_identity,
         })

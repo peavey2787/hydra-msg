@@ -1,0 +1,99 @@
+[package]
+name = "hydra-coverage-fuzz"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.88"
+license = "GPL-2.0-or-later"
+repository = "https://github.com/peavey2787/hydra-msg"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+hydra-core = { version = "0.1.0", path = "../../../crates/hydra-core" }
+hydra-crypto = { version = "0.1.0", path = "../../../crates/hydra-crypto" }
+hydra-envelope = { version = "0.1.0", path = "../../../crates/hydra-envelope" }
+hydra-group = { version = "0.1.0", path = "../../../crates/hydra-group" }
+hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg" }
+hydra-session = { version = "0.1.0", path = "../../../crates/hydra-session" }
+libfuzzer-sys = "=0.4.9"
+
+[workspace]
+
+[[bin]]
+name = "envelope_header_decoding"
+path = "fuzz_targets/envelope_header_decoding.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "protected_record_decoding"
+path = "fuzz_targets/protected_record_decoding.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "message_codec"
+path = "fuzz_targets/message_codec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "storage_backup_chunk_parser"
+path = "fuzz_targets/storage_backup_chunk_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "contact_card_parser"
+path = "fuzz_targets/contact_card_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "handshake_offer_answer_parser"
+path = "fuzz_targets/handshake_offer_answer_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "lobby_invite_parser"
+path = "fuzz_targets/lobby_invite_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "anonymous_auth_token_parser"
+path = "fuzz_targets/anonymous_auth_token_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fragment_reassembly"
+path = "fuzz_targets/fragment_reassembly.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "session_receive_state_machine"
+path = "fuzz_targets/session_receive_state_machine.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "group_commit_message_parser"
+path = "fuzz_targets/group_commit_message_parser.rs"
+test = false
+doc = false
+bench = false
