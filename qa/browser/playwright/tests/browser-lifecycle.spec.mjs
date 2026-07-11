@@ -54,8 +54,21 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     await installIndexedDbHarness(page, { quotaBytes: 4 });
     await page.evaluate(() => window.__hydraLifecycle.deleteProfile('quota-profile'));
 
-    await expect(page.evaluate(() => window.__hydraLifecycle.save('quota-profile', [1, 2, 3, 4, 5], 0)))
-      .rejects.toThrow(/QuotaExceededError/);
+    const quotaError = await page.evaluate(async () => {
+      try {
+        await window.__hydraLifecycle.save('quota-profile', [1, 2, 3, 4, 5], 0);
+        return null;
+      } catch (error) {
+        return {
+          name: error instanceof Error || error instanceof DOMException ? error.name : '',
+          message: error instanceof Error || error instanceof DOMException ? error.message : String(error)
+        };
+      }
+    });
+    expect(quotaError).toEqual({
+      name: 'QuotaExceededError',
+      message: 'HYDRA test quota exceeded'
+    });
     const loaded = await page.evaluate(() => window.__hydraLifecycle.load('quota-profile'));
     expect(loaded).toEqual({ bytes: null, revision: 0 });
   });
