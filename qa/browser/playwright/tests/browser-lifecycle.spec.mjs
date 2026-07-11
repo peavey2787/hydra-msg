@@ -202,21 +202,52 @@ async function installIndexedDbHarness(page, options = {}) {
           return await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
+            let nextRevision = null;
+            let staleError = null;
+            let transactionError = null;
+
+            tx.oncomplete = () => {
+              if (staleError) {
+                reject(staleError);
+                return;
+              }
+              if (nextRevision === null) {
+                reject(new Error('IndexedDB transaction completed without a revision'));
+                return;
+              }
+              resolve(nextRevision);
+            };
+            tx.onerror = () => {
+              transactionError = tx.error || transactionError
+                || new Error('IndexedDB transaction failed');
+            };
+            tx.onabort = () => reject(
+              tx.error || transactionError || new Error('IndexedDB transaction abort')
+            );
+
             const get = store.get(name);
-            get.onerror = () => reject(get.error || new Error('IndexedDB get failed'));
+            get.onerror = () => {
+              transactionError = get.error || new Error('IndexedDB get failed');
+            };
             get.onsuccess = () => {
               const current = get.result || null;
               const currentRevision = current ? current.revision : 0;
               if (currentRevision !== expectedRevision) {
-                tx.abort();
-                reject(new Error(`stale profile revision: expected ${expectedRevision}, got ${currentRevision}`));
+                staleError = new Error(
+                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
+                );
                 return;
               }
-              const nextRevision = currentRevision + 1;
-              store.put({ name, bytes: Array.from(bytes), revision: nextRevision });
-              tx.oncomplete = () => resolve(nextRevision);
-              tx.onerror = () => reject(tx.error || new Error('IndexedDB transaction failed'));
-              tx.onabort = () => reject(tx.error || new Error('IndexedDB transaction abort'));
+
+              nextRevision = currentRevision + 1;
+              const put = store.put({
+                name,
+                bytes: Array.from(bytes),
+                revision: nextRevision
+              });
+              put.onerror = () => {
+                transactionError = put.error || new Error('IndexedDB put failed');
+              };
             };
           });
         } finally {
