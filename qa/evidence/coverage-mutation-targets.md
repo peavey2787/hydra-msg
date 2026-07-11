@@ -65,7 +65,11 @@ The manifest intentionally tracks the test names that own these transitions so f
 
 ## Mutation testing target
 
-`qa/mutation/targets.tsv` is the canonical mutation target list. The static gate fails if a listed source file, test file, or mutation-killing test disappears. Release CI can set `HYDRA_RUN_MUTATION=1` to run `cargo-mutants` across the workspace and write mutation evidence under `target/mutants/`.
+`qa/mutation/targets.tsv` is the canonical mutation target list. The static gate fails if a listed source file, test file, or mutation-killing test disappears. Release CI can set `HYDRA_RUN_MUTATION=1` to run `cargo-mutants` against the unique source files listed in that manifest and write mutation evidence under `target/mutants/`.
+
+The measured gate deliberately does not impose a fixed timeout on the unmutated baseline. HYDRA's cryptographic, persistence, and crash-consistency tests can take several minutes, especially on laptops and under copied cargo-mutants worktrees. After the baseline succeeds, cargo-mutants applies a baseline-derived timeout to each mutant. The default is two times the measured baseline with a 120-second minimum. Maintainers may tune this without weakening the baseline check through `HYDRA_MUTATION_TIMEOUT_MULTIPLIER`, `HYDRA_MUTATION_MINIMUM_TEST_TIMEOUT`, and `HYDRA_MUTATION_JOBS`.
+
+When the exact source tree has already passed the Rust test gate, a resumed Unix run may explicitly use `--skip-mutation-baseline`. That sets `HYDRA_MUTATION_BASELINE=skip` and applies `HYDRA_MUTATION_TIMEOUT` as a fixed per-mutant limit, defaulting to 1200 seconds. This is a resume optimization, not the normal standalone mutation policy.
 
 The required mutation target classes are:
 

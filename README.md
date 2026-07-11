@@ -122,9 +122,10 @@ Resume a failed release run at a named section instead of repeating earlier gree
 ./qa/ci/check-all.sh --from browser --skip-browser-install
 ./qa/ci/check-all.sh --from coverage
 ./qa/ci/check-all.sh --from coverage --through mutation
+./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
 ```
 
-Run `./qa/ci/check-all.sh --help` for every section and granular `--skip-*` option. The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` or pass `--fuzz-runs N` only when intentionally changing the release campaign length.
+Skip the mutation baseline only when the same tree already passed its Rust tests; otherwise leave the baseline enabled so cargo-mutants can derive a safe timeout. Run `./qa/ci/check-all.sh --help` for every section and granular `--skip-*` option. The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` or pass `--fuzz-runs N` only when intentionally changing the release campaign length.
 
 ## Repository layout
 

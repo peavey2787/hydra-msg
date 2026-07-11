@@ -81,11 +81,13 @@ PowerShell:
 `qa/ci/check-all.*` includes the long-running release-evidence gates. It runs Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign. The fuzz campaign is intentionally last and defaults to 100,000 libFuzzer runs per target.
 
 Use the individual scripts only when debugging one failing gate or intentionally collecting isolated evidence. The Unix runner can resume at a release section and can skip already-collected evidence:
+A skipped cargo-mutants baseline is valid only when the same tree has already passed its Rust tests.
 
 ```bash
 ./qa/ci/check-all.sh --from browser --skip-browser-install
 ./qa/ci/check-all.sh --from coverage
 ./qa/ci/check-all.sh --only mutation
+./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
 ./qa/ci/check-all.sh --help
 ```
 

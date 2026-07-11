@@ -37,9 +37,11 @@ On Unix, resume after a failure without repeating earlier green sections:
 ./qa/ci/check-all.sh --from browser --skip-browser-install
 ./qa/ci/check-all.sh --from coverage
 ./qa/ci/check-all.sh --from coverage --through mutation
+./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
 ```
 
 The canonical section order is `permissions`, `tests`, `examples`, `miri`, `sanitizers`, `browser`, `coverage`, `mutation`, `fuzz`. Use `--only SECTION` for one gate or the corresponding granular `--skip-*` flag for an omission.
+The mutation baseline may be skipped only after the same source tree has already passed its Rust tests. Use `--skip-mutation-baseline`; the default explicit mutant timeout is 1200 seconds and can be changed with `--mutation-timeout N`.
 
 This proves that:
 

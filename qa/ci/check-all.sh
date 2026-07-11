@@ -34,6 +34,13 @@ Nested-gate options:
   --skip-vectors            Pass --skip-vectors to core/check-tests.sh.
   --skip-wasm               Pass --skip-wasm to core/check-examples.sh.
   --skip-browser-install    Reuse installed Playwright browser binaries.
+  --skip-mutation-baseline  Skip cargo-mutants' clean baseline after separate green tests.
+  --mutation-timeout N      Seconds allowed per mutant when the baseline is skipped.
+  --mutation-timeout-multiplier N
+                            Multiplier applied to the measured mutation baseline.
+  --mutation-minimum-timeout N
+                            Minimum seconds allowed per mutant after baseline measurement.
+  --mutation-jobs N         Number of concurrent cargo-mutants jobs.
   --fuzz-runs N             Override coverage-guided runs per fuzz target.
 
 Other:
@@ -43,6 +50,7 @@ Examples:
   qa/ci/check-all.sh --from browser
   qa/ci/check-all.sh --from coverage --through mutation
   qa/ci/check-all.sh --only browser --skip-browser-install
+  qa/ci/check-all.sh --from mutation --skip-mutation-baseline
   qa/ci/check-all.sh --skip-miri --skip-sanitizers --skip-fuzz
 USAGE
 }
@@ -109,6 +117,15 @@ require_positive_integer() {
   esac
 }
 
+require_positive_number() {
+  option=$1
+  value=$2
+  if ! awk -v value="$value" 'BEGIN { exit !(value ~ /^[0-9]+([.][0-9]+)?$/ && value + 0 > 0) }'; then
+    echo "$option requires a positive number, got: $value" >&2
+    exit 2
+  fi
+}
+
 from_section=permissions
 through_section=fuzz
 only_section=
@@ -126,6 +143,11 @@ skip_fuzz=0
 skip_vectors=0
 skip_wasm=0
 skip_browser_install=0
+skip_mutation_baseline=0
+mutation_timeout=${HYDRA_MUTATION_TIMEOUT:-1200}
+mutation_timeout_multiplier=${HYDRA_MUTATION_TIMEOUT_MULTIPLIER:-2}
+mutation_minimum_timeout=${HYDRA_MUTATION_MINIMUM_TEST_TIMEOUT:-120}
+mutation_jobs=${HYDRA_MUTATION_JOBS:-1}
 fuzz_runs=${HYDRA_COVERAGE_FUZZ_RUNS:-100000}
 
 while [ "$#" -gt 0 ]; do
@@ -177,6 +199,51 @@ while [ "$#" -gt 0 ]; do
     --skip-vectors) skip_vectors=1; shift ;;
     --skip-wasm) skip_wasm=1; shift ;;
     --skip-browser-install) skip_browser_install=1; shift ;;
+    --skip-mutation-baseline) skip_mutation_baseline=1; shift ;;
+    --mutation-timeout)
+      require_value "$1" "${2:-}"
+      require_positive_integer "$1" "$2"
+      mutation_timeout=$2
+      shift 2
+      ;;
+    --mutation-timeout=*)
+      mutation_timeout=${1#*=}
+      require_positive_integer --mutation-timeout "$mutation_timeout"
+      shift
+      ;;
+    --mutation-timeout-multiplier)
+      require_value "$1" "${2:-}"
+      require_positive_number "$1" "$2"
+      mutation_timeout_multiplier=$2
+      shift 2
+      ;;
+    --mutation-timeout-multiplier=*)
+      mutation_timeout_multiplier=${1#*=}
+      require_positive_number --mutation-timeout-multiplier "$mutation_timeout_multiplier"
+      shift
+      ;;
+    --mutation-minimum-timeout)
+      require_value "$1" "${2:-}"
+      require_positive_integer "$1" "$2"
+      mutation_minimum_timeout=$2
+      shift 2
+      ;;
+    --mutation-minimum-timeout=*)
+      mutation_minimum_timeout=${1#*=}
+      require_positive_integer --mutation-minimum-timeout "$mutation_minimum_timeout"
+      shift
+      ;;
+    --mutation-jobs)
+      require_value "$1" "${2:-}"
+      require_positive_integer "$1" "$2"
+      mutation_jobs=$2
+      shift 2
+      ;;
+    --mutation-jobs=*)
+      mutation_jobs=${1#*=}
+      require_positive_integer --mutation-jobs "$mutation_jobs"
+      shift
+      ;;
     --fuzz-runs)
       require_value "$1" "${2:-}"
       require_positive_integer "$1" "$2"
@@ -313,11 +380,28 @@ if should_run coverage "$skip_coverage"; then
 fi
 
 if should_run mutation "$skip_mutation"; then
+  require_positive_integer --mutation-timeout "$mutation_timeout"
+  require_positive_number --mutation-timeout-multiplier "$mutation_timeout_multiplier"
+  require_positive_integer --mutation-minimum-timeout "$mutation_minimum_timeout"
+  require_positive_integer --mutation-jobs "$mutation_jobs"
   ran_any=1
   print_release_header
-  run_env_step "mutation testing release evidence" \
-    HYDRA_RUN_MUTATION=1 \
-    qa/ci/quality/check-mutation.sh
+  if [ "$skip_mutation_baseline" -eq 1 ]; then
+    run_env_step "mutation testing release evidence" \
+      HYDRA_RUN_MUTATION=1 \
+      HYDRA_MUTATION_BASELINE=skip \
+      HYDRA_MUTATION_TIMEOUT="$mutation_timeout" \
+      HYDRA_MUTATION_JOBS="$mutation_jobs" \
+      qa/ci/quality/check-mutation.sh
+  else
+    run_env_step "mutation testing release evidence" \
+      HYDRA_RUN_MUTATION=1 \
+      HYDRA_MUTATION_BASELINE=run \
+      HYDRA_MUTATION_TIMEOUT_MULTIPLIER="$mutation_timeout_multiplier" \
+      HYDRA_MUTATION_MINIMUM_TEST_TIMEOUT="$mutation_minimum_timeout" \
+      HYDRA_MUTATION_JOBS="$mutation_jobs" \
+      qa/ci/quality/check-mutation.sh
+  fi
 fi
 
 if should_run fuzz "$skip_fuzz"; then
