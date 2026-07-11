@@ -213,3 +213,6 @@ fn map_replay_error(error: ReplayError) -> SessionError {
         ReplayError::TooOld => SessionError::MessageTooOld,
     }
 }
+
+#[cfg(test)]
+mod tests;

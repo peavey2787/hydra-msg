@@ -307,3 +307,5 @@ fn treekem_commit_requires_update_path() {
         Err(GroupError::MissingUpdatePath)
     );
 }
+
+mod mutation_regressions;

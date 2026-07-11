@@ -31,5 +31,6 @@ fn pair() -> (SessionState, SessionState) {
     )
 }
 
+mod receive_validation;
 mod refresh;
 mod send_receive;

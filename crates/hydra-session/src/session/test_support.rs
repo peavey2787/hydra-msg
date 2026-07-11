@@ -3,7 +3,7 @@ use hydra_core::types::ContentKind;
 use hydra_core::types::EnvelopeClass;
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
 #[cfg(test)]
-use hydra_envelope::ProtectedRecord;
+use hydra_envelope::{encode_protected_record, ProtectedRecord};
 
 use crate::{ratchet::derive_step, SessionError, SessionResult};
 
@@ -29,6 +29,22 @@ impl SessionState {
                 content: b"invalid binding".to_vec(),
             },
         )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn seal_record_for_test(
+        &mut self,
+        class: EnvelopeClass,
+        record: ProtectedRecord,
+    ) -> SessionResult<OutboundMessage> {
+        let index = self.sending_chain.next_index();
+        if index == u64::MAX {
+            return Err(SessionError::CounterExhausted);
+        }
+        let step = derive_step(self.sending_chain.key(), &self.session_id, index)?;
+        let plaintext =
+            encode_protected_record(class, &record).map_err(|_| SessionError::InvalidPayload)?;
+        self.seal_plaintext(class, index, step, &plaintext)
     }
 
     pub fn seal_test_plaintext(

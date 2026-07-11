@@ -1,11 +1,15 @@
 use super::*;
+use super::{signature::verify_group_data_signature, sizing::signed_group_data_class};
 use crate::{
     GovernancePolicy, GroupError, GroupMode, GroupRole, GroupState, MemberId, MemberStatus,
     MembershipMechanism, ModePolicy, RosterEntry, StateVersion,
 };
-use hydra_core::types::{EnvelopeClass, Epoch, GroupId, IdentityFingerprint, Secret32};
-use hydra_crypto::{CryptoBackend, MlDsaVerificationKey, RustCryptoBackend};
-use hydra_envelope::decode_outer_header;
+use hydra_core::{
+    types::{EnvelopeClass, Epoch, GroupId, IdentityFingerprint, OuterMode, Secret32},
+    ML_DSA_65_SIG_SIZE,
+};
+use hydra_crypto::{CryptoBackend, MlDsaSigningKey, MlDsaVerificationKey, RustCryptoBackend};
+use hydra_envelope::{decode_outer_header, OuterHeader, ProtectedRecord};
 
 fn member(value: u8) -> MemberId {
     MemberId([value; 32])
@@ -277,4 +281,98 @@ fn signed_group_message_rejects_different_mode_or_envelope_class_context() {
             keypair.verification_key.clone()
         ))
         .is_err());
+}
+
+fn signed_record_fixture(
+    state: &mut GroupState,
+    signing_key: &MlDsaSigningKey,
+    content: &[u8],
+    class: EnvelopeClass,
+) -> (OuterHeader, crate::SenderMessageStep, ProtectedRecord) {
+    let step = state.next_sender_message_step(member(1)).unwrap();
+    let digest = group_data_signature_digest(state, class, &step, content).unwrap();
+    let signature = RustCryptoBackend::mldsa65_sign(signing_key, &digest).unwrap();
+    let mut signed_content = Vec::with_capacity(4 + content.len() + ML_DSA_65_SIG_SIZE);
+    signed_content.extend_from_slice(&u32::try_from(content.len()).unwrap().to_be_bytes());
+    signed_content.extend_from_slice(content);
+    signed_content.extend_from_slice(&signature);
+    let record = ProtectedRecord {
+        content_kind: hydra_core::types::ContentKind::GroupData,
+        session_or_group_id: state.group_id.0,
+        sender_id: step.sender.0,
+        epoch: state.epoch.0,
+        state_version: state.state_version.0,
+        message_index: step.index,
+        content: signed_content,
+    };
+    let header = OuterHeader::new(OuterMode::Protected, class, step.route_tag, step.index);
+    (header, step, record)
+}
+
+#[test]
+fn undersized_signed_group_data_fails_closed_before_length_parsing() {
+    let keypair = RustCryptoBackend::mldsa65_generate().unwrap();
+    let mut state = signed_lite_state(&keypair.verification_key);
+    let step = state.next_sender_message_step(member(1)).unwrap();
+    let header = OuterHeader::new(
+        OuterMode::Protected,
+        EnvelopeClass::Lite,
+        step.route_tag,
+        step.index,
+    );
+    for content in [Vec::new(), vec![0], vec![0; 3]] {
+        let record = ProtectedRecord {
+            content_kind: hydra_core::types::ContentKind::GroupData,
+            session_or_group_id: state.group_id.0,
+            sender_id: step.sender.0,
+            epoch: state.epoch.0,
+            state_version: state.state_version.0,
+            message_index: step.index,
+            content,
+        };
+        assert_eq!(
+            verify_group_data_signature(&state, &header, &step, &record, |_| {
+                Some(keypair.verification_key.clone())
+            }),
+            Err(GroupError::InvalidGroupSignature)
+        );
+    }
+}
+
+#[test]
+fn empty_signed_group_data_is_valid_at_the_exact_signature_boundary() {
+    let keypair = RustCryptoBackend::mldsa65_generate().unwrap();
+    let mut state = signed_lite_state(&keypair.verification_key);
+    let class = signed_group_data_class(state.mode, 0).unwrap();
+    let (header, step, record) =
+        signed_record_fixture(&mut state, &keypair.signing_key, b"", class);
+    assert_eq!(record.content.len(), 4 + ML_DSA_65_SIG_SIZE);
+    assert_eq!(
+        verify_group_data_signature(&state, &header, &step, &record, |_| {
+            Some(keypair.verification_key.clone())
+        }),
+        Ok(Vec::new())
+    );
+}
+
+#[test]
+fn signed_group_data_rejects_a_cryptographically_valid_wrong_class() {
+    let keypair = RustCryptoBackend::mldsa65_generate().unwrap();
+    let mut state = signed_lite_state(&keypair.verification_key);
+    assert_eq!(
+        signed_group_data_class(state.mode, 1),
+        Some(EnvelopeClass::Lite)
+    );
+    let (header, step, record) = signed_record_fixture(
+        &mut state,
+        &keypair.signing_key,
+        b"x",
+        EnvelopeClass::Standard,
+    );
+    assert_eq!(
+        verify_group_data_signature(&state, &header, &step, &record, |_| {
+            Some(keypair.verification_key.clone())
+        }),
+        Err(GroupError::InvalidGroupSignature)
+    );
 }
