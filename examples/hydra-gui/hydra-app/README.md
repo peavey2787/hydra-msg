@@ -8,7 +8,7 @@
 - [Crates](../../../crates/README.md)
 - [Examples](../../README.md)
 - [Public developer API](../../../docs/spec/public-developer-api.md)
-- [Benchmark notes](../../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../../docs/validation/benchmarks/benchmark-results.md)
 
 CLI and loopback-only local web GUI for the HYDRA public-SDK reference app.
 

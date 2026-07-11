@@ -5,7 +5,7 @@ set -eu
 hydra_enter_repo_root
 
 manifest=qa/mutation/targets.tsv
-audit=qa/evidence/coverage-mutation-targets.md
+audit=docs/validation/evidence/coverage-mutation-targets.md
 output_dir=target/mutants
 mutation_files_file=
 

@@ -10,7 +10,7 @@ Hosts a LAN web page for browser/device WASM benchmarks and IndexedDB persistenc
 - [Crates](../../crates/README.md)
 - [Examples](../README.md)
 - [Public developer API](../../docs/spec/public-developer-api.md)
-- [Benchmark notes](../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md)
 
 ## Build example-local WASM
 
@@ -116,7 +116,7 @@ The page exposes these actions:
 
 Persistent browser validation uses `WasmHydra.openPersistent(name, password)` and commits mutations with `await hydra.flush()`. The message-growth portion opens a separate ephemeral peer, exchanges contact cards, completes the normal offer/answer handshake, and then validates that persistent `send(...)` packets are received by the peer session. Backup restore follows the same boundary: `importBackup(bytes, password)` authenticates and applies the restore snapshot in memory, marks the wrapper dirty, and becomes durable only after `await hydra.flush()`. The example stores the same opaque authenticated-encrypted HYDRA snapshot bytes as native persistence. The page only measures record byte length and public facade status; it does not parse HYDRA plaintext snapshots or secrets in JavaScript.
 
-A complete manual pass should run the validation suite on desktop and at least one real mobile browser, reload the page, then click **Reopen persistent profile**. Capture the JSON output and record it under [Benchmark notes](../../docs/validation/benchmark-results.md).
+A complete manual pass should run the validation suite on desktop and at least one real mobile browser, reload the page, then click **Reopen persistent profile**. Capture the JSON output and record it under [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md).
 
 ## Quota and lifecycle notes
 

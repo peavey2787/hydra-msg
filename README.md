@@ -11,7 +11,7 @@ It gives apps a small public API for identities, contacts, handshakes, encrypted
 - [Crates](crates/README.md)
 - [Examples](examples/README.md)
 - [Public developer API](docs/spec/public-developer-api.md)
-- [Benchmark notes](docs/validation/benchmark-results.md)
+- [Benchmark notes](docs/validation/benchmarks/benchmark-results.md)
 
 ## Simple mental model
 
@@ -162,7 +162,7 @@ are benchmark-noise/harness dominated and should not be used to claim that one
 runtime is universally faster than another.
 ```
 
-See [Benchmark notes](docs/validation/benchmark-results.md) for the full table and evidence expectations.
+See [Benchmark notes](docs/validation/benchmarks/benchmark-results.md) for the full table and evidence expectations.
 
 ## First-time developer setup
 
@@ -186,7 +186,7 @@ The full release-complete gate is:
 ./qa/ci/check-all.sh
 ```
 
-It includes workspace format/test/clippy checks, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last. Archive the generated logs and reports for release candidates as described in [Release criteria](docs/validation/release-criteria.md).
+It includes workspace format/test/clippy checks, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last. Archive the generated logs and reports for release candidates as described in [Release criteria](docs/validation/release/release-criteria.md).
 
 ## Security and release governance
 
@@ -194,11 +194,11 @@ Security reporting and release governance are documented separately so the app-d
 
 - [Security policy](SECURITY.md)
 - [Changelog](CHANGELOG.md)
-- [Release criteria](docs/validation/release-criteria.md)
-- [Release checklist](docs/validation/release-checklist.md)
-- [Release artifacts](docs/validation/release-artifacts.md)
-- [SBOM policy](docs/validation/sbom.md)
-- [Reproducible builds](docs/validation/reproducible-builds.md)
-- [Release signing](docs/validation/release-signing.md)
+- [Release criteria](docs/validation/release/release-criteria.md)
+- [Release checklist](docs/validation/release/release-checklist.md)
+- [Release artifacts](docs/validation/release/release-artifacts.md)
+- [SBOM policy](docs/validation/release/sbom.md)
+- [Reproducible builds](docs/validation/release/reproducible-builds.md)
+- [Release signing](docs/validation/release/release-signing.md)
 
 The public repository is `https://github.com/peavey2787/hydra-msg`. Security reports use GitHub Private Vulnerability Reporting through [SECURITY.md](SECURITY.md). Production release artifacts are created per signed tag with the release scripts under `scripts/release/`.

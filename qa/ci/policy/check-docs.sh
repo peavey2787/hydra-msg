@@ -4,7 +4,7 @@ set -eu
 . "$(dirname -- "$0")/../lib/repo-root.sh"
 hydra_enter_repo_root
 
-required_paths="docs/spec docs/impl docs/validation qa/ci qa/evidence qa/fixtures/interop qa/tests qa/tools/vector-gen qa/vectors/candidate qa/vectors/cross-version"
+required_paths="docs/spec docs/impl docs/validation docs/validation/benchmarks docs/validation/evidence docs/validation/gates docs/validation/release qa/ci qa/fixtures/interop qa/tests qa/tools/vector-gen qa/vectors/candidate qa/vectors/cross-version"
 for path in $required_paths; do
   test -e "$path" || {
     echo "required path missing: $path" >&2
@@ -20,9 +20,14 @@ for path in docs/*; do
   fi
 done
 
-# Long-lived release evidence belongs under qa/evidence, not docs/project.
+# Long-lived release evidence belongs under docs/validation/evidence, not docs/project.
 if [ -d docs/project ] && find docs/project -type f | grep .; then
-  echo "persistent file found under docs/project; move release evidence to qa/evidence" >&2
+  echo "persistent file found under docs/project; move release evidence to docs/validation/evidence" >&2
+  exit 1
+fi
+
+if [ -e qa/evidence ]; then
+  echo "qa/evidence must not exist; move long-lived documentation to docs/validation/evidence" >&2
   exit 1
 fi
 
@@ -95,7 +100,18 @@ done
 
 is_main_nav_doc() {
   case "$1" in
-    crates/*|examples/*|docs/impl/message-flow/README.md|docs/impl/carrier-examples.md|docs/impl/hydra-msg-cli.md|docs/impl/wasm-javascript-bindings.md|docs/spec/public-developer-api.md|docs/validation/benchmark-results.md)
+    crates/*|examples/*|docs/impl/message-flow/README.md|docs/impl/carrier-examples.md|docs/impl/hydra-msg-cli.md|docs/impl/wasm-javascript-bindings.md|docs/spec/public-developer-api.md|docs/validation/benchmarks/benchmark-results.md)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+is_validation_nav_doc() {
+  case "$1" in
+    docs/validation/*)
       return 0
       ;;
     *)
@@ -172,6 +188,31 @@ require_spec_nav_family() {
   done
 }
 
+require_validation_nav_family() {
+  file=$1
+  nav=$2
+  for label in \
+    "Main README" \
+    "Validation index" \
+    "Spec document index" \
+    "Threat model"
+  do
+    require_nav_label "$file" "$nav" "$label"
+  done
+
+  for label in \
+    "How HYDRA messaging works" \
+    "Spec docs and repo structure" \
+    "Crates" \
+    "Examples" \
+    "Public developer API" \
+    "Benchmark notes" \
+    "Roadmap"
+  do
+    forbidden_nav_label "$file" "$nav" "$label"
+  done
+}
+
 # Main-nav docs are the root README nav entries and their children.
 # Spec-nav docs are the spec index entries and their children. The spec index
 # itself is the only root README entry that intentionally uses the spec family.
@@ -184,6 +225,8 @@ for doc in $(find crates examples docs/spec docs/impl docs/validation -name '*.m
   doc_nav=$(navigation_block "$doc")
   if is_main_nav_doc "$doc"; then
     require_main_nav_family "$doc" "$doc_nav"
+  elif is_validation_nav_doc "$doc"; then
+    require_validation_nav_family "$doc" "$doc_nav"
   else
     require_spec_nav_family "$doc" "$doc_nav"
   fi

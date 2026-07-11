@@ -1,5 +1,12 @@
 # HYDRA-MSG crash-consistency matrix
 
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
+
 Status: implementation audit and regression gate for production persistence safety.
 
 HYDRA persistence must be safe when process, OS, browser, filesystem, or storage

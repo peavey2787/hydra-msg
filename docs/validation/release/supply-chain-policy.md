@@ -2,35 +2,10 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
-- [Anonymous authorization](../spec/anonymous-authorization.md)
-
-
-HYDRA-MSG treats dependency provenance, advisories, yanked crates, duplicate
-versions, and license compatibility as release-blocking supply-chain evidence.
-The mandatory local gate is:
-
-```bash
-./qa/ci/security/check-supply-chain.sh
-```
-
-PowerShell:
-
-```powershell
-.\qa\ci\security\check-supply-chain.ps1
-```
-
-The gate is also called by `qa/ci/core/check-tests.*`, so it is part of `check-all`. In the release-complete `check-all` order, supply-chain checks run before the expensive release-evidence gates; the overnight coverage-guided fuzz campaign remains the final gate.
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 ## Required tools
 

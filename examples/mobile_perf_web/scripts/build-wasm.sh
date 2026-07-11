@@ -32,6 +32,6 @@ Useful repo docs:
 - [Main README](../../../../README.md)
 - [Public developer API](../../../../docs/spec/public-developer-api.md)
 - [Browser/WASM bindings](../../../../docs/impl/wasm-javascript-bindings.md)
-- [Benchmark notes](../../../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../../../docs/validation/benchmarks/benchmark-results.md)
 EOF_README
 echo "Built mobile benchmark example-local WASM package: examples/mobile_perf_web/web/pkg"

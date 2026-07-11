@@ -3,7 +3,7 @@
 ## Navigation
 
 - [Main README](../../README.md)
-- [Validation docs](../../../docs/validation/test-vectors.md)
+- [Validation docs](../../../docs/validation/gates/test-vectors.md)
 
 These fixtures are stable compatibility artifacts for upgrade tests that live under `qa/tests/cross-version-compat/`.
 

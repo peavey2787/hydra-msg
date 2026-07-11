@@ -5,8 +5,11 @@ set -eu
 hydra_enter_repo_root
 
 manifest=qa/coverage/critical-paths.tsv
-coverage_tool=qa/coverage/enforce_lcov_thresholds.py
-audit=qa/evidence/coverage-mutation-targets.md
+coverage_tool=qa/coverage/enforce_lcov_thresholds.rs
+coverage_tool_dir=target/qa-tools/coverage
+coverage_tool_bin=$coverage_tool_dir/enforce-lcov-thresholds
+coverage_tool_tests=$coverage_tool_dir/enforce-lcov-thresholds-tests
+audit=docs/validation/evidence/coverage-mutation-targets.md
 
 require_file() {
   if [ ! -f "$1" ]; then
@@ -28,12 +31,20 @@ require_file "$manifest"
 require_file "$coverage_tool"
 require_file "$audit"
 
-python3 - "$coverage_tool" <<'PY'
-import ast
-from pathlib import Path
-import sys
-ast.parse(Path(sys.argv[1]).read_text(encoding='utf-8'), filename=sys.argv[1])
-PY
+if find qa/coverage -type f -name '*.py' -print | grep .; then
+  echo "Python coverage helper found; coverage enforcement must remain Rust-only" >&2
+  exit 1
+fi
+
+if ! command -v rustc >/dev/null 2>&1; then
+  echo "the Rust coverage threshold helper requires rustc on PATH" >&2
+  echo "load the rustup environment or run: ./scripts/setup-dev-env.sh" >&2
+  exit 1
+fi
+mkdir -p "$coverage_tool_dir"
+rustc --edition=2021 -D warnings --test "$coverage_tool" -o "$coverage_tool_tests"
+"$coverage_tool_tests"
+rustc --edition=2021 -D warnings "$coverage_tool" -o "$coverage_tool_bin"
 
 while IFS='|' read -r id coverage_class min_line min_branch source_file test_file required_test; do
   case "$id" in
@@ -117,7 +128,7 @@ if [ "${HYDRA_RUN_COVERAGE:-0}" = "1" ]; then
   cargo "+$coverage_toolchain" llvm-cov \
     --workspace --all-targets --branch --lcov \
     --output-path target/coverage/hydra.lcov
-  python3 "$coverage_tool" "$manifest" target/coverage/hydra.lcov
+  "$coverage_tool_bin" "$manifest" target/coverage/hydra.lcov
   cargo "+$coverage_toolchain" llvm-cov \
     --workspace --all-targets --branch --html \
     --output-dir target/coverage/html

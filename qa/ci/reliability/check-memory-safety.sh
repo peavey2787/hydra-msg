@@ -34,7 +34,7 @@ run_cargo_test() {
   "$@"
 }
 
-policy=docs/validation/miri-sanitizer-fault-injection.md
+policy=docs/validation/gates/miri-sanitizer-fault-injection.md
 crash_tests=crates/hydra-msg/src/tests/crash_consistency.rs
 native_store=crates/hydra-msg/src/persistence/native_store.rs
 

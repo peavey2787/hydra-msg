@@ -28,7 +28,7 @@ messages=crates/hydra-msg/src/messages/mod.rs
 crash_tests=crates/hydra-msg/src/tests/crash_consistency.rs
 wasm_app=examples/mobile_perf_web/web/app.js
 wasm_host=examples/mobile_perf_web/src/main.rs
-audit=qa/evidence/crash-consistency-matrix.md
+audit=docs/validation/evidence/crash-consistency-matrix.md
 
 for file in \
   "$native_store" \

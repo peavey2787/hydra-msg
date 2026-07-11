@@ -179,8 +179,11 @@ function Invoke-DocsGate {
         "docs/spec",
         "docs/impl",
         "docs/validation",
+        "docs/validation/benchmarks",
         "qa/ci",
-        "qa/evidence",
+        "docs/validation/evidence",
+        "docs/validation/gates",
+        "docs/validation/release",
         "qa/fixtures/interop",
         "qa/tests",
         "qa/tools/vector-gen",
@@ -200,8 +203,12 @@ function Invoke-DocsGate {
         $projectFiles = Get-ChildItem "docs/project" -File -Recurse
         if ($projectFiles) {
             $projectFiles | ForEach-Object { Write-Host $_.FullName }
-            throw "persistent file found under docs/project; move release evidence to qa/evidence"
+            throw "persistent file found under docs/project; move release evidence to docs/validation/evidence"
         }
+    }
+
+    if (Test-Path "qa/evidence") {
+        throw "qa/evidence must not exist; move long-lived documentation to docs/validation/evidence"
     }
 
     $mainNav = Get-NavigationBlock "README.md"
@@ -253,8 +260,13 @@ function Invoke-DocsGate {
             $normalized -eq "docs/impl/hydra-msg-cli.md" -or
             $normalized -eq "docs/impl/wasm-javascript-bindings.md" -or
             $normalized -eq "docs/spec/public-developer-api.md" -or
-            $normalized -eq "docs/validation/benchmark-results.md"
+            $normalized -eq "docs/validation/benchmarks/benchmark-results.md"
         )
+    }
+
+    function Test-ValidationNavDoc {
+        param([Parameter(Mandatory = $true)][string]$Path)
+        return $Path.Replace('\', '/').StartsWith("docs/validation/")
     }
 
     function Assert-MainNavFamily {
@@ -327,6 +339,32 @@ function Invoke-DocsGate {
         }
     }
 
+    function Assert-ValidationNavFamily {
+        param(
+            [Parameter(Mandatory = $true)][string]$File,
+            [Parameter(Mandatory = $true)][string]$Nav
+        )
+        foreach ($label in @(
+            "Main README",
+            "Validation index",
+            "Spec document index",
+            "Threat model"
+        )) {
+            Assert-NavLabel $File $Nav $label
+        }
+        foreach ($label in @(
+            "How HYDRA messaging works",
+            "Spec docs and repo structure",
+            "Crates",
+            "Examples",
+            "Public developer API",
+            "Benchmark notes",
+            "Roadmap"
+        )) {
+            Assert-NoNavLabel $File $Nav $label
+        }
+    }
+
     $importantDocs = @()
     foreach ($root in @("crates", "examples", "docs/spec", "docs/impl", "docs/validation")) {
         $importantDocs += Get-ChildItem $root -Filter *.md -File -Recurse |
@@ -343,6 +381,8 @@ function Invoke-DocsGate {
         $docNav = Get-NavigationBlock $doc.FullName
         if (Test-MainNavDoc $relative) {
             Assert-MainNavFamily $doc.FullName $docNav
+        } elseif (Test-ValidationNavDoc $relative) {
+            Assert-ValidationNavFamily $doc.FullName $docNav
         } else {
             Assert-SpecNavFamily $doc.FullName $docNav
         }

@@ -82,7 +82,7 @@ fi
 if command -v python3 >/dev/null 2>&1; then
   echo "✓ python3 found: $(python3 --version 2>&1)"
 else
-  echo "! python3 is not installed. Coverage/docs and release SBOM helper scripts require python3."
+  echo "! python3 is not installed. Release SBOM generation, interop fixture checks, and web-host smoke tests require python3."
 fi
 if command -v gpg >/dev/null 2>&1; then
   echo "✓ gpg found: $(gpg --version | head -n 1)"

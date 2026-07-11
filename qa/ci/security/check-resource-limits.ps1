@@ -45,7 +45,7 @@ $sessionSnapshot = "crates/hydra-session/src/session/snapshot.rs"
 $groupSender = "crates/hydra-group/src/state/sender_chain.rs"
 $groupSenderRestore = "crates/hydra-group/src/state/sender_chain/snapshot_restore.rs"
 $groupReplay = "crates/hydra-group/src/state/replay.rs"
-$audit = "qa/evidence/resource-exhaustion-dos-limits.md"
+$audit = "docs/validation/evidence/resource-exhaustion-dos-limits.md"
 
 foreach ($path in @(
     $limits,

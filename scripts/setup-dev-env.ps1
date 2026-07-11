@@ -74,7 +74,7 @@ if (Get-Command npm -ErrorAction SilentlyContinue) {
 if (Get-Command python3 -ErrorAction SilentlyContinue) {
     Write-Host "✓ python3 found: $(python3 --version)"
 } else {
-    Write-Host "! python3 is not installed. Coverage/docs and release SBOM helper scripts require python3."
+    Write-Host "! python3 is not installed. Release SBOM generation, interop fixture checks, and web-host smoke tests require python3."
 }
 if (Get-Command gpg -ErrorAction SilentlyContinue) {
     Write-Host "✓ gpg found: $((gpg --version)[0])"

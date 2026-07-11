@@ -2,34 +2,16 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
-- [Anonymous authorization](../spec/anonymous-authorization.md)
-
-Status: not frozen. Symmetric, class, and serialization values below are
-normative. ML-KEM/ML-DSA/TreeKEM vectors require complete deterministic
-outputs reproduced by the current RustCrypto backend and an independent release oracle described in `backend-profile.md` before
-the wire format is frozen. Missing output is a release blocker and is never
-represented by invented or truncated bytes.
-
-Hex is lowercase and contiguous. Integers are big-endian unless their primitive
-standard specifies otherwise.
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 ## Persistence vector requirements
 
 Persistence vectors for the canonical encrypted local snapshot contract live under `qa/vectors/persistence/`. HYDRA is still pre-v1, so the current storage implementation defines the first production-candidate chunked padded envelope format. Older unpadded persistence fixtures are retained only as fail-closed regression inputs until fresh v1-candidate fixtures are frozen. Active runtime tests generate current chunked state/backup fixtures, verify chunked round trips, verify backup import/restore, and still exercise wrong-password rejection, bad-KDF-parameter rejection, ciphertext/tag mutation rejection, truncated-envelope rejection, authenticated malformed-snapshot rejection, stale-generation rollback rejection, and restore generation-floor preservation.
 
 These vectors record KDF profile/parameters, deterministic test-only salts/nonces, ciphertext lengths through metadata artifacts, decrypted snapshot hashes when authentication is expected to succeed, expected result, and purpose. They use fixture-only passwords and deterministic test-only entropy. They must not be regenerated with production randomness.
-
 
 ## Cross-version compatibility vector requirements
 
@@ -46,7 +28,6 @@ The active compatibility gate covers:
 - packet-fragment delivery remains compatible through the public `set_packet_size`, `send`, and `receive` contract.
 
 The current unknown-field policy is reject-by-default. Future fields require an explicit spec update and corresponding vectors before they may be accepted.
-
 
 ## Interop harness fixture requirements
 

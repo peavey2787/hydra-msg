@@ -2,20 +2,10 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
-- [Anonymous authorization](../spec/anonymous-authorization.md)
-
-The production QA gate is `qa/ci/check-all.*`. It now includes the normal workspace/static/example checks plus the heavy release-evidence gates. The final step is the long coverage-guided fuzz campaign.
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 ## Full release gate
 

@@ -25,7 +25,7 @@ for file in \
   qa/tests/interop/Cargo.toml \
   qa/tests/interop/src/lib.rs \
   qa/fixtures/interop/browser/wasm-fixture-probe.js \
-  qa/evidence/interop-test-harness.md \
+  docs/validation/evidence/interop-test-harness.md \
   examples/mobile_perf_web/web/app.js \
   examples/mobile_perf_web/src/main.rs
 do
@@ -61,6 +61,6 @@ require_text qa/tests/interop/src/lib.rs "native_runtime_accepts_the_same_snapsh
 require_text qa/tests/interop/src/lib.rs "pre_v1_and_future_fixture_contracts_fail_closed"
 require_text examples/mobile_perf_web/web/app.js "runWasmInteropFixtureProbe"
 require_text examples/mobile_perf_web/web/app.js "browser-wasm-frozen-fixture-interop"
-require_text qa/evidence/interop-test-harness.md "CLI ↔ WASM compatibility"
+require_text docs/validation/evidence/interop-test-harness.md "CLI ↔ WASM compatibility"
 
 printf 'interop harness checks passed.\n'

@@ -1,6 +1,6 @@
 # HYDRA-MSG checks
 
-`qa/` contains local scripts, system tests, gate-owned evidence notes, vector tooling, and fuzzing workspace folders.
+`qa/` contains executable validation tooling, system tests, machine-readable manifests, vector tooling, and fuzzing workspaces. Long-lived human-readable evidence lives under [`docs/validation/`](../docs/validation/README.md).
 
 ## Navigation
 
@@ -12,8 +12,7 @@
 qa/
 ├── browser/   Playwright browser lifecycle evidence harness
 ├── ci/        grouped local-check scripts; check-all stays at top level
-├── coverage/  critical-path coverage thresholds and LCOV enforcement helper
-├── evidence/  gate-owned evidence notes used by validation scripts
+├── coverage/  critical-path manifest and Rust LCOV threshold helper
 ├── fixtures/  fixed validation fixtures, including cross-runtime interop fixtures
 ├── fuzz/      fuzzing workspace
 ├── mutation/  mutation-testing targets for release CI

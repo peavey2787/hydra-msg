@@ -5,4 +5,4 @@ at your option, any later version published by the Free Software Foundation.
 
 This repository uses SPDX license identifiers in package manifests and source
 metadata. Dependency licenses are governed by deny.toml and the supply-chain
-policy under docs/validation/supply-chain-policy.md.
+policy under docs/validation/release/supply-chain-policy.md.

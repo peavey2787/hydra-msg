@@ -41,7 +41,7 @@ session_snapshot=crates/hydra-session/src/session/snapshot.rs
 group_sender=crates/hydra-group/src/state/sender_chain.rs
 group_sender_restore=crates/hydra-group/src/state/sender_chain/snapshot_restore.rs
 group_replay=crates/hydra-group/src/state/replay.rs
-audit=qa/evidence/resource-exhaustion-dos-limits.md
+audit=docs/validation/evidence/resource-exhaustion-dos-limits.md
 
 for file in \
   "$limits" \

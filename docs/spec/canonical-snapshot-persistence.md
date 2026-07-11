@@ -203,4 +203,4 @@ mixed chunks from another backup
 stale generation and rollback-floor cases
 ```
 
-The current fixture and interop requirements live under `qa/fixtures/interop/`, `qa/vectors/`, `qa/evidence/`, and `docs/validation/test-vectors.md`.
+The current fixture and interop requirements live under `qa/fixtures/interop/`, `qa/vectors/`, `docs/validation/evidence/`, and `docs/validation/gates/test-vectors.md`.

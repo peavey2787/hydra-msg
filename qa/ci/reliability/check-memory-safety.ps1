@@ -45,7 +45,7 @@ function Invoke-Step {
     }
 }
 
-$policy = "docs/validation/miri-sanitizer-fault-injection.md"
+$policy = "docs/validation/gates/miri-sanitizer-fault-injection.md"
 $crashTests = "crates/hydra-msg/src/tests/crash_consistency.rs"
 $nativeStore = "crates/hydra-msg/src/persistence/native_store.rs"
 

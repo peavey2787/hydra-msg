@@ -1,5 +1,12 @@
 # Interop test harness audit
 
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
+
 HYDRA-MSG has a dedicated interop gate instead of relying only on fresh same-code round trips.
 
 ## Coverage matrix

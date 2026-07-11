@@ -8,9 +8,9 @@
 - [Crates](../../crates/README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](public-developer-api.md)
-- [Benchmark notes](../validation/benchmark-results.md)
+- [Benchmark notes](../validation/benchmarks/benchmark-results.md)
 
-Status: **v1 public API frozen** for the `hydra-msg` facade crate. This freezes the app-facing SDK surface, not the full protocol/specification release; protocol freeze and production release still depend on the validation gates in `docs/validation/release-criteria.md`.
+Status: **v1 public API frozen** for the `hydra-msg` facade crate. This freezes the app-facing SDK surface, not the full protocol/specification release; protocol freeze and production release still depend on the validation gates in `docs/validation/release/release-criteria.md`.
 
 Goal: make HYDRA simple for app developers. A developer should be able to open HYDRA, create or restore an identity, add contacts, handshake, send messages, receive messages, use lobbies, back up data, rotate passwords, preview shareable inputs before importing them, and run basic diagnostics without seeing cryptographic internals, wire-format details, padding classes, chunks, ratchets, sessions, or transport logic.
 

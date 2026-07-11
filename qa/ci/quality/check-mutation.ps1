@@ -7,7 +7,7 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
 $Manifest = "qa/mutation/targets.tsv"
-$Audit = "qa/evidence/coverage-mutation-targets.md"
+$Audit = "docs/validation/evidence/coverage-mutation-targets.md"
 $OutputDir = "target/mutants"
 $MutationFiles = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
 

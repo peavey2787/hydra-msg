@@ -24,10 +24,10 @@ function Reject-Text($Path, $Text) {
     }
 }
 
-$audit = "qa/evidence/metadata-leakage-audit.md"
+$audit = "docs/validation/evidence/metadata-leakage-audit.md"
 $threat = "docs/spec/threat-model.md"
-$release = "docs/validation/release-criteria.md"
-$qaGate = "docs/validation/production-qa-gate.md"
+$release = "docs/validation/release/release-criteria.md"
+$qaGate = "docs/validation/gates/production-qa-gate.md"
 $wasm = "crates/hydra-msg-wasm/src/lib.rs"
 $wasmTypes = "crates/hydra-msg-wasm/src/types.rs"
 $wasmPersistence = "crates/hydra-msg/src/browser/persistence.rs"

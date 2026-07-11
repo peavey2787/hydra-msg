@@ -1,5 +1,12 @@
 # Coverage / mutation-testing target audit
 
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
+
 Status: implementation QA hardening artifact.
 
 This audit makes the coverage and mutation-testing expectations explicit for production readiness. Green unit tests alone are not enough; HYDRA must track which critical protocol paths are exercised, which negative paths are covered, and which mutation classes must be killed before release certification.
@@ -15,7 +22,7 @@ The default local `check-all` gate performs a static coverage-manifest check so 
  target/coverage/html/index.html
 ```
 
-The threshold helper then reads `qa/coverage/critical-paths.tsv` and enforces each critical-path coverage threshold against the LCOV report. The LCOV file is the release evidence; screenshots or prose summaries are not enough.
+The Rust threshold helper at `qa/coverage/enforce_lcov_thresholds.rs` reads `qa/coverage/critical-paths.tsv` and enforces each critical-path coverage threshold against the LCOV report. The gate compiles and tests that helper before using it. The LCOV file is the release evidence; screenshots or prose summaries are not enough.
 
 Rust branch coverage currently requires a nightly compiler because `cargo-llvm-cov --branch` enables the compiler's nightly-only coverage instrumentation. The coverage scripts therefore use `HYDRA_COVERAGE_TOOLCHAIN`, defaulting to `nightly`, and ensure `llvm-tools-preview` is installed for that same toolchain. Line and branch thresholds are not weakened to make stable-only coverage pass.
 

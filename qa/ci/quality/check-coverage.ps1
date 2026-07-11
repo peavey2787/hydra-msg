@@ -7,8 +7,11 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
 $Manifest = "qa/coverage/critical-paths.tsv"
-$CoverageTool = "qa/coverage/enforce_lcov_thresholds.py"
-$Audit = "qa/evidence/coverage-mutation-targets.md"
+$CoverageTool = "qa/coverage/enforce_lcov_thresholds.rs"
+$CoverageToolDir = "target/qa-tools/coverage"
+$CoverageToolBin = Join-Path $CoverageToolDir "enforce-lcov-thresholds.exe"
+$CoverageToolTests = Join-Path $CoverageToolDir "enforce-lcov-thresholds-tests.exe"
+$Audit = "docs/validation/evidence/coverage-mutation-targets.md"
 
 function Require-File {
     param([Parameter(Mandatory = $true)][string]$Path)
@@ -31,14 +34,22 @@ Require-File $Manifest
 Require-File $CoverageTool
 Require-File $Audit
 
-$syntaxCheck = @'
-import ast
-from pathlib import Path
-import sys
-ast.parse(Path(sys.argv[1]).read_text(encoding='utf-8'), filename=sys.argv[1])
-'@
-$syntaxCheck | python3 - $CoverageTool
-if ($LASTEXITCODE -ne 0) { throw "coverage threshold helper failed syntax check" }
+$PythonCoverageHelpers = Get-ChildItem "qa/coverage" -Filter *.py -File -Recurse
+if ($PythonCoverageHelpers) {
+    $PythonCoverageHelpers | ForEach-Object { Write-Host $_.FullName }
+    throw "Python coverage helper found; coverage enforcement must remain Rust-only"
+}
+
+if (-not (Get-Command rustc -ErrorAction SilentlyContinue)) {
+    throw "the Rust coverage threshold helper requires rustc on PATH. Load the rustup environment or run .\scripts\setup-dev-env.ps1."
+}
+New-Item -ItemType Directory -Force -Path $CoverageToolDir | Out-Null
+& rustc --edition=2021 -D warnings --test $CoverageTool -o $CoverageToolTests
+if ($LASTEXITCODE -ne 0) { throw "coverage threshold helper tests failed to compile" }
+& $CoverageToolTests
+if ($LASTEXITCODE -ne 0) { throw "coverage threshold helper tests failed" }
+& rustc --edition=2021 -D warnings $CoverageTool -o $CoverageToolBin
+if ($LASTEXITCODE -ne 0) { throw "coverage threshold helper failed to compile" }
 
 foreach ($line in Get-Content $Manifest) {
     $trimmed = $line.Trim()
@@ -113,7 +124,7 @@ if ($env:HYDRA_RUN_COVERAGE -eq "1") {
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov clean failed" }
     & cargo "+$CoverageToolchain" llvm-cov --workspace --all-targets --branch --lcov --output-path target/coverage/hydra.lcov
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov lcov failed" }
-    python3 $CoverageTool $Manifest target/coverage/hydra.lcov
+    & $CoverageToolBin $Manifest target/coverage/hydra.lcov
     if ($LASTEXITCODE -ne 0) { throw "critical-path LCOV threshold enforcement failed" }
     & cargo "+$CoverageToolchain" llvm-cov --workspace --all-targets --branch --html --output-dir target/coverage/html
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov html report failed" }

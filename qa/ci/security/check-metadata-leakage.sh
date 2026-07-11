@@ -29,10 +29,10 @@ reject_text() {
   fi
 }
 
-audit=qa/evidence/metadata-leakage-audit.md
+audit=docs/validation/evidence/metadata-leakage-audit.md
 threat=docs/spec/threat-model.md
-release=docs/validation/release-criteria.md
-qa_gate=docs/validation/production-qa-gate.md
+release=docs/validation/release/release-criteria.md
+qa_gate=docs/validation/gates/production-qa-gate.md
 wasm=crates/hydra-msg-wasm/src/lib.rs
 wasm_types=crates/hydra-msg-wasm/src/types.rs
 wasm_persistence=crates/hydra-msg/src/browser/persistence.rs

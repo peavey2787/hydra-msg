@@ -2,25 +2,10 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
-- [Anonymous authorization](../spec/anonymous-authorization.md)
-
-HYDRA has two fuzzing layers:
-
-1. The bounded deterministic fuzz-smoke gate that runs inside the final `check-all` fuzz step.
-2. Long-running `cargo-fuzz`/libFuzzer campaigns used as release-candidate evidence and run by `check-all`.
-
-The deterministic gate is intentionally fast and reproducible. It is not enough by itself for release-grade adversarial confidence. Release candidates must also save coverage-guided fuzz evidence for the high-risk parser and state-machine surfaces below.
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 ## Targets
 

@@ -31,7 +31,7 @@ $messages = "crates/hydra-msg/src/messages/mod.rs"
 $crashTests = "crates/hydra-msg/src/tests/crash_consistency.rs"
 $wasmApp = "examples/mobile_perf_web/web/app.js"
 $wasmHost = "examples/mobile_perf_web/src/main.rs"
-$audit = "qa/evidence/crash-consistency-matrix.md"
+$audit = "docs/validation/evidence/crash-consistency-matrix.md"
 
 foreach ($path in @(
     $nativeStore,

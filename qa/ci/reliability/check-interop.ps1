@@ -20,7 +20,7 @@ function Require-Text($Path, $Text) {
   "qa/tests/interop/Cargo.toml",
   "qa/tests/interop/src/lib.rs",
   "qa/fixtures/interop/browser/wasm-fixture-probe.js",
-  "qa/evidence/interop-test-harness.md",
+  "docs/validation/evidence/interop-test-harness.md",
   "examples/mobile_perf_web/web/app.js",
   "examples/mobile_perf_web/src/main.rs"
 ) | ForEach-Object { Require-File $_ }
@@ -60,6 +60,6 @@ Require-Text "qa/tests/interop/src/lib.rs" "native_runtime_accepts_the_same_snap
 Require-Text "qa/tests/interop/src/lib.rs" "pre_v1_and_future_fixture_contracts_fail_closed"
 Require-Text "examples/mobile_perf_web/web/app.js" "runWasmInteropFixtureProbe"
 Require-Text "examples/mobile_perf_web/web/app.js" "browser-wasm-frozen-fixture-interop"
-Require-Text "qa/evidence/interop-test-harness.md" "CLI ↔ WASM compatibility"
+Require-Text "docs/validation/evidence/interop-test-harness.md" "CLI ↔ WASM compatibility"
 
 Write-Host "interop harness checks passed." -ForegroundColor Green

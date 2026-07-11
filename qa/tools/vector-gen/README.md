@@ -29,4 +29,4 @@ cargo run --release --manifest-path qa/tools/vector-gen/Cargo.toml -- --verify
 
 The tool verifies the generated manifest, artifact inventory, hashes, and binary/hex mirrors. The handshake set contains byte-complete INIT, RESP, and FINISH envelopes plus transcript, hybrid KDF, session, and confirmation artifacts.
 
-The tool uses the test-only entropy schedule in `docs/validation/test-vectors.md`. Deterministic primitive internals are confined to this isolated tool; production signing remains randomized through `hydra-crypto`.
+The tool uses the test-only entropy schedule in `docs/validation/gates/test-vectors.md`. Deterministic primitive internals are confined to this isolated tool; production signing remains randomized through `hydra-crypto`.

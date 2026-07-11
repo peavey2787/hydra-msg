@@ -1,5 +1,12 @@
 # HYDRA-MSG WASM/browser lifecycle policy
 
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
+
 Status: production hardening policy and regression gate for browser persistence.
 
 HYDRA browser persistence stores one opaque authenticated-encrypted chunked state container per

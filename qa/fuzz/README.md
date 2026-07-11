@@ -51,7 +51,7 @@ The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Ru
 
 `check-all` sets `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000`. Run `qa/ci/fuzz/check-fuzz.*` directly only when debugging fuzz in isolation.
 
-The harness covers envelope headers, protected records, message codec paths, storage/backup chunks, contact cards, handshakes, lobby invites, anonymous-auth tokens, fragment reassembly, session receive state machines, and group commit/message paths. Evidence is written to `target/hydra-fuzz-evidence/`. See [`docs/validation/coverage-guided-fuzzing.md`](../../docs/validation/coverage-guided-fuzzing.md).
+The harness covers envelope headers, protected records, message codec paths, storage/backup chunks, contact cards, handshakes, lobby invites, anonymous-auth tokens, fragment reassembly, session receive state machines, and group commit/message paths. Evidence is written to `target/hydra-fuzz-evidence/`. See [`docs/validation/gates/coverage-guided-fuzzing.md`](../../docs/validation/gates/coverage-guided-fuzzing.md).
 
 ## Not a replacement for release campaigns
 

@@ -158,7 +158,7 @@ $versionTagSearchPaths = @(
     "crates/hydra-msg/README.md",
     "docs/spec/public-developer-api.md",
     "docs/impl/message-flow",
-    "docs/validation/benchmark-results.md"
+    "docs/validation/benchmarks/benchmark-results.md"
 )
 $versionTagFiles = @()
 foreach ($searchPath in $versionTagSearchPaths) {

@@ -8,7 +8,7 @@
 - [Crates](../../crates/README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../spec/public-developer-api.md)
-- [Benchmark notes](../validation/benchmark-results.md)
+- [Benchmark notes](../validation/benchmarks/benchmark-results.md)
 
 Status: browser/mobile binding implementation notes.
 

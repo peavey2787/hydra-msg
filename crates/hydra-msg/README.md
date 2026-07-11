@@ -12,7 +12,7 @@ Apps should start here instead of depending directly on crypto, envelope, sessio
 - [Crates](../README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../../docs/spec/public-developer-api.md)
-- [Benchmark notes](../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md)
 
 ## Small app shape
 

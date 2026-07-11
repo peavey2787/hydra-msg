@@ -40,7 +40,7 @@ $implDocs = "docs/impl/wasm-javascript-bindings.md"
 $apiDocs = "docs/spec/public-developer-api.md"
 $app = "examples/mobile_perf_web/web/app.js"
 $hostFile = "examples/mobile_perf_web/src/main.rs"
-$audit = "qa/evidence/wasm-browser-lifecycle-policy.md"
+$audit = "docs/validation/evidence/wasm-browser-lifecycle-policy.md"
 
 foreach ($path in @($wasm, $adapter, $wasmDocs, $implDocs, $apiDocs, $app, $hostFile, $audit)) {
     Assert-FileExists $path

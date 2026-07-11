@@ -1,6 +1,11 @@
 # Resource-exhaustion and denial-of-service limits audit
 
-[Main README](../../README.md)
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 Status: implemented internal production hardening; maintainer validation and external review remain required.
 

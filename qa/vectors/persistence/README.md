@@ -3,7 +3,7 @@
 ## Navigation
 
 - [Main README](../../../README.md)
-- [Validation docs](../../../docs/validation/test-vectors.md)
+- [Validation docs](../../../docs/validation/gates/test-vectors.md)
 
 Status: frozen persistence vectors are present for the canonical encrypted local-state and backup contract. Parser-stress vectors remain present for malformed container/snapshot rejection.
 

@@ -88,10 +88,10 @@ The public API remains available through the crate root; the modules are impleme
 ```text
 docs/impl/         implementation-focused docs and scaffolding
 docs/spec/         foundational specifications and public behavior contracts
-docs/validation/   checks, release criteria, proofs, vectors, release-governance docs, and benchmark evidence
+docs/validation/   organized validation gates, evidence, benchmarks, and release governance
 ```
 
-Important product docs and release evidence must not live in assistant working-note folders. Long-lived validation evidence belongs in `qa/evidence/` or `docs/validation/`, depending on whether it is a gate-owned evidence note or public release-governance documentation.
+Important product docs and release evidence must not live in assistant working-note folders. Use `docs/validation/benchmarks/` for measurements, `docs/validation/evidence/` for audit records, `docs/validation/gates/` for gate descriptions, and `docs/validation/release/` for release governance.
 
 ## `qa/`
 
@@ -99,7 +99,6 @@ Important product docs and release evidence must not live in assistant working-n
 
 ```text
 qa/ci/        local CI scripts and one-command check gates
-qa/evidence/  gate-owned evidence notes used by validation scripts
 qa/fuzz/      fuzzing harnesses
 qa/tools/     internal QA utilities
 qa/vectors/   protocol fixtures and test vectors

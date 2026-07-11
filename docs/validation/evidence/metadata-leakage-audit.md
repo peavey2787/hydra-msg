@@ -1,5 +1,12 @@
 # HYDRA Metadata-Leakage Audit
 
+## Navigation
+
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
+
 HYDRA minimizes avoidable SDK-level metadata leakage, but it is not metadata-free and it is not anonymous by default. The implementation encrypts message contents and protected protocol metadata, uses fixed-size encrypted transport packets by default, dynamically chunks valid large messages, pads backup/state storage chunks, exposes randomized lobby routing hints for privacy-oriented carriers, and redacts production storage diagnostics.
 
 ## Protected by HYDRA

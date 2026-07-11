@@ -387,11 +387,11 @@ account reputation, proof of work, and network-level anti-abuse are outside
 HYDRA-MSG v1.
 
 The concrete implementation ceilings and enforcement points are recorded in
-[`resource-exhaustion-dos-limits.md`](../../qa/evidence/resource-exhaustion-dos-limits.md).
+[`resource-exhaustion-dos-limits.md`](../../docs/validation/evidence/resource-exhaustion-dos-limits.md).
 The explicit persistence crash/failure regression matrix is recorded in
-[`crash-consistency-matrix.md`](../../qa/evidence/crash-consistency-matrix.md).
+[`crash-consistency-matrix.md`](../../docs/validation/evidence/crash-consistency-matrix.md).
 The WASM/browser lifecycle and multi-tab concurrency policy is recorded in
-[`wasm-browser-lifecycle-policy.md`](../../qa/evidence/wasm-browser-lifecycle-policy.md).
+[`wasm-browser-lifecycle-policy.md`](../../docs/validation/evidence/wasm-browser-lifecycle-policy.md).
 The application must still rate-limit carrier ingress before buffering complete
 objects and must bound concurrent calls, queues, connections, and durable storage.
 
@@ -437,4 +437,4 @@ security proof. `../validation/release-criteria.md` and
 
 ## Metadata-leakage boundary
 
-The metadata boundary is maintained in `qa/evidence/metadata-leakage-audit.md`. HYDRA minimizes avoidable SDK-level metadata leakage, but it must not claim metadata-free transport, anonymous by default routing, traffic-flow privacy, or fully unlinkable bearer anonymous auth. Packet count, timing, endpoints, relay/mailbox access patterns, backup/state chunk count, browser/OS storage metadata, and issuer/carrier correlation remain visible unless the carrier adds stronger privacy machinery.
+The metadata boundary is maintained in `docs/validation/evidence/metadata-leakage-audit.md`. HYDRA minimizes avoidable SDK-level metadata leakage, but it must not claim metadata-free transport, anonymous by default routing, traffic-flow privacy, or fully unlinkable bearer anonymous auth. Packet count, timing, endpoints, relay/mailbox access patterns, backup/state chunk count, browser/OS storage metadata, and issuer/carrier correlation remain visible unless the carrier adds stronger privacy machinery.

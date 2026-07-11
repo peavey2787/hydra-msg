@@ -8,7 +8,7 @@
 - [Crates](../../crates/README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../spec/public-developer-api.md)
-- [Benchmark notes](../validation/benchmark-results.md)
+- [Benchmark notes](../validation/benchmarks/benchmark-results.md)
 
 Status: developer utility over the public `hydra-msg` facade.
 

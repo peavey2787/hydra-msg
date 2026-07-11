@@ -10,7 +10,7 @@ Shows text plus file and byte attachments through the public send/receive API.
 - [Crates](../../crates/README.md)
 - [Examples](../README.md)
 - [Public developer API](../../docs/spec/public-developer-api.md)
-- [Benchmark notes](../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md)
 
 ## Shape
 

@@ -2,16 +2,13 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [How HYDRA messaging works](../impl/message-flow/README.md)
-- [Spec docs and repo structure](../spec/README.md)
-- [Crates](../../crates/README.md)
-- [Examples](../../examples/README.md)
-- [Public developer API](../spec/public-developer-api.md)
+- [Main README](../../../README.md)
+- [How HYDRA messaging works](../../impl/message-flow/README.md)
+- [Spec docs and repo structure](../../spec/README.md)
+- [Crates](../../../crates/README.md)
+- [Examples](../../../examples/README.md)
+- [Public developer API](../../spec/public-developer-api.md)
 - [Benchmark notes](benchmark-results.md)
-
-These numbers came from real browser/WASM and native/server runs reported during HYDRA-MSG development and release-candidate validation. They are useful evidence that the `hydra-msg` message path is viable on modern desktop, laptop, and mobile hardware, but they are informal benchmark snapshots, not a formal performance certification.
-
 ## Important caveats
 
 - These are informal real-world runs, not a locked lab benchmark suite.

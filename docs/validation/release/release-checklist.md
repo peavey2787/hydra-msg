@@ -2,26 +2,10 @@
 
 ## Navigation
 
-- [Main README](../../README.md)
-- [Spec document index](../spec/README.md)
-- [Protocol spec](../spec/protocol-spec.md)
-- [Threat model](../spec/threat-model.md)
-- [Security proof sketch](../spec/security-proof-sketch.md)
-- [State machines](../spec/state-machines.md)
-- [Envelope serialization](../spec/envelope-serialization.md)
-- [Chain-key evolution](../spec/chain-key-evolution.md)
-- [TreeKEM profile](../spec/tree-kem.md)
-- [Group modes](../spec/group-modes.md)
-- [Group rekey](../spec/group-rekey.md)
-- [Anonymous authorization](../spec/anonymous-authorization.md)
-
-Every release gets a versioned evidence directory:
-
-```text
-release-evidence/<version>/
-```
-
-That directory is the human-readable audit record. It does not replace Git history, signed tags, artifact hashes, SBOMs, or signatures.
+- [Main README](../../../README.md)
+- [Validation index](../README.md)
+- [Spec document index](../../spec/README.md)
+- [Threat model](../../spec/threat-model.md)
 
 ## Release status rule
 

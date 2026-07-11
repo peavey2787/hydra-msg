@@ -10,7 +10,7 @@
 - [Crates](../README.md)
 - [Examples](../../examples/README.md)
 - [Public developer API](../../docs/spec/public-developer-api.md)
-- [Benchmark notes](../../docs/validation/benchmark-results.md)
+- [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md)
 
 ## Build reusable browser package
 
@@ -112,7 +112,7 @@ Deleting a persistent profile removes the IndexedDB record for that profile name
 
 ## Browser persistence validation
 
-Use `examples/mobile_perf_web` to validate browser/mobile persistence behavior. The page includes an IndexedDB persistence suite, a reopen-after-page-reload check, a multi-tab stale-writer probe, a browser API misuse guard for missing names/passwords, a crash-consistency probe, and a non-destructive quota/lifecycle probe. Results should be recorded in [Benchmark notes](../../docs/validation/benchmark-results.md) before claiming browser persistence is release-final.
+Use `examples/mobile_perf_web` to validate browser/mobile persistence behavior. The page includes an IndexedDB persistence suite, a reopen-after-page-reload check, a multi-tab stale-writer probe, a browser API misuse guard for missing names/passwords, a crash-consistency probe, and a non-destructive quota/lifecycle probe. Results should be recorded in [Benchmark notes](../../docs/validation/benchmarks/benchmark-results.md) before claiming browser persistence is release-final.
 
 ## Public surface rule
 

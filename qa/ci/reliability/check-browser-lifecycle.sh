@@ -36,7 +36,7 @@ impl_docs=docs/impl/wasm-javascript-bindings.md
 api_docs=docs/spec/public-developer-api.md
 app=examples/mobile_perf_web/web/app.js
 host=examples/mobile_perf_web/src/main.rs
-audit=qa/evidence/wasm-browser-lifecycle-policy.md
+audit=docs/validation/evidence/wasm-browser-lifecycle-policy.md
 
 for file in \
   "$wasm" \
