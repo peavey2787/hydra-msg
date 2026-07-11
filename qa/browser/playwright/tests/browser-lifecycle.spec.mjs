@@ -165,6 +165,20 @@ async function installIndexedDbHarness(page, options = {}) {
       });
     }
 
+    function transactionToPromise(transaction, operation) {
+      return new Promise((resolve, reject) => {
+        let transactionError = null;
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => {
+          transactionError = transaction.error || transactionError
+            || new Error(`IndexedDB ${operation} failed`);
+        };
+        transaction.onabort = () => reject(
+          transaction.error || transactionError || new Error(`IndexedDB ${operation} aborted`)
+        );
+      });
+    }
+
     async function openDb() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -174,7 +188,11 @@ async function installIndexedDbHarness(page, options = {}) {
             db.createObjectStore(STORE_NAME, { keyPath: 'name' });
           }
         };
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+          const db = request.result;
+          db.onversionchange = () => db.close();
+          resolve(db);
+        };
         request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
         request.onblocked = () => reject(new Error('IndexedDB open blocked'));
       });
@@ -185,7 +203,10 @@ async function installIndexedDbHarness(page, options = {}) {
         const db = await openDb();
         try {
           const tx = db.transaction(STORE_NAME, 'readonly');
-          const record = await requestToPromise(tx.objectStore(STORE_NAME).get(name));
+          const [record] = await Promise.all([
+            requestToPromise(tx.objectStore(STORE_NAME).get(name)),
+            transactionToPromise(tx, 'load')
+          ]);
           if (!record) return { bytes: null, revision: 0 };
           return { bytes: Array.from(record.bytes || []), revision: record.revision };
         } finally {
@@ -198,25 +219,16 @@ async function installIndexedDbHarness(page, options = {}) {
           throw new DOMException('HYDRA test quota exceeded', 'QuotaExceededError');
         }
         const db = await openDb();
+        let outcome;
         try {
-          return await new Promise((resolve, reject) => {
+          outcome = await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
             let nextRevision = null;
-            let staleError = null;
+            let staleMessage = null;
             let transactionError = null;
 
-            tx.oncomplete = () => {
-              if (staleError) {
-                reject(staleError);
-                return;
-              }
-              if (nextRevision === null) {
-                reject(new Error('IndexedDB transaction completed without a revision'));
-                return;
-              }
-              resolve(nextRevision);
-            };
+            tx.oncomplete = () => resolve({ nextRevision, staleMessage });
             tx.onerror = () => {
               transactionError = tx.error || transactionError
                 || new Error('IndexedDB transaction failed');
@@ -233,9 +245,11 @@ async function installIndexedDbHarness(page, options = {}) {
               const current = get.result || null;
               const currentRevision = current ? current.revision : 0;
               if (currentRevision !== expectedRevision) {
-                staleError = new Error(
-                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
-                );
+                staleMessage =
+                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`;
+                if (typeof tx.commit === 'function') {
+                  tx.commit();
+                }
                 return;
               }
 
@@ -253,18 +267,25 @@ async function installIndexedDbHarness(page, options = {}) {
         } finally {
           db.close();
         }
+
+        if (outcome.staleMessage !== null) {
+          throw new Error(outcome.staleMessage);
+        }
+        if (outcome.nextRevision === null) {
+          throw new Error('IndexedDB transaction completed without a revision');
+        }
+        return outcome.nextRevision;
       },
 
       async deleteProfile(name) {
         const db = await openDb();
         try {
           const tx = db.transaction(STORE_NAME, 'readwrite');
-          tx.objectStore(STORE_NAME).delete(name);
-          await new Promise((resolve, reject) => {
-            tx.oncomplete = resolve;
-            tx.onerror = () => reject(tx.error || new Error('IndexedDB delete failed'));
-            tx.onabort = () => reject(tx.error || new Error('IndexedDB delete aborted'));
-          });
+          const deletion = requestToPromise(tx.objectStore(STORE_NAME).delete(name));
+          await Promise.all([
+            deletion,
+            transactionToPromise(tx, 'delete')
+          ]);
         } finally {
           db.close();
         }
