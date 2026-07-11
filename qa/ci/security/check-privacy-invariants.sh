@@ -149,7 +149,7 @@ forbidden_source_text "$auth_codec_file" "identity_id" "anonymous auth token cod
 forbidden_source_text "$auth_codec_file" "session_id" "anonymous auth token codec must not encode session ids"
 
 if grep -RInE "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" \
-  crates/hydra-msg examples/hydra-app examples/hydra-app-core README.md crates/hydra-msg/README.md \
+  crates/hydra-msg examples/hydra-gui/hydra-app examples/hydra-gui/hydra-app-core README.md crates/hydra-msg/README.md \
   docs/spec/public-developer-api.md docs/impl/message-flow docs/validation/benchmark-results.md; then
   echo "privacy invariant forbidden pattern found: facade/app format labels must not carry version tags" >&2
   exit 1

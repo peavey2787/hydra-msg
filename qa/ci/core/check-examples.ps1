@@ -30,8 +30,8 @@ $CheckedManifests = @(
     "examples/attachment_roundtrip/Cargo.toml",
     "examples/contact_card/Cargo.toml",
     "examples/handshake_roundtrip/Cargo.toml",
-    "examples/hydra-app-core/Cargo.toml",
-    "examples/hydra-app/Cargo.toml",
+    "examples/hydra-gui/hydra-app-core/Cargo.toml",
+    "examples/hydra-gui/hydra-app/Cargo.toml",
     "examples/lobby_roundtrip/Cargo.toml",
     "examples/manual_file_carrier/Cargo.toml",
     "examples/mobile_perf_web/Cargo.toml",
@@ -57,6 +57,36 @@ function Assert-AllExampleManifestsCovered {
 }
 
 Assert-AllExampleManifestsCovered
+
+function Assert-ReferenceAppSdkBoundary {
+    if ((Test-Path "examples/hydra-app") -or (Test-Path "examples/hydra-app-core")) {
+        throw "Old hydra-app example paths must not exist outside examples/hydra-gui."
+    }
+
+    $referenceFiles = Get-ChildItem -Path @(
+        "examples/hydra-gui/hydra-app-core",
+        "examples/hydra-gui/hydra-app"
+    ) -Recurse -File
+    $directProtocolMatches = $referenceFiles | Select-String -Pattern 'hydra-(core|crypto|group|session)|hydra_(core|crypto|group|session)'
+    if ($directProtocolMatches) {
+        $directProtocolMatches | ForEach-Object { Write-Host $_ }
+        throw "Reference app must depend only on the public hydra-msg SDK boundary."
+    }
+
+    $removedSurfaceMatches = $referenceFiles | Select-String -Pattern 'ContactTrustStore|IdentityVault|IdentityStore|IdentityUnlockSession|MessageStore|LiveStateStore|ChatShell|AppSession|AppGroup|RecoveryManifest|SignedBackup|TransportApi|DeviceRegistry'
+    if ($removedSurfaceMatches) {
+        $removedSurfaceMatches | ForEach-Object { Write-Host $_ }
+        throw "Removed app-owned protocol/storage implementations must not return."
+    }
+
+    $suppressionMatches = $referenceFiles | Select-String -Pattern '#\[allow\((dead_code|deprecated|unused|unused_imports|unused_must_use)'
+    if ($suppressionMatches) {
+        $suppressionMatches | ForEach-Object { Write-Host $_ }
+        throw "Reference app must not suppress dead, deprecated, or unused-code diagnostics."
+    }
+}
+
+Assert-ReferenceAppSdkBoundary
 
 function Invoke-WebHostStep {
     param(
@@ -118,47 +148,29 @@ Invoke-Step "manual_file_carrier example package" {
 }
 
 Invoke-Step "hydra-app-core package check" {
-    cargo check --manifest-path examples/hydra-app-core/Cargo.toml --all-targets --all-features
+    cargo check --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-targets --all-features
 }
-Invoke-Step "hydra-app-core create_identity example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example create_identity
+Invoke-Step "hydra-app-core reference tests" {
+    cargo test --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-features
 }
-Invoke-Step "hydra-app-core start_session_send_receive example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --features test-support --example start_session_send_receive
+Invoke-Step "hydra-app-core identity and contacts example" {
+    cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example identity_contacts
 }
-Invoke-Step "hydra-app-core group_create_join example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example group_create_join
+Invoke-Step "hydra-app-core direct message example" {
+    cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example direct_message
 }
-Invoke-Step "hydra-app-core identity_store example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example identity_store
-}
-Invoke-Step "hydra-app-core message_store example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example message_store
-}
-Invoke-Step "hydra-app-core transport_relay example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example transport_relay
-}
-Invoke-Step "hydra-app-core recovery_export_import example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example recovery_export_import
-}
-Invoke-Step "hydra-app-core device_linking example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example device_linking
-}
-Invoke-Step "hydra-app-core attachment_handling example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example attachment_handling
-}
-Invoke-Step "hydra-app-core abuse_failure_tests example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example abuse_failure_tests
-}
-Invoke-Step "hydra-app-core live_state_store example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --features test-support --example live_state_store
-}
-Invoke-Step "hydra-app-core signed_backup_history example" {
-    cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example signed_backup_history
+Invoke-Step "hydra-app-core lobby and backup example" {
+    cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example lobby_backup
 }
 
-Invoke-Step "hydra-app example package" {
-    cargo run --manifest-path examples/hydra-app/Cargo.toml -- help
+Invoke-Step "hydra-app package check" {
+    cargo check --manifest-path examples/hydra-gui/hydra-app/Cargo.toml --all-targets
+}
+Invoke-Step "hydra-app tests" {
+    cargo test --manifest-path examples/hydra-gui/hydra-app/Cargo.toml
+}
+Invoke-Step "hydra-app command model" {
+    cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
 }
 
 Invoke-Step "mobile_perf_web host compile" {

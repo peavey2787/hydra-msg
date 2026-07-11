@@ -24,8 +24,8 @@ checked_manifests="
 examples/attachment_roundtrip/Cargo.toml
 examples/contact_card/Cargo.toml
 examples/handshake_roundtrip/Cargo.toml
-examples/hydra-app-core/Cargo.toml
-examples/hydra-app/Cargo.toml
+examples/hydra-gui/hydra-app-core/Cargo.toml
+examples/hydra-gui/hydra-app/Cargo.toml
 examples/lobby_roundtrip/Cargo.toml
 examples/manual_file_carrier/Cargo.toml
 examples/mobile_perf_web/Cargo.toml
@@ -49,11 +49,35 @@ assert_all_example_manifests_covered() {
       exit 1
     fi
   done <<EOF_FIND
-$(find examples -mindepth 2 -maxdepth 2 -name Cargo.toml -print | sort)
+$(find examples -mindepth 2 -name Cargo.toml -print | sort)
 EOF_FIND
 }
 
 assert_all_example_manifests_covered
+
+assert_reference_app_sdk_boundary() {
+  if [ -e examples/hydra-app ] || [ -e examples/hydra-app-core ]; then
+    echo "Old hydra-app example paths must not exist outside examples/hydra-gui." >&2
+    exit 1
+  fi
+  if grep -RInE 'hydra-(core|crypto|group|session)|hydra_(core|crypto|group|session)' \
+    examples/hydra-gui/hydra-app-core examples/hydra-gui/hydra-app; then
+    echo "Reference app must depend only on the public hydra-msg SDK boundary." >&2
+    exit 1
+  fi
+  if grep -RInE 'ContactTrustStore|IdentityVault|IdentityStore|IdentityUnlockSession|MessageStore|LiveStateStore|ChatShell|AppSession|AppGroup|RecoveryManifest|SignedBackup|TransportApi|DeviceRegistry' \
+    examples/hydra-gui; then
+    echo "Removed app-owned protocol/storage implementations must not return." >&2
+    exit 1
+  fi
+  if grep -RInE '#\[allow\((dead_code|deprecated|unused|unused_imports|unused_must_use)' \
+    examples/hydra-gui; then
+    echo "Reference app must not suppress dead, deprecated, or unused-code diagnostics." >&2
+    exit 1
+  fi
+}
+
+assert_reference_app_sdk_boundary
 
 run_web_host_step() {
   name=$1
@@ -108,34 +132,22 @@ run_step "manual_file_carrier example package" \
   cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 
 run_step "hydra-app-core package check" \
-  cargo check --manifest-path examples/hydra-app-core/Cargo.toml --all-targets --all-features
-run_step "hydra-app-core create_identity example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example create_identity
-run_step "hydra-app-core start_session_send_receive example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --features test-support --example start_session_send_receive
-run_step "hydra-app-core group_create_join example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example group_create_join
-run_step "hydra-app-core identity_store example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example identity_store
-run_step "hydra-app-core message_store example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example message_store
-run_step "hydra-app-core transport_relay example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example transport_relay
-run_step "hydra-app-core recovery_export_import example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example recovery_export_import
-run_step "hydra-app-core device_linking example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example device_linking
-run_step "hydra-app-core attachment_handling example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example attachment_handling
-run_step "hydra-app-core abuse_failure_tests example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example abuse_failure_tests
-run_step "hydra-app-core live_state_store example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --features test-support --example live_state_store
-run_step "hydra-app-core signed_backup_history example" \
-  cargo run --manifest-path examples/hydra-app-core/Cargo.toml --example signed_backup_history
+  cargo check --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-targets --all-features
+run_step "hydra-app-core reference tests" \
+  cargo test --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-features
+run_step "hydra-app-core identity and contacts example" \
+  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example identity_contacts
+run_step "hydra-app-core direct message example" \
+  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example direct_message
+run_step "hydra-app-core lobby and backup example" \
+  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example lobby_backup
 
-run_step "hydra-app example package" \
-  cargo run --manifest-path examples/hydra-app/Cargo.toml -- help
+run_step "hydra-app package check" \
+  cargo check --manifest-path examples/hydra-gui/hydra-app/Cargo.toml --all-targets
+run_step "hydra-app tests" \
+  cargo test --manifest-path examples/hydra-gui/hydra-app/Cargo.toml
+run_step "hydra-app command model" \
+  cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
 
 run_step "mobile_perf_web host compile" \
   cargo check --manifest-path examples/mobile_perf_web/Cargo.toml

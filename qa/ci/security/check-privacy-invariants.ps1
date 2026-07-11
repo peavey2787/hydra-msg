@@ -152,8 +152,8 @@ Assert-NoSourceText $AuthCodecFile "session_id" "anonymous auth token codec must
 
 $versionTagSearchPaths = @(
     "crates/hydra-msg",
-    "examples/hydra-app",
-    "examples/hydra-app-core",
+    "examples/hydra-gui/hydra-app",
+    "examples/hydra-gui/hydra-app-core",
     "README.md",
     "crates/hydra-msg/README.md",
     "docs/spec/public-developer-api.md",

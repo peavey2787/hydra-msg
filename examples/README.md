@@ -1,8 +1,8 @@
 # HYDRA-MSG examples
 
-`examples/` contains runnable examples over the public `hydra-msg` SDK.
+`examples/` contains runnable applications and carrier demonstrations built on the public `hydra-msg` SDK.
 
-Examples show how app code moves opaque HYDRA bytes over different carriers. Protocol authority stays in `crates/` and `docs/spec/`.
+Protocol authority remains in `crates/` and `docs/spec/`. Example applications must treat handshake, direct-message, and lobby packet bytes as opaque carrier payloads.
 
 ## Navigation
 
@@ -23,25 +23,17 @@ Examples show how app code moves opaque HYDRA bytes over different carriers. Pro
 | [attachment_roundtrip](attachment_roundtrip/README.md) | Text plus file and byte attachments. |
 | [lobby_roundtrip](lobby_roundtrip/README.md) | Lobby invite and recipient-tagged lobby send/receive. |
 | [manual_file_carrier](manual_file_carrier/README.md) | Files on disk as a manual opaque-byte carrier. |
-| hydra-app-core | Lower-level app architecture examples used by the local example gate. |
-| hydra-app | CLI/local GUI reference app used by the local example gate. |
+| [hydra-gui](hydra-gui/README.md) | Current production reference app over the public SDK. |
 | [mobile_perf_web](mobile_perf_web/README.md) | LAN browser/device WASM benchmark host. |
 | [webrtc_manual_carrier](webrtc_manual_carrier/README.md) | WebRTC DataChannel carrier after manual contact-card exchange. |
 
-## Run native examples
+## Run the reference app
 
 ```bash
-cargo run --manifest-path examples/handshake_roundtrip/Cargo.toml
-cargo run --manifest-path examples/contact_card/Cargo.toml
-cargo run --manifest-path examples/attachment_roundtrip/Cargo.toml
-cargo run --manifest-path examples/lobby_roundtrip/Cargo.toml
-cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
-cargo run --manifest-path examples/hydra-app/Cargo.toml -- help
+cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
 ```
 
-`check-examples` is the source of truth for full example coverage. It also runs all `hydra-app-core` examples, smoke-runs the browser host packages, and builds the example WASM packages unless WASM is explicitly skipped.
-
-## Run all example checks
+The full example gate runs the reference-app integration tests, three public-SDK app examples, all other native examples, browser-host smoke tests, and WASM builds unless WASM is explicitly skipped.
 
 Unix:
 
@@ -59,18 +51,12 @@ Use `--skip-wasm` on Unix or `-SkipWasm` on PowerShell for native-only example c
 
 ## Reusable browser package
 
-The real browser/mobile component lives in `crates/hydra-msg-wasm`.
+The reusable browser/mobile component lives in `crates/hydra-msg-wasm`.
 
-Build reusable web output for your own app:
+Build web output for another application with:
 
 ```bash
 ./qa/ci/core/build-wasm-web.sh
 ```
 
-Output:
-
-```text
-target/hydra-msg-wasm/web/
-```
-
-Example browser hosts build their own `web/pkg/` folders only when testing those examples.
+The generated package is written to `target/hydra-msg-wasm/web/`. Example browser hosts build their own `web/pkg/` directories only during their validation steps.

@@ -1,0 +1,13 @@
+[package]
+name = "hydra-app"
+version = "0.1.0"
+edition = "2021"
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+hydra-app-core = { version = "0.1.0", path = "../hydra-app-core" }
+
+[lints]
+workspace = true
