@@ -148,7 +148,7 @@ $env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
 |---|---|
 | `quality/check-coverage.ps1` / `quality/check-coverage.sh` | Critical-path coverage manifest gate, plus optional `HYDRA_RUN_COVERAGE=1` LCOV/HTML coverage generation and threshold enforcement. |
 | `quality/check-mutation.ps1` / `quality/check-mutation.sh` | Mutation-target manifest gate, plus optional `HYDRA_RUN_MUTATION=1` cargo-mutants run over the manifest-listed critical files. The measured run uses a baseline-derived timeout rather than a fixed baseline cutoff. |
-| `fuzz/check-fuzz.ps1` / `fuzz/check-fuzz.sh` | Bounded deterministic fuzz-smoke gate plus coverage-guided cargo-fuzz/libFuzzer release campaigns. `check-all` calls this last with `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000` unless you override it. |
+| `fuzz/check-fuzz.ps1` / `fuzz/check-fuzz.sh` | Bounded deterministic fuzz-smoke gate plus nightly cargo-fuzz/libFuzzer release campaigns. The scripts propagate `HYDRA_FUZZ_TOOLCHAIN` (default `nightly`) into cargo-fuzz's nested Cargo build. `check-all` calls this last with `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000` unless you override it. |
 | `release/check-release-governance.ps1` / `release/check-release-governance.sh` | Static release-governance gate for changelog, security policy, MSRV, SBOM/signing/reproducible-build docs, and release helper scripts. |
 
 ## Common commands

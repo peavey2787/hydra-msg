@@ -35,7 +35,7 @@ Write-Host "`n==> Rust stable components"
 rustup component add rustfmt clippy
 rustup target add wasm32-unknown-unknown
 
-Write-Host "`n==> Rust nightly components for Miri/sanitizer/branch-coverage gates"
+Write-Host "`n==> Rust nightly components for Miri/sanitizer/branch-coverage/fuzz gates"
 if ($env:HYDRA_SKIP_NIGHTLY -eq "1") {
     Write-Host "Skipping nightly setup because HYDRA_SKIP_NIGHTLY=1"
 } else {

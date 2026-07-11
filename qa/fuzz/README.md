@@ -43,13 +43,20 @@ HYDRA_FUZZ_CASES=64 ./qa/ci/fuzz/check-fuzz.sh
 
 ## Coverage-guided fuzzing
 
-The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Because it intentionally lives outside cargo-fuzz's conventional root `fuzz/` directory, the QA runners pass `--fuzz-dir qa/fuzz/cargo-fuzz` explicitly. Run release fuzz evidence through the full gate:
+The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Because it intentionally lives outside cargo-fuzz's conventional root `fuzz/` directory, the QA runners pass `--fuzz-dir qa/fuzz/cargo-fuzz` explicitly. Cargo-fuzz's sanitizer coverage requires nightly Rust, so the runners select `nightly` for the complete cargo-fuzz subprocess tree. Override that only with another installed nightly toolchain through `HYDRA_FUZZ_TOOLCHAIN`. Run release fuzz evidence through the full gate:
 
 ```bash
 ./qa/ci/check-all.sh
 ```
 
 `check-all` sets `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000`. Run `qa/ci/fuzz/check-fuzz.*` directly only when debugging fuzz in isolation.
+
+Install the required toolchain and cargo-fuzz with `scripts/setup-dev-env.*`, or manually:
+
+```bash
+rustup toolchain install nightly
+cargo install cargo-fuzz --locked
+```
 
 The harness covers envelope headers, protected records, message codec paths, storage/backup chunks, contact cards, handshakes, lobby invites, anonymous-auth tokens, fragment reassembly, session receive state machines, and group commit/message paths. Evidence is written to `target/hydra-fuzz-evidence/`. See [`docs/validation/gates/coverage-guided-fuzzing.md`](../../docs/validation/gates/coverage-guided-fuzzing.md).
 

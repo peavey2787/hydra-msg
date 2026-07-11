@@ -42,7 +42,7 @@ printf '\n==> Rust stable components\n'
 rustup component add rustfmt clippy
 rustup target add wasm32-unknown-unknown
 
-printf '\n==> Rust nightly components for Miri/sanitizer/branch-coverage gates\n'
+printf '\n==> Rust nightly components for Miri/sanitizer/branch-coverage/fuzz gates\n'
 if [ "${HYDRA_SKIP_NIGHTLY:-0}" = "1" ]; then
   echo "Skipping nightly setup because HYDRA_SKIP_NIGHTLY=1"
 else

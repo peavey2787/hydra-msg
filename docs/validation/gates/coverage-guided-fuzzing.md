@@ -9,7 +9,7 @@
 
 ## Targets
 
-The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/`. The validation scripts pass that nonstandard location explicitly with cargo-fuzz's `--fuzz-dir` option, so cargo-fuzz never falls back to a nonexistent root `fuzz/Cargo.toml`. It covers:
+The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/`. The validation scripts pass that nonstandard location explicitly with cargo-fuzz's `--fuzz-dir` option, so cargo-fuzz never falls back to a nonexistent root `fuzz/Cargo.toml`. Cargo-fuzz's sanitizer instrumentation requires nightly Rust; the scripts select `nightly` for the outer command and every nested Cargo/rustc process. Set `HYDRA_FUZZ_TOOLCHAIN` only when intentionally pinning another installed nightly toolchain. It covers:
 
 - `envelope_header_decoding` — outer header decoding.
 - `protected_record_decoding` — protected-record decoding in every envelope class.
@@ -29,6 +29,13 @@ Install tooling:
 
 ```bash
 ./scripts/setup-dev-env.sh
+```
+
+The equivalent minimum manual setup is:
+
+```bash
+rustup toolchain install nightly
+cargo install cargo-fuzz --locked
 ```
 
 Run the fuzz gate directly while debugging:
