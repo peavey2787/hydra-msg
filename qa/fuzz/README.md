@@ -43,7 +43,7 @@ HYDRA_FUZZ_CASES=64 ./qa/ci/fuzz/check-fuzz.sh
 
 ## Coverage-guided fuzzing
 
-The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Run release fuzz evidence through the full gate:
+The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Because it intentionally lives outside cargo-fuzz's conventional root `fuzz/` directory, the QA runners pass `--fuzz-dir qa/fuzz/cargo-fuzz` explicitly. Run release fuzz evidence through the full gate:
 
 ```bash
 ./qa/ci/check-all.sh

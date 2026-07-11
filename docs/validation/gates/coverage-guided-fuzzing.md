@@ -9,7 +9,7 @@
 
 ## Targets
 
-The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/` and covers:
+The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/`. The validation scripts pass that nonstandard location explicitly with cargo-fuzz's `--fuzz-dir` option, so cargo-fuzz never falls back to a nonexistent root `fuzz/Cargo.toml`. It covers:
 
 - `envelope_header_decoding` — outer header decoding.
 - `protected_record_decoding` — protected-record decoding in every envelope class.

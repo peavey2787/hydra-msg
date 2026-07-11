@@ -19,8 +19,19 @@ if ! command -v cargo-fuzz >/dev/null 2>&1; then
 fi
 
 FUZZ_RUNS="${HYDRA_COVERAGE_FUZZ_RUNS:-256}"
+FUZZ_DIR="$HYDRA_REPO_ROOT/qa/fuzz/cargo-fuzz"
+FUZZ_MANIFEST="$FUZZ_DIR/Cargo.toml"
 EVIDENCE_DIR="${HYDRA_COVERAGE_FUZZ_EVIDENCE_DIR:-target/hydra-fuzz-evidence}"
-mkdir -p "$EVIDENCE_DIR"
+case "$EVIDENCE_DIR" in
+  /*) EVIDENCE_ROOT=$EVIDENCE_DIR ;;
+  *) EVIDENCE_ROOT="$HYDRA_REPO_ROOT/$EVIDENCE_DIR" ;;
+esac
+
+if [ ! -f "$FUZZ_MANIFEST" ]; then
+  echo "HYDRA cargo-fuzz manifest is missing: $FUZZ_MANIFEST" >&2
+  exit 1
+fi
+mkdir -p "$EVIDENCE_ROOT"
 
 TARGETS="
 envelope_header_decoding
@@ -36,16 +47,16 @@ session_receive_state_machine
 group_commit_message_parser
 "
 
-(
-  cd qa/fuzz/cargo-fuzz
-  for target in $TARGETS; do
-    echo "==> coverage-guided fuzz target: $target runs=$FUZZ_RUNS"
-    mkdir -p "../../../$EVIDENCE_DIR/$target"
-    cargo fuzz run "$target" -- -runs="$FUZZ_RUNS" -artifact_prefix="../../../$EVIDENCE_DIR/$target/"
-  done
-)
+for target in $TARGETS; do
+  echo "==> coverage-guided fuzz target: $target runs=$FUZZ_RUNS"
+  target_evidence_dir="$EVIDENCE_ROOT/$target"
+  mkdir -p "$target_evidence_dir"
+  cargo fuzz run --fuzz-dir "$FUZZ_DIR" "$target" -- \
+    -runs="$FUZZ_RUNS" \
+    -artifact_prefix="$target_evidence_dir/"
+done
 
-cat > "$EVIDENCE_DIR/README.txt" <<EOF2
+cat > "$EVIDENCE_ROOT/README.txt" <<EOF2
 HYDRA coverage-guided fuzz evidence
 
 Targets:
