@@ -17,6 +17,8 @@ The default local `check-all` gate performs a static coverage-manifest check so 
 
 The threshold helper then reads `qa/coverage/critical-paths.tsv` and enforces each critical-path coverage threshold against the LCOV report. The LCOV file is the release evidence; screenshots or prose summaries are not enough.
 
+Rust branch coverage currently requires a nightly compiler because `cargo-llvm-cov --branch` enables the compiler's nightly-only coverage instrumentation. The coverage scripts therefore use `HYDRA_COVERAGE_TOOLCHAIN`, defaulting to `nightly`, and ensure `llvm-tools-preview` is installed for that same toolchain. Line and branch thresholds are not weakened to make stable-only coverage pass.
+
 ## Critical-path coverage threshold
 
 `qa/coverage/critical-paths.tsv` is the canonical target list. Every row names:

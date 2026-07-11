@@ -71,17 +71,56 @@ require_text "$audit" "state-machine transition coverage"
 require_text "$audit" "HYDRA_RUN_COVERAGE=1"
 
 if [ "${HYDRA_RUN_COVERAGE:-0}" = "1" ]; then
-  if ! cargo llvm-cov --version >/dev/null 2>&1; then
+  coverage_toolchain=${HYDRA_COVERAGE_TOOLCHAIN:-nightly}
+
+  if ! command -v rustup >/dev/null 2>&1; then
+    echo "HYDRA branch coverage requires rustup and a nightly toolchain" >&2
+    echo "install Rust with rustup, then run: ./scripts/setup-dev-env.sh" >&2
+    exit 1
+  fi
+  if ! command -v cargo >/dev/null 2>&1; then
+    echo "HYDRA branch coverage requires cargo on PATH" >&2
+    echo "load the rustup environment or run: ./scripts/setup-dev-env.sh" >&2
+    exit 1
+  fi
+  if ! rustup run "$coverage_toolchain" rustc --version >/dev/null 2>&1; then
+    echo "coverage toolchain is unavailable: $coverage_toolchain" >&2
+    echo "install it with: rustup toolchain install $coverage_toolchain" >&2
+    exit 1
+  fi
+  coverage_rustc_version=$(rustup run "$coverage_toolchain" rustc --version)
+  case "$coverage_rustc_version" in
+    *nightly*) ;;
+    *)
+      echo "HYDRA branch coverage requires a nightly Rust toolchain" >&2
+      echo "HYDRA_COVERAGE_TOOLCHAIN=$coverage_toolchain selected: $coverage_rustc_version" >&2
+      exit 1
+      ;;
+  esac
+
+  if ! rustup component list --toolchain "$coverage_toolchain" --installed \
+    | grep -Eq '^llvm-tools'; then
+    echo "==> installing llvm-tools-preview for coverage toolchain: $coverage_toolchain"
+    rustup component add llvm-tools-preview --toolchain "$coverage_toolchain"
+  fi
+
+  if ! cargo "+$coverage_toolchain" llvm-cov --version >/dev/null 2>&1; then
     echo "HYDRA_RUN_COVERAGE=1 requires cargo-llvm-cov to be installed" >&2
     echo "install with: cargo install cargo-llvm-cov --locked" >&2
     echo "or run: ./scripts/setup-dev-env.sh" >&2
     exit 1
   fi
+
+  echo "==> branch coverage toolchain: $coverage_rustc_version"
   mkdir -p target/coverage
-  cargo llvm-cov clean --workspace
-  cargo llvm-cov --workspace --all-targets --branch --lcov --output-path target/coverage/hydra.lcov
+  cargo "+$coverage_toolchain" llvm-cov clean --workspace
+  cargo "+$coverage_toolchain" llvm-cov \
+    --workspace --all-targets --branch --lcov \
+    --output-path target/coverage/hydra.lcov
   python3 "$coverage_tool" "$manifest" target/coverage/hydra.lcov
-  cargo llvm-cov --workspace --all-targets --branch --html --output-dir target/coverage/html
+  cargo "+$coverage_toolchain" llvm-cov \
+    --workspace --all-targets --branch --html \
+    --output-dir target/coverage/html
 else
   echo "coverage manifest/static gate passed. Set HYDRA_RUN_COVERAGE=1 to generate and enforce LCOV/HTML coverage."
 fi

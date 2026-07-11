@@ -116,7 +116,15 @@ Runnable examples are in [examples](examples/README.md).
 ./qa/ci/check-all.sh
 ```
 
-The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` only when intentionally changing the release campaign length.
+Resume a failed release run at a named section instead of repeating earlier green gates:
+
+```bash
+./qa/ci/check-all.sh --from browser --skip-browser-install
+./qa/ci/check-all.sh --from coverage
+./qa/ci/check-all.sh --from coverage --through mutation
+```
+
+Run `./qa/ci/check-all.sh --help` for every section and granular `--skip-*` option. The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` or pass `--fuzz-runs N` only when intentionally changing the release campaign length.
 
 ## Repository layout
 

@@ -42,12 +42,12 @@ run_check_all() {
     cd "$repo_dir"
     echo "HYDRA-MSG validation repo: $repo_dir"
     echo
-    ./qa/ci/check-all.sh
+    ./qa/ci/check-all.sh "$@"
 }
 
 run_inside_terminal() {
     status=0
-    run_check_all || status=$?
+    run_check_all "$@" || status=$?
     echo
     echo "check-all exit code: $status"
     printf 'Press Enter to close this terminal... '
@@ -57,7 +57,15 @@ run_inside_terminal() {
 }
 
 if [ "${HYDRA_CHECK_ALL_INSIDE_TERMINAL:-}" = "1" ]; then
-    run_inside_terminal
+    run_inside_terminal "$@"
+fi
+
+# When invoked manually with check-all arguments, stay in the current terminal
+# and forward them directly. Desktop launches have no arguments and still open
+# a dedicated terminal window below.
+if [ "$#" -gt 0 ]; then
+    run_check_all "$@"
+    exit $?
 fi
 
 script_path=$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || printf '%s\n' "$0")

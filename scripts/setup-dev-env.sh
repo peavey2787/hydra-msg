@@ -42,12 +42,12 @@ printf '\n==> Rust stable components\n'
 rustup component add rustfmt clippy
 rustup target add wasm32-unknown-unknown
 
-printf '\n==> Rust nightly components for optional Miri/sanitizer gates\n'
+printf '\n==> Rust nightly components for Miri/sanitizer/branch-coverage gates\n'
 if [ "${HYDRA_SKIP_NIGHTLY:-0}" = "1" ]; then
   echo "Skipping nightly setup because HYDRA_SKIP_NIGHTLY=1"
 else
   rustup toolchain install nightly
-  rustup +nightly component add miri rust-src
+  rustup +nightly component add miri rust-src llvm-tools-preview
 fi
 
 printf '\n==> Cargo QA tools\n'

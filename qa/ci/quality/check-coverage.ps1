@@ -79,16 +79,43 @@ foreach ($required in @(
 }
 
 if ($env:HYDRA_RUN_COVERAGE -eq "1") {
-    cargo llvm-cov --version | Out-Null
+    $CoverageToolchain = if ($env:HYDRA_COVERAGE_TOOLCHAIN) { $env:HYDRA_COVERAGE_TOOLCHAIN } else { "nightly" }
+
+    if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) {
+        throw "HYDRA branch coverage requires rustup and a nightly toolchain. Run .\scripts\setup-dev-env.ps1."
+    }
+    if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+        throw "HYDRA branch coverage requires cargo on PATH. Load the rustup environment or run .\scripts\setup-dev-env.ps1."
+    }
+
+    $CoverageRustcVersion = (& rustup run $CoverageToolchain rustc --version | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "coverage toolchain is unavailable: $CoverageToolchain. Install it with: rustup toolchain install $CoverageToolchain"
+    }
+    if ($CoverageRustcVersion -notmatch "nightly") {
+        throw "HYDRA branch coverage requires nightly Rust. HYDRA_COVERAGE_TOOLCHAIN=$CoverageToolchain selected: $CoverageRustcVersion"
+    }
+
+    $InstalledComponents = & rustup component list --toolchain $CoverageToolchain --installed
+    if ($LASTEXITCODE -ne 0) { throw "failed to inspect components for coverage toolchain: $CoverageToolchain" }
+    if (-not ($InstalledComponents | Select-String -Pattern '^llvm-tools' -Quiet)) {
+        Write-Host "==> installing llvm-tools-preview for coverage toolchain: $CoverageToolchain"
+        & rustup component add llvm-tools-preview --toolchain $CoverageToolchain
+        if ($LASTEXITCODE -ne 0) { throw "failed to install llvm-tools-preview for $CoverageToolchain" }
+    }
+
+    & cargo "+$CoverageToolchain" llvm-cov --version | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "HYDRA_RUN_COVERAGE=1 requires cargo-llvm-cov to be installed. Install with: cargo install cargo-llvm-cov --locked, or run .\scripts\setup-dev-env.ps1" }
+
+    Write-Host "==> branch coverage toolchain: $CoverageRustcVersion"
     New-Item -ItemType Directory -Force -Path "target/coverage" | Out-Null
-    cargo llvm-cov clean --workspace
+    & cargo "+$CoverageToolchain" llvm-cov clean --workspace
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov clean failed" }
-    cargo llvm-cov --workspace --all-targets --branch --lcov --output-path target/coverage/hydra.lcov
+    & cargo "+$CoverageToolchain" llvm-cov --workspace --all-targets --branch --lcov --output-path target/coverage/hydra.lcov
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov lcov failed" }
     python3 $CoverageTool $Manifest target/coverage/hydra.lcov
     if ($LASTEXITCODE -ne 0) { throw "critical-path LCOV threshold enforcement failed" }
-    cargo llvm-cov --workspace --all-targets --branch --html --output-dir target/coverage/html
+    & cargo "+$CoverageToolchain" llvm-cov --workspace --all-targets --branch --html --output-dir target/coverage/html
     if ($LASTEXITCODE -ne 0) { throw "cargo llvm-cov html report failed" }
 } else {
     Write-Host "coverage manifest/static gate passed. Set HYDRA_RUN_COVERAGE=1 to generate and enforce LCOV/HTML coverage." -ForegroundColor Green

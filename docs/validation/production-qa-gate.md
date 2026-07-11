@@ -31,6 +31,16 @@ PowerShell:
 .\qa\ci\check-all.ps1
 ```
 
+On Unix, resume after a failure without repeating earlier green sections:
+
+```bash
+./qa/ci/check-all.sh --from browser --skip-browser-install
+./qa/ci/check-all.sh --from coverage
+./qa/ci/check-all.sh --from coverage --through mutation
+```
+
+The canonical section order is `permissions`, `tests`, `examples`, `miri`, `sanitizers`, `browser`, `coverage`, `mutation`, `fuzz`. Use `--only SECTION` for one gate or the corresponding granular `--skip-*` flag for an omission.
+
 This proves that:
 
 - Rust formatting, tests, and clippy warnings are clean;

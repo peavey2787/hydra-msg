@@ -58,6 +58,16 @@ PowerShell:
 .\qa\ci\check-all.ps1
 ```
 
+The Unix runner supports section-aware resume and granular skips:
+
+```bash
+./qa/ci/check-all.sh --list-sections
+./qa/ci/check-all.sh --from browser --skip-browser-install
+./qa/ci/check-all.sh --from coverage --through mutation
+./qa/ci/check-all.sh --only fuzz --fuzz-runs 10000
+```
+
+Sections run in this order: `permissions`, `tests`, `examples`, `miri`, `sanitizers`, `browser`, `coverage`, `mutation`, `fuzz`. Run `./qa/ci/check-all.sh --help` for all `--skip-*` flags.
 
 ## What `check-all` includes
 

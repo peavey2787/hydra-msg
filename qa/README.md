@@ -80,7 +80,14 @@ PowerShell:
 
 `qa/ci/check-all.*` includes the long-running release-evidence gates. It runs Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign. The fuzz campaign is intentionally last and defaults to 100,000 libFuzzer runs per target.
 
-Use the individual scripts only when debugging one failing gate or intentionally collecting isolated evidence.
+Use the individual scripts only when debugging one failing gate or intentionally collecting isolated evidence. The Unix runner can resume at a release section and can skip already-collected evidence:
+
+```bash
+./qa/ci/check-all.sh --from browser --skip-browser-install
+./qa/ci/check-all.sh --from coverage
+./qa/ci/check-all.sh --only mutation
+./qa/ci/check-all.sh --help
+```
 
 ```bash
 HYDRA_COVERAGE_FUZZ_RUNS=10000 ./qa/ci/check-all.sh
