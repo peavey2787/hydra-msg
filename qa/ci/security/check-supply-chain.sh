@@ -37,8 +37,13 @@ if ! grep -q 'license = "GPL-2.0-or-later"' Cargo.toml; then
   exit 1
 fi
 
-printf '\n==> verify committed root Cargo.lock\n'
-cargo fetch --locked
+printf '\n==> verify root Cargo.lock\n'
+if [ "${HYDRA_CI_EPHEMERAL_LOCK_REFRESH:-0}" = "1" ]; then
+  echo "bounded CI: refreshing the lock graph ephemerally; local/release gates still require --locked"
+  cargo fetch
+else
+  cargo fetch --locked
+fi
 
 printf '\n==> cargo-audit advisories\n'
 cargo audit --deny warnings

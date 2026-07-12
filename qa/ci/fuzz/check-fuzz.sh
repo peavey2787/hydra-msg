@@ -4,8 +4,13 @@ set -eu
 . "$(dirname -- "$0")/../lib/repo-root.sh"
 hydra_enter_repo_root
 
-HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
-  cargo run --locked -p hydra-fuzz-gate --
+if [ "${HYDRA_CI_EPHEMERAL_LOCK_REFRESH:-0}" = "1" ]; then
+  HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
+    cargo run -p hydra-fuzz-gate --
+else
+  HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
+    cargo run --locked -p hydra-fuzz-gate --
+fi
 
 if [ "${HYDRA_RUN_COVERAGE_GUIDED_FUZZ:-0}" != "1" ]; then
   echo "coverage-guided fuzz campaigns skipped; set HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 for release evidence"

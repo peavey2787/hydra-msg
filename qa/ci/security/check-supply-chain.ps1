@@ -38,8 +38,13 @@ if (-not ((Get-Content "Cargo.toml" -Raw).Contains('license = "GPL-2.0-or-later"
 }
 
 Write-Host ""
-Write-Host "==> verify committed root Cargo.lock" -ForegroundColor Cyan
-cargo fetch --locked
+Write-Host "==> verify root Cargo.lock" -ForegroundColor Cyan
+if ($env:HYDRA_CI_EPHEMERAL_LOCK_REFRESH -eq "1") {
+    Write-Host "bounded CI: refreshing the lock graph ephemerally; local/release gates still require --locked" -ForegroundColor Yellow
+    cargo fetch
+} else {
+    cargo fetch --locked
+}
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host ""

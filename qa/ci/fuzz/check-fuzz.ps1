@@ -10,7 +10,11 @@ if (-not $env:HYDRA_FUZZ_CASES) {
     $env:HYDRA_FUZZ_CASES = "8"
 }
 
-cargo run --locked -p hydra-fuzz-gate --
+if ($env:HYDRA_CI_EPHEMERAL_LOCK_REFRESH -eq "1") {
+    cargo run -p hydra-fuzz-gate --
+} else {
+    cargo run --locked -p hydra-fuzz-gate --
+}
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }

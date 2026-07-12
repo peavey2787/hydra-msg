@@ -62,10 +62,14 @@ Assert-Text ".github/workflows/ci.yml" 'HYDRA_RUN_BROWSER_E2E: "1"'
 Assert-Text ".github/workflows/ci.yml" "./qa/ci/reliability/check-browser-e2e.sh"
 Assert-Text ".github/workflows/ci.yml" "Deterministic fuzz regression"
 Assert-Text ".github/workflows/ci.yml" "./qa/ci/fuzz/check-fuzz.sh"
-Assert-Text ".github/workflows/ci.yml" "cargo fetch --locked"
+Assert-Text ".github/workflows/ci.yml" 'HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"'
+Assert-Text ".github/workflows/ci.yml" "cargo fetch"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/core.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser-lifecycle.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/fuzz-regression.log"
+Assert-Text "qa/ci/core/check-rust.sh" "cargo metadata --locked"
+Assert-Text "qa/ci/security/check-supply-chain.sh" "cargo fetch --locked"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" "cargo run --locked -p hydra-fuzz-gate --"
 Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"

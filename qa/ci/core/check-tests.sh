@@ -6,6 +6,21 @@ hydra_enter_repo_root
 
 skip_vectors=0
 skip_release_static=0
+lock_backup=""
+if [ "${HYDRA_CI_EPHEMERAL_LOCK_REFRESH:-0}" = "1" ]; then
+  mkdir -p target/ci-logs
+  lock_backup="target/ci-logs/Cargo.lock.committed"
+  cp Cargo.lock "$lock_backup"
+fi
+
+restore_committed_lock_for_policy() {
+  if [ -n "$lock_backup" ] && [ -f "$lock_backup" ]; then
+    cp "$lock_backup" Cargo.lock
+  fi
+}
+if [ -n "$lock_backup" ]; then
+  trap restore_committed_lock_for_policy EXIT HUP INT TERM
+fi
 for arg in "$@"; do
   case "$arg" in
     --skip-vectors)
@@ -55,6 +70,7 @@ run_step "cross-version compatibility checks" qa/ci/reliability/check-cross-vers
 run_step "mobile perf web persistence checks" qa/ci/reliability/check-mobile-perf-web.sh
 run_step "docs/static checks" qa/ci/policy/check-docs.sh
 run_step "release-governance checks" qa/ci/release/check-release-governance.sh
+restore_committed_lock_for_policy
 run_step "lock-file checks" qa/ci/policy/check-locks.sh
 
 if [ "$skip_vectors" -eq 0 ]; then

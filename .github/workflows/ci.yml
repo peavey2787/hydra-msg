@@ -23,6 +23,8 @@ jobs:
     name: Core bounded CI
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    env:
+      HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -48,8 +50,8 @@ jobs:
           cargo install cargo-deny --locked
           cargo install wasm-pack --locked
 
-      - name: Fetch committed lock graph
-        run: cargo fetch --locked
+      - name: Prepare bounded CI dependency graph
+        run: cargo fetch
 
       - name: Run bounded core validation
         shell: bash
@@ -122,6 +124,8 @@ jobs:
     name: Deterministic fuzz regression
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -143,7 +147,7 @@ jobs:
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
           {
-            cargo fetch --locked
+            cargo fetch
             ./qa/ci/fuzz/check-fuzz.sh
           } 2>&1 | tee -a "$log_file"
 

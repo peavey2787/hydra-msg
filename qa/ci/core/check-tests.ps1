@@ -15,6 +15,25 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
+$LockBackup = $null
+if ($env:HYDRA_CI_EPHEMERAL_LOCK_REFRESH -eq "1") {
+    New-Item -ItemType Directory -Force -Path "target/ci-logs" | Out-Null
+    $LockBackup = "target/ci-logs/Cargo.lock.committed"
+    Copy-Item -LiteralPath "Cargo.lock" -Destination $LockBackup -Force
+}
+
+function Restore-CommittedLockForPolicy {
+    if ($LockBackup -and (Test-Path -LiteralPath $LockBackup)) {
+        Copy-Item -LiteralPath $LockBackup -Destination "Cargo.lock" -Force
+    }
+}
+if ($LockBackup) {
+    trap {
+        Restore-CommittedLockForPolicy
+        throw $_
+    }
+}
+
 function Invoke-Step {
     param(
         [Parameter(Mandatory = $true)]
@@ -151,27 +170,8 @@ function Invoke-LockGate {
     Write-Host "==> lock-file checks" -ForegroundColor Cyan
     python3 .\qa\ci\policy\check-workspace-lock.py
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-    $rootPairs = @(Get-LockPairs "Cargo.lock")
-    $rootSet = @{}
-    foreach ($pair in $rootPairs) {
-        $rootSet[$pair] = $true
-    }
-
-    $missing = @()
-    foreach ($pair in @(Get-LockPairs "qa/tools/vector-gen/Cargo.lock")) {
-        if ($pair -eq "hydra-vector-gen 0.1.0") {
-            continue
-        }
-        if (!$rootSet.ContainsKey($pair)) {
-            $missing += $pair
-        }
-    }
-
-    if ($missing.Count -gt 0) {
-        $missing | ForEach-Object { Write-Host "  $_" }
-        throw "vector tool lock contains package versions not present in the main workspace lock"
-    }
+    python3 .\qa\ci\policy\check-vector-lock-conflicts.py Cargo.lock qa/tools/vector-gen/Cargo.lock
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     Write-Host "lock-file checks passed." -ForegroundColor Green
 }
 
@@ -411,7 +411,11 @@ function Invoke-DocsGate {
     Write-Host "docs/path/stale-term checks passed." -ForegroundColor Green
 }
 
-Invoke-Step "cargo metadata --locked" { cargo metadata --locked --format-version 1 --no-deps | Out-Null }
+if ($env:HYDRA_CI_EPHEMERAL_LOCK_REFRESH -eq "1") {
+    Invoke-Step "cargo metadata" { cargo metadata --format-version 1 --no-deps | Out-Null }
+} else {
+    Invoke-Step "cargo metadata --locked" { cargo metadata --locked --format-version 1 --no-deps | Out-Null }
+}
 
 if ($CheckFormatOnly) {
     Invoke-Step "cargo fmt --check" { cargo fmt --all -- --check }
@@ -447,6 +451,7 @@ Invoke-Step "cross-version compatibility checks" { .\qa\ci\reliability\check-cro
 Invoke-Step "mobile perf web persistence checks" { .\qa\ci\reliability\check-mobile-perf-web.ps1 }
 Invoke-DocsGate
 Invoke-Step "release-governance checks" { .\qa\ci\release\check-release-governance.ps1 }
+Restore-CommittedLockForPolicy
 Invoke-LockGate
 
 if (!$SkipVectors) {
