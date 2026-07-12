@@ -43,7 +43,7 @@ PowerShell:
 
 ## Top-level gate
 
-`check-all` is the full release validation runner. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the overnight coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
+`check-all` is the full release validation runner. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the overnight coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
 
 Unix:
 
@@ -63,9 +63,11 @@ The Unix runner supports section-aware resume and granular skips:
 ```bash
 ./qa/ci/check-all.sh --list-sections
 ./qa/ci/check-all.sh --from browser --skip-browser-install
+./qa/ci/check-all.sh --resume-from browser --skip-browser-install
 ./qa/ci/check-all.sh --from coverage --through mutation
 ./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
 ./qa/ci/check-all.sh --only fuzz --fuzz-runs 10000
+./qa/ci/check-all.sh --section fuzz --fuzz-runs 10000
 ```
 
 Sections run in this order: `permissions`, `tests`, `examples`, `miri`, `sanitizers`, `browser`, `coverage`, `mutation`, `fuzz`. Run `./qa/ci/check-all.sh --help` for all `--skip-*` flags.

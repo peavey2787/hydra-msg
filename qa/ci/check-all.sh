@@ -8,12 +8,16 @@ usage() {
   cat <<'USAGE'
 Usage: qa/ci/check-all.sh [options]
 
-Run the complete HYDRA release-validation pipeline, or resume at a named section.
+Run the complete HYDRA release-validation pipeline by default. The runner stops on the first failing section, or resumes/selects sections when flags are provided.
 
 Section selection:
   --from SECTION            Start at SECTION and run everything after it.
+  --resume-from SECTION     Alias for --from.
+  --start-at SECTION        Alias for --from.
   --through SECTION         Stop after SECTION.
+  --stop-after SECTION      Alias for --through.
   --only SECTION            Run exactly one SECTION.
+  --section SECTION         Alias for --only.
   --list-sections           Print valid section names and exit.
 
 Sections, in execution order:
@@ -47,7 +51,9 @@ Other:
   -h, --help                Show this help.
 
 Examples:
+  qa/ci/check-all.sh
   qa/ci/check-all.sh --from browser
+  qa/ci/check-all.sh --resume-from browser
   qa/ci/check-all.sh --from coverage --through mutation
   qa/ci/check-all.sh --only browser --skip-browser-install
   qa/ci/check-all.sh --from mutation --skip-mutation-baseline
@@ -152,34 +158,34 @@ fuzz_runs=${HYDRA_COVERAGE_FUZZ_RUNS:-100000}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --from)
+    --from|--resume-from|--start-at)
       require_value "$1" "${2:-}"
       from_section=$(normalize_section "$2")
       from_was_set=1
       shift 2
       ;;
-    --from=*)
+    --from=*|--resume-from=*|--start-at=*)
       from_section=$(normalize_section "${1#*=}")
       from_was_set=1
       shift
       ;;
-    --through)
+    --through|--stop-after)
       require_value "$1" "${2:-}"
       through_section=$(normalize_section "$2")
       through_was_set=1
       shift 2
       ;;
-    --through=*)
+    --through=*|--stop-after=*)
       through_section=$(normalize_section "${1#*=}")
       through_was_set=1
       shift
       ;;
-    --only)
+    --only|--section)
       require_value "$1" "${2:-}"
       only_section=$(normalize_section "$2")
       shift 2
       ;;
-    --only=*)
+    --only=*|--section=*)
       only_section=$(normalize_section "${1#*=}")
       shift
       ;;

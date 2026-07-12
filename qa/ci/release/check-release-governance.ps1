@@ -54,23 +54,22 @@ Assert-Text "docs/validation/release/msrv-policy.md" 'rust-version = "1.88"'
 Assert-Text ".github/workflows/ci.yml" "push:"
 Assert-Text ".github/workflows/ci.yml" "pull_request:"
 Assert-Text ".github/workflows/ci.yml" "workflow_dispatch:"
-Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --through examples --skip-permissions"
-Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --only browser --skip-permissions"
-Assert-Text ".github/workflows/ci.yml" "target/ci-logs/rust-policy-examples.log"
-Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser.log"
-Assert-Text ".github/workflows/ci.yml" '${{ github.workspace }}/fuzz-regression.log'
-Assert-Text ".github/workflows/ci.yml" "hashFiles('fuzz-regression.log') != ''"
+Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --skip-permissions"
+Assert-Text ".github/workflows/ci.yml" "target/ci-logs/check-all.log"
+Assert-Text ".github/workflows/ci.yml" "Full sequential check-all"
 Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
+Assert-Text ".github/workflows/ci.yml" "cargo install cargo-fuzz --locked"
+Assert-Text ".github/workflows/ci.yml" "HYDRA_CHECK_ALL_ARGS"
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"
-Assert-Text ".github/workflows/release-validation.yml" "./qa/ci/check-all.sh --through examples --skip-permissions"
-Assert-Text ".github/workflows/release-validation.yml" "target/ci-logs/core.log"
-Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE: "1"'
-Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_MUTATION: "1"'
-Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
-Assert-Text ".github/workflows/release-validation.yml" '${{ github.workspace }}/release-fuzz.log'
-Assert-Text ".github/workflows/release-validation.yml" "hashFiles('release-fuzz.log') != ''"
+Assert-Text ".github/workflows/release-validation.yml" "./qa/ci/check-all.sh"
+Assert-Text ".github/workflows/release-validation.yml" "target/ci-logs/release-check-all.log"
+Assert-Text ".github/workflows/release-validation.yml" "Full sequential release check-all"
+Assert-Text ".github/workflows/release-validation.yml" "cargo install cargo-mutants --locked"
+Assert-Text ".github/workflows/release-validation.yml" "cargo install cargo-fuzz --locked"
 Assert-Text ".github/workflows/release-validation.yml" 'tee -a "$log_file"'
+Assert-Text ".github/workflows/release-validation.yml" "HYDRA_RELEASE_FUZZ_RUNS"
+Assert-Text ".github/workflows/release-validation.yml" "HYDRA_RELEASE_MUTATION_JOBS"
 Assert-Text ".github/workflows/release-validation.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/dependabot.yml" "package-ecosystem: github-actions"
 
@@ -89,7 +88,7 @@ if ($unpinnedActions) {
 }
 foreach ($workflow in @(".github/workflows/ci.yml", ".github/workflows/release-validation.yml")) {
     Assert-Text $workflow "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0"
-    Assert-Text $workflow "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2"
+    Assert-Text $workflow "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1"
 }
 Assert-Text ".github/workflows/ci.yml" "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0"
 Assert-Text ".github/workflows/release-validation.yml" "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0"

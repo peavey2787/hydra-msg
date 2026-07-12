@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      check_all_args:
+        description: "Optional qa/ci/check-all.sh args, e.g. --from browser or --only fuzz --fuzz-runs 10000"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -19,48 +25,14 @@ env:
   RUST_BACKTRACE: "1"
 
 jobs:
-  rust-and-policy:
-    name: Rust, policy, and examples
+  check-all:
+    name: Full sequential check-all
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Install Rust stable toolchain
-        run: |
-          rustup toolchain install stable --profile minimal --component rustfmt,clippy
-          rustup target add wasm32-unknown-unknown --toolchain stable
-          rustup default stable
-
-      - name: Install required QA tools
-        run: |
-          cargo install cargo-audit --locked
-          cargo install cargo-deny --locked
-          cargo install wasm-pack --locked
-
-      - name: Run tests, static policy gates, and examples
-        run: |
-          mkdir -p target/ci-logs
-          set -o pipefail
-          ./qa/ci/check-all.sh --through examples --skip-permissions 2>&1 \
-            | tee target/ci-logs/rust-policy-examples.log
-
-      - name: Upload core CI evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: core-ci-${{ github.sha }}
-          path: target/ci-logs/rust-policy-examples.log
-          if-no-files-found: error
-          retention-days: 30
-
-  browser-lifecycle:
-    name: Browser lifecycle
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 720
+    env:
+      HYDRA_BROWSER_WORKERS: "1"
+      HYDRA_PLAYWRIGHT_INSTALL_DEPS: "1"
+      HYDRA_CHECK_ALL_ARGS: ${{ inputs.check_all_args }}
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -74,81 +46,66 @@ jobs:
           cache: npm
           cache-dependency-path: qa/browser/playwright/package-lock.json
 
-      - name: Run real-browser lifecycle suite
-        env:
-          HYDRA_RUN_BROWSER_E2E: "1"
-          HYDRA_PLAYWRIGHT_INSTALL_DEPS: "1"
-          HYDRA_BROWSER_WORKERS: "1"
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup target add wasm32-unknown-unknown --toolchain stable
+          rustup toolchain install nightly --profile minimal --component miri,rust-src,llvm-tools-preview
+          rustup target add x86_64-unknown-linux-gnu --toolchain nightly
+          rustup default stable
+
+      - name: Install required QA tools
+        run: |
+          cargo install cargo-audit --locked
+          cargo install cargo-deny --locked
+          cargo install wasm-pack --locked
+          cargo install cargo-llvm-cov --locked
+          cargo install cargo-mutants --locked
+          cargo install cargo-fuzz --locked
+
+      - name: Run full check-all pipeline
+        shell: bash
         run: |
           mkdir -p target/ci-logs
+          log_file="target/ci-logs/check-all.log"
+          printf '%s\n' \
+            "HYDRA-MSG full sequential check-all" \
+            "Commit: $GITHUB_SHA" \
+            "Args: ${HYDRA_CHECK_ALL_ARGS:-<default full run>}" > "$log_file"
+          extra_args=()
+          if [ -n "${HYDRA_CHECK_ALL_ARGS:-}" ]; then
+            read -r -a extra_args <<< "$HYDRA_CHECK_ALL_ARGS"
+          fi
           set -o pipefail
-          ./qa/ci/check-all.sh --only browser --skip-permissions 2>&1 \
-            | tee target/ci-logs/browser.log
+          ./qa/ci/check-all.sh --skip-permissions "${extra_args[@]}" 2>&1 | tee -a "$log_file"
 
-      - name: Upload browser evidence
+      - name: Verify check-all evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        run: |
+          test -s "$GITHUB_WORKSPACE/target/ci-logs/check-all.log"
+          ls -l "$GITHUB_WORKSPACE/target/ci-logs/check-all.log"
+          sha256sum "$GITHUB_WORKSPACE/target/ci-logs/check-all.log"
+
+      - name: Upload full check-all evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: browser-lifecycle-${{ github.sha }}
+          name: check-all-${{ github.sha }}
           path: |
-            target/ci-logs/browser.log
+            target/ci-logs/check-all.log
+            target/coverage/
+            target/mutants/
+            target/hydra-fuzz-evidence/
             qa/browser/playwright/test-results/
             qa/browser/playwright/playwright-report/
           if-no-files-found: warn
-          retention-days: 30
-
-  fuzz-regression:
-    name: Deterministic fuzz regression
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          persist-credentials: false
-
-      - name: Install Rust stable toolchain
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-
-      - name: Run deterministic fuzz corpus gate
-        run: |
-          log_file="$GITHUB_WORKSPACE/fuzz-regression.log"
-          printf '%s\n' \
-            "HYDRA-MSG deterministic fuzz regression" \
-            "Commit: $GITHUB_SHA" > "$log_file"
-          set -o pipefail
-          {
-            rm -f Cargo.lock
-            cargo generate-lockfile
-            cargo fetch
-            ./qa/ci/fuzz/check-fuzz.sh
-          } 2>&1 | tee -a "$log_file"
-
-      - name: Verify fuzz artifact input
-        if: ${{ always() && hashFiles('fuzz-regression.log') != '' }}
-        run: |
-          test -s "$GITHUB_WORKSPACE/fuzz-regression.log"
-          ls -l "$GITHUB_WORKSPACE/fuzz-regression.log"
-          sha256sum "$GITHUB_WORKSPACE/fuzz-regression.log"
-
-      - name: Upload fuzz regression evidence
-        if: ${{ always() && hashFiles('fuzz-regression.log') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: fuzz-regression-${{ github.sha }}
-          path: ${{ github.workspace }}/fuzz-regression.log
-          if-no-files-found: error
           retention-days: 30
 
   summary:
     name: CI summary
     if: always()
     needs:
-      - rust-and-policy
-      - browser-lifecycle
-      - fuzz-regression
+      - check-all
     runs-on: ubuntu-24.04
     steps:
       - name: Publish commit validation summary
@@ -160,9 +117,7 @@ jobs:
 
           | Gate | Result |
           |---|---|
-          | Rust, policy, and examples | ${{ needs['rust-and-policy'].result }} |
-          | Browser lifecycle | ${{ needs['browser-lifecycle'].result }} |
-          | Deterministic fuzz regression | ${{ needs['fuzz-regression'].result }} |
+          | Full sequential check-all | ${{ needs['check-all'].result }} |
 
-          Complete console logs are attached to this workflow run as commit-named artifacts.
+          The check-all job runs the repository validation pipeline in script order and stops on the first failing section. Complete logs and generated diagnostics are attached as commit-named artifacts.
           EOF2
