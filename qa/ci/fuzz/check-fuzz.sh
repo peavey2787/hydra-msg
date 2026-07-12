@@ -5,7 +5,7 @@ set -eu
 hydra_enter_repo_root
 
 HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
-  cargo run --offline -p hydra-fuzz-gate --
+  cargo run -p hydra-fuzz-gate --
 
 if [ "${HYDRA_RUN_COVERAGE_GUIDED_FUZZ:-0}" != "1" ]; then
   echo "coverage-guided fuzz campaigns skipped; set HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 for release evidence"

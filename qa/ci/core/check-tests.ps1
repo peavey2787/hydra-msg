@@ -410,7 +410,14 @@ function Invoke-DocsGate {
     Write-Host "docs/path/stale-term checks passed." -ForegroundColor Green
 }
 
-Invoke-Step "cargo metadata --locked" { cargo metadata --locked --format-version 1 --no-deps | Out-Null }
+Invoke-Step "refresh root Cargo.lock" {
+    Remove-Item -LiteralPath "Cargo.lock" -Force -ErrorAction SilentlyContinue
+    cargo generate-lockfile
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    cargo fetch
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+Invoke-Step "cargo metadata" { cargo metadata --format-version 1 --no-deps | Out-Null }
 
 if ($CheckFormatOnly) {
     Invoke-Step "cargo fmt --check" { cargo fmt --all -- --check }

@@ -10,7 +10,7 @@ if (-not $env:HYDRA_FUZZ_CASES) {
     $env:HYDRA_FUZZ_CASES = "8"
 }
 
-cargo run --offline -p hydra-fuzz-gate --
+cargo run -p hydra-fuzz-gate --
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }

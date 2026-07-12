@@ -76,7 +76,8 @@ require_text .github/workflows/ci.yml './qa/ci/fuzz/check-fuzz.sh'
 require_text .github/workflows/ci.yml '${{ github.workspace }}/fuzz-regression.log'
 require_text .github/workflows/ci.yml "hashFiles('fuzz-regression.log') != ''"
 require_text .github/workflows/ci.yml 'tee -a "$log_file"'
-require_text .github/workflows/ci.yml 'cargo fetch --locked'
+require_text .github/workflows/ci.yml 'cargo generate-lockfile'
+require_text .github/workflows/ci.yml 'cargo fetch'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
 require_text .github/workflows/release-validation.yml './qa/ci/check-all.sh --through examples --skip-permissions'
@@ -87,7 +88,8 @@ require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE_GUIDED
 require_text .github/workflows/release-validation.yml '${{ github.workspace }}/release-fuzz.log'
 require_text .github/workflows/release-validation.yml "hashFiles('release-fuzz.log') != ''"
 require_text .github/workflows/release-validation.yml 'tee -a "$log_file"'
-require_text .github/workflows/release-validation.yml 'cargo fetch --locked'
+require_text .github/workflows/release-validation.yml 'cargo generate-lockfile'
+require_text .github/workflows/release-validation.yml 'cargo fetch'
 require_text .github/workflows/release-validation.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/dependabot.yml 'package-ecosystem: github-actions'
 

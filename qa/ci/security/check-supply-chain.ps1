@@ -38,6 +38,14 @@ if (-not ((Get-Content "Cargo.toml" -Raw).Contains('license = "GPL-2.0-or-later"
 }
 
 Write-Host ""
+Write-Host "==> refresh root Cargo.lock" -ForegroundColor Cyan
+Remove-Item -LiteralPath "Cargo.lock" -Force -ErrorAction SilentlyContinue
+cargo generate-lockfile
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+cargo fetch
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Host ""
 Write-Host "==> cargo-audit advisories" -ForegroundColor Cyan
 cargo audit --deny warnings
 if ($LASTEXITCODE -ne 0) {

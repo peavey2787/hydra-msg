@@ -120,7 +120,9 @@ jobs:
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
           {
-            cargo fetch --locked
+            rm -f Cargo.lock
+            cargo generate-lockfile
+            cargo fetch
             ./qa/ci/fuzz/check-fuzz.sh
           } 2>&1 | tee -a "$log_file"
 
