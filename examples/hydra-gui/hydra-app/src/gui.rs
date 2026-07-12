@@ -1,6 +1,7 @@
 use crate::text::{hex_decode, hex_encode, json_escape, parse_form};
 use hydra_app_core::{
-    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId, ReceivedHydraMessage,
+    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, HydraSessionSecurityPolicy, IdentityId,
+    LobbyId, ReceivedHydraMessage,
 };
 use std::{
     collections::HashMap,
@@ -274,6 +275,48 @@ fn handle_post(
                 .map_err(sdk_error)?;
             ok_json()
         }
+        "/api/handshake/policy" => {
+            app.set_session_security_policy(
+                contact_id(fields)?,
+                session_security_policy(field(fields, "interval")?)?,
+            )
+            .map_err(sdk_error)?;
+            ok_json()
+        }
+        "/api/handshake/security-status" => {
+            let status = app
+                .session_security_status(contact_id(fields)?)
+                .map_err(sdk_error)?;
+            let limit = status
+                .policy()
+                .max_outbound_messages_per_session()
+                .map_or_else(|| "null".to_owned(), |value| value.to_string());
+            let remaining = status
+                .remaining_messages()
+                .map_or_else(|| "null".to_owned(), |value| value.to_string());
+            Ok(format!(
+                "{{\"max_outbound_messages_per_session\":{limit},\"outbound_messages_in_session\":{},\"remaining_messages\":{remaining},\"refresh_required\":{}}}",
+                status.outbound_messages_in_session(),
+                status.refresh_required()
+            ))
+        }
+        "/api/handshake/refresh-offer" => {
+            let bytes = app
+                .session_refresh_offer(contact_id(fields)?)
+                .map_err(sdk_error)?;
+            bytes_json("offer", &bytes)
+        }
+        "/api/handshake/refresh-answer" => {
+            let bytes = app
+                .session_refresh_answer(bytes_field(fields, "offer_hex")?)
+                .map_err(sdk_error)?;
+            bytes_json("answer", &bytes)
+        }
+        "/api/handshake/refresh-finish" => {
+            app.finish_session_refresh(bytes_field(fields, "answer_hex")?)
+                .map_err(sdk_error)?;
+            ok_json()
+        }
         "/api/messages/send" => {
             let packets = app
                 .send_message(
@@ -529,6 +572,22 @@ fn identity_id(fields: &HashMap<String, String>) -> Result<IdentityId, String> {
     IdentityId::from_hex(field(fields, "id")?).map_err(sdk_error)
 }
 
+fn session_security_policy(value: &str) -> Result<HydraSessionSecurityPolicy, String> {
+    match value {
+        "ratchet" | "ratchet-only" | "0" => Ok(HydraSessionSecurityPolicy::ratchet_only()),
+        "periodic-50" => HydraSessionSecurityPolicy::every_messages(50)
+            .map_err(|_| "session refresh interval is invalid".to_owned()),
+        "every-message" | "1" => Ok(HydraSessionSecurityPolicy::fresh_session_every_message()),
+        interval => {
+            let messages = interval
+                .parse::<u64>()
+                .map_err(|_| "session refresh interval is invalid".to_owned())?;
+            HydraSessionSecurityPolicy::every_messages(messages)
+                .map_err(|_| "session refresh interval is invalid".to_owned())
+        }
+    }
+}
+
 fn contact_id(fields: &HashMap<String, String>) -> Result<ContactId, String> {
     ContactId::from_hex(field(fields, "contact_id")?).map_err(sdk_error)
 }
@@ -633,7 +692,7 @@ code {{ color: #9bd5ff; }}
 <select id="route">
 <option>/api/identity/generate</option><option>/api/identity/switch</option><option>/api/identity/unlock</option><option>/api/identity/lock</option><option>/api/identity/export</option><option>/api/identity/import</option><option>/api/identity/change-password</option><option>/api/identity/delete</option>
 <option>/api/contacts/my-card</option><option>/api/contacts/preview</option><option>/api/contacts/add</option><option>/api/contacts/verify</option><option>/api/contacts/export</option><option>/api/contacts/import</option>
-<option>/api/handshake/offer</option><option>/api/handshake/answer</option><option>/api/handshake/finish</option>
+<option>/api/handshake/offer</option><option>/api/handshake/answer</option><option>/api/handshake/finish</option><option>/api/handshake/policy</option><option>/api/handshake/security-status</option><option>/api/handshake/refresh-offer</option><option>/api/handshake/refresh-answer</option><option>/api/handshake/refresh-finish</option>
 <option>/api/messages/send</option><option>/api/messages/receive</option>
 <option>/api/lobbies/create</option><option>/api/lobbies/add-member</option><option>/api/lobbies/invite</option><option>/api/lobbies/join</option><option>/api/lobbies/send</option><option>/api/lobbies/receive</option><option>/api/lobbies/leave</option>
 <option>/api/backup/export</option><option>/api/backup/verify</option><option>/api/backup/import</option><option>/api/backup/change-state-password</option>
@@ -679,6 +738,8 @@ mod tests {
             "/api/identity/generate",
             "/api/contacts/my-card",
             "/api/handshake/offer",
+            "/api/handshake/policy",
+            "/api/handshake/refresh-offer",
             "/api/messages/send",
             "/api/lobbies/create",
             "/api/backup/export",

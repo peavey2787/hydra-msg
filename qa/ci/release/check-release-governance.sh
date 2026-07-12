@@ -7,6 +7,9 @@ hydra_enter_repo_root
 required_files="
 CHANGELOG.md
 SECURITY.md
+.github/workflows/ci.yml
+.github/workflows/release-validation.yml
+.github/dependabot.yml
 docs/validation/release/release-checklist.md
 docs/validation/release/release-artifacts.md
 docs/validation/release/release-signing.md
@@ -61,6 +64,37 @@ require_text docs/validation/release/release-signing.md 'scripts/release/sign-re
 require_text docs/validation/release/sbom.md 'scripts/release/generate-sbom.py'
 require_text docs/validation/release/reproducible-builds.md 'SOURCE_DATE_EPOCH'
 require_text docs/validation/release/msrv-policy.md 'rust-version = "1.88"'
+
+require_text .github/workflows/ci.yml 'push:'
+require_text .github/workflows/ci.yml 'pull_request:'
+require_text .github/workflows/ci.yml 'workflow_dispatch:'
+require_text .github/workflows/ci.yml './qa/ci/check-all.sh --through examples --skip-permissions'
+require_text .github/workflows/ci.yml './qa/ci/check-all.sh --only browser --skip-permissions'
+require_text .github/workflows/ci.yml 'target/ci-logs/rust-policy-examples.log'
+require_text .github/workflows/ci.yml 'target/ci-logs/browser.log'
+require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
+require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
+require_text .github/workflows/release-validation.yml './qa/ci/check-all.sh --through examples --skip-permissions'
+require_text .github/workflows/release-validation.yml 'target/ci-logs/core.log'
+require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE: "1"'
+require_text .github/workflows/release-validation.yml 'HYDRA_RUN_MUTATION: "1"'
+require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
+require_text .github/workflows/release-validation.yml 'GITHUB_STEP_SUMMARY'
+require_text .github/dependabot.yml 'package-ecosystem: github-actions'
+
+unpinned_actions=$(grep -RInE '^[[:space:]]*uses:[[:space:]]+[^[:space:]]+@' .github/workflows \
+  | grep -vE '@[0-9a-fA-F]{40}([[:space:]]|#|$)' || true)
+if [ -n "$unpinned_actions" ]; then
+  printf '%s\n' "$unpinned_actions" >&2
+  echo "GitHub Actions must be pinned to immutable 40-character commit SHAs" >&2
+  exit 1
+fi
+for workflow in .github/workflows/ci.yml .github/workflows/release-validation.yml; do
+  require_text "$workflow" 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0'
+  require_text "$workflow" 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
+done
+require_text .github/workflows/ci.yml 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0'
+require_text .github/workflows/release-validation.yml 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0'
 
 if grep -RInE 'example\.invalid|fake security email|Production release blocker until verified|must be verified before production release|public production release remains blocked until.*private reporting|GitHub Private Vulnerability Reporting availability is unverified' README.md SECURITY.md docs CHANGELOG.md; then
   echo "stale release-governance blocker or placeholder wording found" >&2

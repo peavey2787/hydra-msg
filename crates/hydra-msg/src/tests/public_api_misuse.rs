@@ -54,7 +54,7 @@ fn handshake_and_session_misuse_fails_closed() {
         connected("hydra-msg-test-api-misuse-handshake");
     assert!(bob.reply_handshake(b"not a real offer").is_err());
     assert!(alice
-        .rekey_session(ContactId::from_bytes([9; hydra_core::HASH_SIZE]))
+        .begin_session_refresh(ContactId::from_bytes([9; hydra_core::HASH_SIZE]))
         .is_err());
     assert!(alice
         .close_session(ContactId::from_bytes([8; hydra_core::HASH_SIZE]))

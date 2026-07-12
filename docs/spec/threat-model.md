@@ -119,6 +119,7 @@ Under the trust assumptions in Section 7, HYDRA-MSG v1 aims to provide:
 HYDRA-MSG v1 does not claim:
 
 - endpoint compromise resistance while plaintext or keys are live;
+- automatic or instantaneous post-compromise healing without an authenticated peer round trip, fresh uncompromised entropy, and attacker loss of endpoint access;
 - operating-system, kernel, hypervisor, firmware, DMA, or hardware compromise
   resistance;
 - network anonymity, IP hiding, relay anonymity, traffic-flow confidentiality,

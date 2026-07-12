@@ -1,8 +1,9 @@
 use crate::{
     AppUiState, CarrierConfig, ContactId, ConversationRef, DisplayDirection, DisplayMessage,
     HydraContact, HydraIdentitySummary, HydraLobby, HydraLobbyPolicy, HydraLobbyRoutingHint,
-    HydraMessage, HydraOneTimeContactCard, HydraResult, HydraSessionStatus,
-    HydraStorageDebugStatus, HydraStorageStatus, IdentityId, LobbyId, NotificationPreferences,
+    HydraMessage, HydraOneTimeContactCard, HydraResult, HydraSessionSecurityPolicy,
+    HydraSessionSecurityStatus, HydraSessionStatus, HydraStorageDebugStatus, HydraStorageStatus,
+    IdentityId, LobbyId, NotificationPreferences,
     ReceivedHydraMessage, RememberMePolicy,
 };
 use hydra_msg::{Hydra, HydraEnvelope};
@@ -292,6 +293,33 @@ impl HydraApp {
 
     pub fn session_status(&self, contact_id: ContactId) -> HydraResult<HydraSessionStatus> {
         self.hydra.session_status(contact_id)
+    }
+
+    pub fn set_session_security_policy(
+        &mut self,
+        contact_id: ContactId,
+        policy: HydraSessionSecurityPolicy,
+    ) -> HydraResult<()> {
+        self.hydra.set_session_security_policy(contact_id, policy)
+    }
+
+    pub fn session_security_status(
+        &self,
+        contact_id: ContactId,
+    ) -> HydraResult<HydraSessionSecurityStatus> {
+        self.hydra.session_security_status(contact_id)
+    }
+
+    pub fn session_refresh_offer(&mut self, contact_id: ContactId) -> HydraResult<Vec<u8>> {
+        Ok(self.hydra.begin_session_refresh(contact_id)?.into_bytes())
+    }
+
+    pub fn session_refresh_answer(&mut self, offer: impl AsRef<[u8]>) -> HydraResult<Vec<u8>> {
+        Ok(self.hydra.reply_session_refresh(offer)?.into_bytes())
+    }
+
+    pub fn finish_session_refresh(&mut self, answer: impl AsRef<[u8]>) -> HydraResult<()> {
+        self.hydra.finish_session_refresh(answer)
     }
 
     pub fn send_message(

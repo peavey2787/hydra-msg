@@ -331,6 +331,7 @@ impl Hydra {
             .ok_or(HydraMsgError::ContactNotFound)?;
         self.remove_session_routes(contact_id);
         self.sessions.remove(&contact_id);
+        self.session_security_policies.remove(&contact_id);
         self.pending_fragments
             .retain(|key, _| key.from() != contact_id);
         if let Err(error) = self.persist() {

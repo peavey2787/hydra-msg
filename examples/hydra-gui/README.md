@@ -23,6 +23,11 @@
 
 `hydra-app` treats every handshake, direct-message, and lobby payload as opaque bytes. File paths, HTTP forms, WebRTC, relays, or another carrier may move those bytes without interpreting them.
 
+Session-security policy is also delegated to `hydra-msg`. The reference app can
+set ratchet-only, periodic-50, every-message, or custom fresh-session intervals
+and transports the explicit refresh offer/answer bytes without owning key
+derivation or rekey state.
+
 ## CLI
 
 ```bash
@@ -36,7 +41,7 @@ Run `help` for the complete command model. The command groups are:
 
 - `identity generate/list/switch/unlock/lock/export/import/change-password/delete`
 - `contacts my-card/preview/add/verify/export/import`
-- `handshake offer/answer/finish`
+- `handshake offer/answer/finish/policy/security-status/refresh-offer/refresh-answer/refresh-finish`
 - `messages send/receive`
 - `lobbies create/add-member/invite/join/send/receive/leave`
 - `backup export/verify/import/change-state-password/status`

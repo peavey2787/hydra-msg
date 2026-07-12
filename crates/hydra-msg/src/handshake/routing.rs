@@ -30,6 +30,7 @@ impl Hydra {
             SessionRecord {
                 state,
                 closed: false,
+                outbound_messages: 0,
             },
         );
         Ok(())

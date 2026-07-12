@@ -290,16 +290,6 @@ impl Hydra {
         Ok(())
     }
 
-    pub fn rekey_lobby(&mut self, lobby_id: LobbyId) -> HydraResult<()> {
-        let members = self.get_lobby(lobby_id)?.members;
-        for member in members {
-            if self.sessions.contains_key(&member) {
-                let _ = self.rekey_session(member);
-            }
-        }
-        Ok(())
-    }
-
     pub fn close_lobby(&mut self, lobby_id: LobbyId) -> HydraResult<()> {
         self.leave_lobby(lobby_id)
     }

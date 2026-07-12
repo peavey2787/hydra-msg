@@ -3,7 +3,8 @@
 
 use hydra_app_core::{
     CarrierConfig, CarrierKind, ContactId, ConversationRef, HydraApp, HydraLobbyPolicy,
-    HydraMessage, HydraMsgError, HydraSessionStatus, IdentityId, NotificationPreferences,
+    HydraMessage, HydraMsgError, HydraSessionSecurityPolicy, HydraSessionStatus, IdentityId,
+    NotificationPreferences,
     RememberMePolicy,
 };
 use std::{
@@ -247,6 +248,48 @@ fn handshake_roundtrip_establishes_public_sdk_sessions() {
             .expect("bob status"),
         HydraSessionStatus::Active
     );
+}
+
+#[test]
+fn fresh_session_cadence_is_exposed_without_app_owned_protocol_state() {
+    let mut pair = connected_pair("session-security");
+    pair.alice
+        .set_session_security_policy(
+            pair.bob_contact,
+            HydraSessionSecurityPolicy::fresh_session_every_message(),
+        )
+        .expect("set policy");
+
+    pair.alice
+        .send_message(pair.bob_contact, HydraMessage::text("first"))
+        .expect("first send");
+    assert!(pair
+        .alice
+        .session_security_status(pair.bob_contact)
+        .expect("status")
+        .refresh_required());
+    assert_eq!(
+        pair.alice
+            .send_message(pair.bob_contact, HydraMessage::text("blocked")),
+        Err(HydraMsgError::SessionRefreshRequired)
+    );
+
+    let offer = pair
+        .alice
+        .session_refresh_offer(pair.bob_contact)
+        .expect("refresh offer");
+    let answer = pair
+        .bob
+        .session_refresh_answer(offer)
+        .expect("refresh answer");
+    pair.alice
+        .finish_session_refresh(answer)
+        .expect("refresh finish");
+    assert!(!pair
+        .alice
+        .session_security_status(pair.bob_contact)
+        .expect("refreshed status")
+        .refresh_required());
 }
 
 #[test]

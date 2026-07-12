@@ -1,8 +1,10 @@
 mod routing;
+mod security;
 mod types;
 
+pub use security::{HydraSessionSecurityPolicy, HydraSessionSecurityStatus};
 pub use types::{HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionStatus};
-pub(crate) use types::{PendingOffer, SessionRecord};
+pub(crate) use types::{HandshakePurpose, PendingOffer, SessionRecord};
 
 use crate::{
     codec::*,
@@ -29,6 +31,14 @@ fn identity_signing_key(
 
 impl Hydra {
     pub fn init_handshake(&mut self, contact_id: ContactId) -> HydraResult<HandshakeOffer> {
+        self.init_handshake_for(contact_id, HandshakePurpose::Standard)
+    }
+
+    pub(crate) fn init_handshake_for(
+        &mut self,
+        contact_id: ContactId,
+        purpose: HandshakePurpose,
+    ) -> HydraResult<HandshakeOffer> {
         self.require_contact(contact_id)?;
         self.expire_pending_handshakes();
         reject_collection_growth(
@@ -61,6 +71,7 @@ impl Hydra {
                 x25519_secret,
                 kem_decapsulation_key: kem_keypair.decapsulation_key,
                 created_at: crate::time::HydraInstant::now(),
+                purpose,
             },
         );
         Ok(HandshakeOffer(offer))
@@ -132,6 +143,14 @@ impl Hydra {
     }
 
     pub fn finish_handshake(&mut self, answer: impl AsRef<[u8]>) -> HydraResult<()> {
+        self.finish_handshake_for(answer, HandshakePurpose::Standard)
+    }
+
+    pub(crate) fn finish_handshake_for(
+        &mut self,
+        answer: impl AsRef<[u8]>,
+        expected_purpose: HandshakePurpose,
+    ) -> HydraResult<()> {
         let parsed_answer = decode_handshake_answer(answer.as_ref())?;
         self.expire_pending_handshakes();
         let active = self.active_unlocked_record()?.clone();
@@ -139,6 +158,11 @@ impl Hydra {
             .pending_offers
             .get(&parsed_answer.offer_nonce)
             .ok_or(HydraMsgError::InvalidInput("unknown handshake answer"))?;
+        if pending.purpose != expected_purpose {
+            return Err(HydraMsgError::InvalidInput(
+                "handshake answer has the wrong local purpose",
+            ));
+        }
         if pending.contact_id != ContactId(parsed_answer.peer_id.0) {
             return Err(HydraMsgError::InvalidInput(
                 "handshake answer does not match pending contact",
@@ -185,16 +209,6 @@ impl Hydra {
             Some(_) => HydraSessionStatus::Active,
             None => HydraSessionStatus::Missing,
         })
-    }
-
-    pub fn rekey_session(&mut self, contact_id: ContactId) -> HydraResult<()> {
-        let session = self
-            .sessions
-            .get_mut(&contact_id)
-            .ok_or(HydraMsgError::SessionNotFound)?;
-        let refresh_id = random_array::<32>()?;
-        session.state.begin_refresh(refresh_id)?;
-        Ok(())
     }
 
     pub fn close_session(&mut self, contact_id: ContactId) -> HydraResult<()> {

@@ -446,10 +446,63 @@ impl WasmHydra {
         ))
     }
 
-    #[wasm_bindgen(js_name = rekeySession)]
-    pub fn rekey_session(&mut self, contact_id_hex: &str) -> Result<(), JsValue> {
+    #[wasm_bindgen(js_name = setSessionRefreshInterval)]
+    pub fn set_session_refresh_interval(
+        &mut self,
+        contact_id_hex: &str,
+        messages: u32,
+    ) -> Result<(), JsValue> {
         self.inner
-            .rekey_session(contact_id(contact_id_hex)?)
+            .set_session_refresh_interval(contact_id(contact_id_hex)?, u64::from(messages))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(())
+    }
+
+    #[wasm_bindgen(js_name = sessionSecurityStatus)]
+    pub fn session_security_status(&self, contact_id_hex: &str) -> Result<String, JsValue> {
+        let status = self
+            .inner
+            .session_security_status(contact_id(contact_id_hex)?)
+            .map_err(to_js_error)?;
+        let limit = status
+            .policy()
+            .max_outbound_messages_per_session()
+            .map_or_else(|| "null".to_owned(), |value| value.to_string());
+        let remaining = status
+            .remaining_messages()
+            .map_or_else(|| "null".to_owned(), |value| value.to_string());
+        Ok(format!(
+            "{{\"max_outbound_messages_per_session\":{limit},\"outbound_messages_in_session\":{},\"remaining_messages\":{remaining},\"refresh_required\":{}}}",
+            status.outbound_messages_in_session(),
+            status.refresh_required()
+        ))
+    }
+
+    #[wasm_bindgen(js_name = beginSessionRefresh)]
+    pub fn begin_session_refresh(&mut self, contact_id_hex: &str) -> Result<Vec<u8>, JsValue> {
+        let offer = self
+            .inner
+            .begin_session_refresh(contact_id(contact_id_hex)?)
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(offer.into_bytes())
+    }
+
+    #[wasm_bindgen(js_name = replySessionRefresh)]
+    pub fn reply_session_refresh(&mut self, offer: Vec<u8>) -> Result<Vec<u8>, JsValue> {
+        let answer = self
+            .inner
+            .reply_session_refresh(HandshakeOffer::from_bytes(offer))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(answer.into_bytes())
+    }
+
+    #[wasm_bindgen(js_name = finishSessionRefresh)]
+    pub fn finish_session_refresh(&mut self, answer: Vec<u8>) -> Result<(), JsValue> {
+        self.inner
+            .finish_session_refresh(HandshakeAnswer::from_bytes(answer))
             .map_err(to_js_error)?;
         self.mark_dirty();
         Ok(())
@@ -726,15 +779,6 @@ impl WasmHydra {
         };
         self.mark_dirty();
         Ok(WasmReceivedHydraMessage { inner }.into())
-    }
-
-    #[wasm_bindgen(js_name = rekeyLobby)]
-    pub fn rekey_lobby(&mut self, lobby_id_hex: &str) -> Result<(), JsValue> {
-        self.inner
-            .rekey_lobby(lobby_id(lobby_id_hex)?)
-            .map_err(to_js_error)?;
-        self.mark_dirty();
-        Ok(())
     }
 
     #[wasm_bindgen(js_name = closeLobby)]

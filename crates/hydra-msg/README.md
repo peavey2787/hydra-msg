@@ -37,6 +37,19 @@ for packet in packets {
 
 For the full two-device explanation, see [How HYDRA messaging works](../../docs/impl/message-flow/README.md).
 
+## Session security cadence
+
+Every encrypted envelope advances a one-way ratchet and erases old message
+material. Apps that also want periodic fresh hybrid session material can set a
+per-contact interval or `HydraSessionSecurityPolicy`. For example,
+`set_session_refresh_interval(contact_id, 1)` permits one outbound logical
+message and then makes the next send return `SessionRefreshRequired` until the app completes
+`begin_session_refresh` / `reply_session_refresh` / `finish_session_refresh`
+over its carrier. This is an explicit peer round trip and conditional
+post-compromise recovery, not automatic healing during an ongoing endpoint
+compromise. Each peer configures and counts its own outbound direction
+independently.
+
 For runnable code, use:
 
 ```bash

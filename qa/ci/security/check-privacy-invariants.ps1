@@ -11,6 +11,8 @@ Set-Location $RepoRoot
 
 $HandshakeFile = "crates/hydra-msg/src/codec/handshake.rs"
 $HandshakeApiFile = "crates/hydra-msg/src/handshake/mod.rs"
+$SessionSecurityFile = "crates/hydra-msg/src/handshake/security.rs"
+$SessionSecurityTestsFile = "crates/hydra-msg/src/tests/session_security.rs"
 $StorageFile = "crates/hydra-msg/src/api/storage.rs"
 $StorageCodecFile = "crates/hydra-msg/src/codec/storage.rs"
 $EncryptedSnapshotFile = "crates/hydra-msg/src/persistence/encrypted_snapshot.rs"
@@ -28,7 +30,7 @@ $AuthFile = "crates/hydra-msg/src/api/anonymous_auth.rs"
 $AuthCodecFile = "crates/hydra-msg/src/codec/auth.rs"
 $AuthTestsFile = "crates/hydra-msg/src/tests/anonymous_auth.rs"
 
-if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile)) {
+if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile) -or !(Test-Path $SessionSecurityFile) -or !(Test-Path $SessionSecurityTestsFile)) {
     throw "hydra-msg handshake files missing"
 }
 if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $EncryptedSnapshotFile) -or !(Test-Path $SnapshotFile) -or !(Test-Path $IdentityCodecFile) -or !(Test-Path $KdfCodecFile) -or !(Test-Path $LibFile)) {
@@ -75,6 +77,24 @@ Assert-SourceText $HandshakeFile "HYDRA-MSG/facade-handshake/hybrid-secret" "dom
 Assert-SourceText $HandshakeApiFile "verify_answer_signature(&parsed_answer, &pending.offer)?" "initiator verifies answer signature against pending offer"
 Assert-SourceText $HandshakeApiFile "verify_answer_confirmation(" "initiator/responder verify derived hybrid material before session install"
 Assert-SourceText $HandshakeApiFile "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects answers from swapped identities"
+Assert-SourceText $SessionSecurityFile "pub fn set_session_refresh_interval" "direct per-contact fresh-session cadence setter"
+Assert-SourceText $SessionSecurityFile "HydraMsgError::SessionRefreshRequired" "fresh-session cadence fails closed before another send"
+Assert-SourceText $SessionSecurityFile "self.init_handshake_for(contact_id, HandshakePurpose::SessionRefresh)" "fresh-session cadence uses a purpose-bound authenticated hybrid handshake"
+Assert-SourceText $SessionSecurityFile "self.reply_handshake(offer)" "fresh-session responder uses the authenticated public handshake path"
+Assert-SourceText $SessionSecurityTestsFile "fn every_message_policy_blocks_the_next_send_until_refresh_completes" "one-message cadence regression coverage"
+Assert-SourceText $SessionSecurityTestsFile "fn lobby_send_counts_one_logical_message_per_recipient_session" "lobby cadence regression coverage"
+Assert-SourceText $SessionSecurityTestsFile "fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose" "initial and refresh finish APIs are purpose-bound"
+Assert-SourceText $SessionSecurityTestsFile "fn session_security_policy_snapshot_rejects_duplicates_zero_and_orphans" "session security policy snapshot validation"
+Assert-NoSourceText $HandshakeApiFile "pub fn rekey_session" "incomplete local-only session rekey API must not return"
+Assert-NoSourceText $LobbyFile "pub fn rekey_lobby" "misleading one-call lobby rekey API must not return"
+$legacyRekeyFiles = @(
+    Get-ChildItem "crates/hydra-msg/src", "crates/hydra-msg-wasm/src", "examples/hydra-gui/hydra-app/src", "examples/hydra-gui/hydra-app-core/src" -Recurse -File
+)
+$legacyRekeyMatches = Select-String -Path $legacyRekeyFiles.FullName -Pattern "rekey_session|rekeySession|rekey_lobby|rekeyLobby" -ErrorAction SilentlyContinue
+if ($legacyRekeyMatches) {
+    $legacyRekeyMatches | ForEach-Object { Write-Host $_ }
+    throw "incomplete or misleading legacy rekey API was reintroduced"
+}
 
 Assert-NoSourceText $HandshakeFile "derive_facade_handshake_material" "removed public transcript-only facade secret derivation helper"
 Assert-NoSourceText $HandshakeFile "public transcript" "facade secret must not be documented as public-transcript derived"

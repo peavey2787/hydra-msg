@@ -1,0 +1,336 @@
+name: Release validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      fuzz_runs:
+        description: Coverage-guided runs per fuzz target
+        required: true
+        default: "100000"
+        type: string
+      mutation_jobs:
+        description: Concurrent cargo-mutants jobs
+        required: true
+        default: "1"
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+
+jobs:
+  core:
+    name: Core workspace and examples
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup target add wasm32-unknown-unknown --toolchain stable
+          rustup default stable
+      - name: Install required QA tools
+        run: |
+          cargo install cargo-audit --locked
+          cargo install cargo-deny --locked
+          cargo install wasm-pack --locked
+      - name: Run core release gates
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/check-all.sh --through examples --skip-permissions 2>&1 \
+            | tee target/ci-logs/core.log
+      - name: Upload core evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: core-${{ github.sha }}
+          path: target/ci-logs/core.log
+          if-no-files-found: error
+          retention-days: 90
+
+  governance:
+    name: Governance and supply chain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install Rust stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Install supply-chain tools
+        run: |
+          cargo install cargo-audit --locked
+          cargo install cargo-deny --locked
+      - name: Run governance and supply-chain gates
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          {
+            ./qa/ci/security/check-supply-chain.sh
+            ./qa/ci/release/check-release-governance.sh
+            ./qa/ci/policy/check-locks.sh
+          } 2>&1 | tee target/ci-logs/governance.log
+      - name: Upload governance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: governance-${{ github.sha }}
+          path: target/ci-logs/governance.log
+          if-no-files-found: error
+          retention-days: 90
+
+  miri:
+    name: Miri
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup toolchain install nightly --profile minimal --component miri
+          rustup default stable
+      - name: Run Miri gate
+        env:
+          HYDRA_RUN_MIRI: "1"
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/reliability/check-memory-safety.sh 2>&1 | tee target/ci-logs/miri.log
+      - name: Upload Miri evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: miri-${{ github.sha }}
+          path: target/ci-logs/miri.log
+          if-no-files-found: error
+          retention-days: 90
+
+  sanitizers:
+    name: Address sanitizer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup toolchain install nightly --profile minimal --component rust-src
+          rustup target add x86_64-unknown-linux-gnu --toolchain nightly
+          rustup default stable
+      - name: Run sanitizer gate
+        env:
+          HYDRA_RUN_SANITIZERS: "1"
+          HYDRA_SANITIZER: address
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/reliability/check-memory-safety.sh 2>&1 | tee target/ci-logs/sanitizer-address.log
+      - name: Upload sanitizer evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sanitizer-address-${{ github.sha }}
+          path: target/ci-logs/sanitizer-address.log
+          if-no-files-found: error
+          retention-days: 90
+
+  browser:
+    name: Cross-browser lifecycle
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: qa/browser/playwright/package-lock.json
+      - name: Run browser evidence gate
+        env:
+          HYDRA_RUN_BROWSER_E2E: "1"
+          HYDRA_PLAYWRIGHT_INSTALL_DEPS: "1"
+          HYDRA_BROWSER_WORKERS: "1"
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/reliability/check-browser-e2e.sh 2>&1 | tee target/ci-logs/browser.log
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-${{ github.sha }}
+          path: |
+            target/ci-logs/browser.log
+            qa/browser/playwright/test-results/
+            qa/browser/playwright/playwright-report/
+          if-no-files-found: warn
+          retention-days: 90
+
+  coverage:
+    name: Branch coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup toolchain install nightly --profile minimal --component llvm-tools-preview
+          rustup default stable
+      - name: Install coverage tool
+        run: cargo install cargo-llvm-cov --locked
+      - name: Run coverage gate
+        env:
+          HYDRA_RUN_COVERAGE: "1"
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/quality/check-coverage.sh 2>&1 | tee target/ci-logs/coverage.log
+      - name: Upload coverage evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ github.sha }}
+          path: |
+            target/ci-logs/coverage.log
+            target/coverage/
+          if-no-files-found: warn
+          retention-days: 90
+
+  mutation:
+    name: Mutation testing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Install cargo-mutants
+        run: cargo install cargo-mutants --locked
+      - name: Run mutation gate
+        env:
+          HYDRA_RUN_MUTATION: "1"
+          HYDRA_MUTATION_JOBS: ${{ inputs.mutation_jobs || '1' }}
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/quality/check-mutation.sh 2>&1 | tee target/ci-logs/mutation.log
+      - name: Upload mutation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mutation-${{ github.sha }}
+          path: |
+            target/ci-logs/mutation.log
+            target/mutants/
+          if-no-files-found: warn
+          retention-days: 90
+
+  fuzz:
+    name: Coverage-guided fuzzing
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchains
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup toolchain install nightly --profile minimal
+          rustup default stable
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Run fuzz gate
+        env:
+          HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"
+          HYDRA_COVERAGE_FUZZ_RUNS: ${{ inputs.fuzz_runs || '100000' }}
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee target/ci-logs/fuzz.log
+      - name: Upload fuzz evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-${{ github.sha }}
+          path: |
+            target/ci-logs/fuzz.log
+            target/hydra-fuzz-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+
+  summary:
+    name: Release validation summary
+    if: always()
+    needs:
+      - core
+      - governance
+      - miri
+      - sanitizers
+      - browser
+      - coverage
+      - mutation
+      - fuzz
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Publish release validation summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF2
+          # HYDRA-MSG release validation
+
+          Commit: \`${{ github.sha }}\`
+
+          | Gate | Result |
+          |---|---|
+          | Core workspace and examples | ${{ needs.core.result }} |
+          | Governance and supply chain | ${{ needs.governance.result }} |
+          | Miri | ${{ needs.miri.result }} |
+          | Address sanitizer | ${{ needs.sanitizers.result }} |
+          | Cross-browser lifecycle | ${{ needs.browser.result }} |
+          | Branch coverage | ${{ needs.coverage.result }} |
+          | Mutation testing | ${{ needs.mutation.result }} |
+          | Coverage-guided fuzzing | ${{ needs.fuzz.result }} |
+
+          Complete console logs and generated diagnostics are attached to this workflow run as commit-named artifacts.
+          EOF2

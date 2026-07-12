@@ -226,6 +226,7 @@ impl Hydra {
             contacts: HashMap::new(),
             pending_offers: HashMap::new(),
             sessions: HashMap::new(),
+            session_security_policies: HashMap::new(),
             receive_routes: HashMap::new(),
             session_route_tags: HashMap::new(),
             messages: Vec::new(),

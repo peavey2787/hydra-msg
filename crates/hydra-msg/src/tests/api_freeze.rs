@@ -299,7 +299,11 @@ fn lobby_backup_storage_and_benchmark_surface_exists() {
     assert_eq!(joined.id(), lobby.id());
     assert_eq!(hydra.list_lobbies().len(), 1);
     assert!(hydra.lobby_members(lobby.id()).unwrap().is_empty());
-    hydra.rekey_lobby(lobby.id()).unwrap();
+    assert_eq!(
+        HydraSessionSecurityPolicy::fresh_session_every_message()
+            .max_outbound_messages_per_session(),
+        Some(1)
+    );
     let backup = hydra.export_backup("pw").unwrap();
     hydra.verify_backup(&backup, "pw").unwrap();
     hydra.import_backup(&backup, "pw").unwrap();

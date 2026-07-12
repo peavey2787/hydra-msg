@@ -112,9 +112,10 @@ The reported data supports these conclusions:
 1. The normal 1 KiB message path is fast on desktop, laptop, modern mobile, and even a BLU M8L (Original).
 2. The current manual release-candidate spot checks show about `17 ms` average browser/WASM handshake on a Samsung Galaxy device and about `10 ms` average browser/WASM handshake on an ASUS TUF A16 laptop.
 3. The measured browser and native/server send+receive path is sub-millisecond for 1 KiB messages on modern hardware.
-4. The BLU M8L (Original) is still usable for message send/receive, but full handshakes are visibly heavier and should remain session setup/rekey events, not per-message work.
-5. The larger-message result suggests payload sizes around 64 KiB remain practical, but padding/envelope expansion and sustained thermal behavior should be remeasured for any release that makes performance claims around larger payloads.
-6. The likely bottlenecks for a real app are carrier setup, WebRTC negotiation/reconnect, storage writes, UI rendering, network latency, background mobile behavior, and optional relay/mailbox behavior — not HYDRA message encryption itself.
+4. The BLU M8L (Original) is still usable for message send/receive, but full authenticated hybrid handshakes are visibly heavier. Ratchet-only or periodic fresh-session policies are therefore the practical choices; the one-message interval is an explicit high-cost policy that performs fresh-session work between logical sends.
+5. The handshake timing is only a computational reference for fresh-session replacement. It does not include carrier round-trip latency, app scheduling, durable flushes, or an attacker-recovery guarantee, so it must not be presented as a fixed per-message PFS benchmark.
+6. The larger-message result suggests payload sizes around 64 KiB remain practical, but padding/envelope expansion and sustained thermal behavior should be remeasured for any release that makes performance claims around larger payloads.
+7. The likely bottlenecks for a real app are carrier setup, WebRTC negotiation/reconnect, storage writes, UI rendering, network latency, background mobile behavior, and optional relay/mailbox behavior — not HYDRA message encryption itself.
 
 ## Release language
 

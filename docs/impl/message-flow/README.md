@@ -85,6 +85,23 @@ Internally, the clean model is still:
 peer key material -> contact record -> session -> encrypted packet
 ```
 
+## What does the fresh-session interval do?
+
+Every encrypted envelope already advances a one-way symmetric ratchet, so
+erased past message keys are not recovered from a later chain-state compromise.
+An app can additionally call `set_session_refresh_interval(contact_id, n)` to
+limit how many outbound logical messages use one authenticated hybrid session.
+At the limit, `send()` fails with `SessionRefreshRequired` before producing
+another application message.
+
+Interval `1` means one logical outbound message per fresh session. It still
+requires the app carrier to move `begin_session_refresh`,
+`reply_session_refresh`, and `finish_session_refresh` bytes between the peers.
+It is therefore slower and interactive. Each endpoint applies the cadence to
+its own outbound direction, so both peers configure it when the app wants the
+same bound in both directions. It does not claim instant healing, protection
+while an attacker remains inside an endpoint, or zero metadata exposure.
+
 ## Can an app support anonymous chats?
 
 Yes, but the normal HYDRA message path is still key/session based. The receiver needs peer key material and an active session to decrypt. The app decides whether that key material is a long-lived identity, a one-time identity, a lobby-specific identity, or a credential-backed identity.

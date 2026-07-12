@@ -24,6 +24,7 @@ impl Hydra {
         message: impl Into<HydraMessage>,
     ) -> HydraResult<Vec<HydraEnvelope>> {
         self.active_unlocked_record()?;
+        self.reject_send_when_refresh_required(contact_id)?;
         let message = message.into();
         let payload = pack_message(&message)?;
         self.ensure_message_capacity(contact_id, payload.len())?;
@@ -33,6 +34,7 @@ impl Hydra {
         }
         self.store_message(contact_id, false, message.plaintext, message.attachments)?;
         self.persist()?;
+        self.record_outbound_application_message(contact_id)?;
         Ok(packets)
     }
 

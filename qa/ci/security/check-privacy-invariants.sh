@@ -6,6 +6,8 @@ hydra_enter_repo_root
 
 handshake_file="crates/hydra-msg/src/codec/handshake.rs"
 handshake_api_file="crates/hydra-msg/src/handshake/mod.rs"
+session_security_file="crates/hydra-msg/src/handshake/security.rs"
+session_security_tests_file="crates/hydra-msg/src/tests/session_security.rs"
 storage_file="crates/hydra-msg/src/api/storage.rs"
 storage_codec_file="crates/hydra-msg/src/codec/storage.rs"
 encrypted_snapshot_file="crates/hydra-msg/src/persistence/encrypted_snapshot.rs"
@@ -23,7 +25,7 @@ auth_file="crates/hydra-msg/src/api/anonymous_auth.rs"
 auth_codec_file="crates/hydra-msg/src/codec/auth.rs"
 auth_tests_file="crates/hydra-msg/src/tests/anonymous_auth.rs"
 
-if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ]; then
+if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ] || [ ! -f "$session_security_file" ] || [ ! -f "$session_security_tests_file" ]; then
   echo "hydra-msg handshake files missing" >&2
   exit 1
 fi
@@ -74,6 +76,21 @@ require_source_text "$handshake_file" "HYDRA-MSG/facade-handshake/hybrid-secret"
 require_source_text "$handshake_api_file" "verify_answer_signature(&parsed_answer, &pending.offer)?" "initiator verifies answer signature against pending offer"
 require_source_text "$handshake_api_file" "verify_answer_confirmation(" "initiator/responder verify derived hybrid material before session install"
 require_source_text "$handshake_api_file" "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects answers from swapped identities"
+require_source_text "$session_security_file" "pub fn set_session_refresh_interval" "direct per-contact fresh-session cadence setter"
+require_source_text "$session_security_file" "HydraMsgError::SessionRefreshRequired" "fresh-session cadence fails closed before another send"
+require_source_text "$session_security_file" "self.init_handshake_for(contact_id, HandshakePurpose::SessionRefresh)" "fresh-session cadence uses a purpose-bound authenticated hybrid handshake"
+require_source_text "$session_security_file" "self.reply_handshake(offer)" "fresh-session responder uses the authenticated public handshake path"
+require_source_text "$session_security_tests_file" "fn every_message_policy_blocks_the_next_send_until_refresh_completes" "one-message cadence regression coverage"
+require_source_text "$session_security_tests_file" "fn lobby_send_counts_one_logical_message_per_recipient_session" "lobby cadence regression coverage"
+require_source_text "$session_security_tests_file" "fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose" "initial and refresh finish APIs are purpose-bound"
+require_source_text "$session_security_tests_file" "fn session_security_policy_snapshot_rejects_duplicates_zero_and_orphans" "session security policy snapshot validation"
+forbidden_source_text "$handshake_api_file" "pub fn rekey_session" "incomplete local-only session rekey API must not return"
+forbidden_source_text "$lobby_file" "pub fn rekey_lobby" "misleading one-call lobby rekey API must not return"
+if grep -RInE 'rekey_session|rekeySession|rekey_lobby|rekeyLobby' \
+  crates/hydra-msg/src crates/hydra-msg-wasm/src examples/hydra-gui/hydra-app/src examples/hydra-gui/hydra-app-core/src; then
+  echo "incomplete or misleading legacy rekey API was reintroduced" >&2
+  exit 1
+fi
 
 forbidden_source_text "$handshake_file" "derive_facade_handshake_material" "removed public transcript-only facade secret derivation helper"
 forbidden_source_text "$handshake_file" "public transcript" "facade secret must not be documented as public-transcript derived"

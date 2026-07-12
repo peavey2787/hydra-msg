@@ -141,7 +141,7 @@ fn lobby_packet_for_unknown_lobby_is_rejected_after_valid_transport_open() {
 }
 
 #[test]
-fn old_direct_packet_after_rekey_is_rejected() {
+fn old_direct_packet_after_fresh_session_is_rejected() {
     let mut alice = unlocked("target/hydra-msg-test-adversarial-old-after-rekey-alice");
     let mut bob = unlocked("target/hydra-msg-test-adversarial-old-after-rekey-bob");
     let (alice_contact, bob_contact) = connect(&mut alice, &mut bob);
@@ -150,7 +150,9 @@ fn old_direct_packet_after_rekey_is_rejected() {
         .unwrap()
         .remove(0);
     bob.receive(packet.clone()).unwrap();
-    alice.rekey_session(bob_contact).unwrap();
+    let offer = alice.begin_session_refresh(bob_contact).unwrap();
+    let answer = bob.reply_session_refresh(offer).unwrap();
+    alice.finish_session_refresh(answer).unwrap();
 
     assert!(bob.receive(packet).is_err());
     assert_eq!(bob.list_messages(alice_contact).len(), 1);

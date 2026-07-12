@@ -2,7 +2,7 @@
 
 mod common;
 
-use hydra_msg::{Hydra, HydraMessage};
+use hydra_msg::HydraMessage;
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {

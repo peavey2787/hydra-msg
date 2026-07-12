@@ -204,12 +204,10 @@ Do not add separate `trust_contact` / `untrust_contact` methods unless they beco
 
 ```rust
 let offer = hydra.init_handshake(contact_id)?;
-let answer = hydra.reply_handshake(offer)?;
+let answer = peer.reply_handshake(offer)?;
 hydra.finish_handshake(answer)?;
 
-hydra.session_status(contact_id)
-hydra.rekey_session(contact_id)
-hydra.close_session(contact_id)
+hydra.session_status(contact_id)?;
 ```
 
 Public rule:
@@ -222,7 +220,63 @@ finish_handshake(answer) verifies the signed answer and creates/activates the in
 
 The facade handshake is an authenticated hybrid exchange. The offer carries the initiator identity verification key, an ML-DSA signature, an ephemeral X25519 public key, and an ephemeral ML-KEM-768 encapsulation key. The answer carries the responder identity verification key, an ML-DSA signature bound to the offer, an ephemeral X25519 public key, an ML-KEM-768 ciphertext, and a confirmation tag. The session secret is derived from the X25519 shared secret, the ML-KEM shared secret, and the signed transcript; the confirmation tag proves both sides derived the same answer transcript secret before the initiator installs the session.
 
-After the handshake flow completes, the contact is ready for message delivery. App developers must not manually create sessions or manage fragment records. Carriers can see handshake bytes and timing/routing metadata, but they do not receive the session secret.
+After the handshake completes, each encrypted envelope advances a one-way symmetric chain and erases old message material. This protects erased past message keys; it does not by itself recover future secrecy after a current endpoint/session-state compromise.
+
+### Fresh-session cadence
+
+Apps can require a new authenticated hybrid session after a chosen number of outbound logical application messages. The direct interval setter is the smallest configuration surface:
+
+```rust
+// One logical outbound message per fresh authenticated session.
+hydra.set_session_refresh_interval(contact_id, 1)?;
+
+// Refresh after 50 logical outbound messages.
+hydra.set_session_refresh_interval(contact_id, 50)?;
+
+// Zero restores the default ratchet-only mode.
+hydra.set_session_refresh_interval(contact_id, 0)?;
+```
+
+Named policies remain available when an app wants self-documenting profiles:
+
+```rust
+use hydra_msg::HydraSessionSecurityPolicy;
+
+hydra.set_session_security_policy(
+    contact_id,
+    HydraSessionSecurityPolicy::every_messages(50)?,
+)?;
+
+hydra.set_session_security_policy(
+    contact_id,
+    HydraSessionSecurityPolicy::fresh_session_every_message(),
+)?;
+
+let custom = HydraSessionSecurityPolicy::every_messages(10)?;
+hydra.set_session_security_policy(contact_id, custom)?;
+```
+
+When the configured limit is reached, `send()` and `send_lobby()` fail with `HydraMsgError::SessionRefreshRequired` before creating another logical message. The app then transports an explicit replacement handshake:
+
+```rust
+let offer = hydra.begin_session_refresh(contact_id)?;
+carrier.send_to_peer(offer.as_bytes())?;
+
+let answer = peer.reply_session_refresh(offer)?;
+carrier.send_to_initiator(answer.as_bytes())?;
+
+hydra.finish_session_refresh(answer)?;
+```
+
+The app should pause application sends during this offer/answer exchange. The SDK cannot transparently complete an interactive peer round trip inside a local `send()` call. Locally pending standard-handshake and session-refresh offers are purpose-bound, so `finish_handshake()` and `finish_session_refresh()` reject answers created for the other local flow.
+
+Setting the interval to `1` means the SDK permits one outbound logical message and then requires a successfully completed fresh authenticated hybrid handshake before the next send. It does **not** mean zero exposure during a live endpoint compromise, automatic healing while an attacker remains present, or an instantaneous refresh without carrier traffic. Recovery is conditional on attacker access having ended, honest erasure, authenticated peer identity, and at least one fresh hybrid component remaining unknown to the attacker. The policy is directional: each endpoint counts only its own outbound logical messages, so both peers must configure the desired cadence when the app wants the same bound in both directions.
+
+`session_security_status(contact_id)` reports the configured limit, the logical outbound-message count in the current session, remaining messages, and whether a refresh is required. Policies are encrypted persistent state. Session keys and their current counters remain live session state and are not exported as durable session secrets.
+
+For fragmented direct messages, one call to `send()` counts as one logical application message. For lobbies, one call to `send_lobby()` counts once against each recipient's pairwise session. Lobbies therefore refresh the underlying contact sessions individually; there is no misleading one-call `rekey_lobby()` shortcut.
+
+Carriers can see handshake bytes and timing/routing metadata, but they do not receive the session secret. App developers must not manually create sessions, chain keys, or fragment records.
 
 ## Messages, payloads, and attachments
 
@@ -362,7 +416,6 @@ if let Some(data) = hydra.receive_lobby(packet)? {
     println!("{}", data.text()?);
 }
 
-hydra.rekey_lobby(lobby_id)
 hydra.close_lobby(lobby_id)
 ```
 
@@ -495,7 +548,14 @@ hydra.init_handshake(contact_id)
 hydra.reply_handshake(offer)
 hydra.finish_handshake(answer)
 hydra.session_status(contact_id)
-hydra.rekey_session(contact_id)
+hydra.set_session_refresh_interval(contact_id, messages)
+hydra.set_session_security_policy(contact_id, policy)
+hydra.clear_session_security_policy(contact_id)
+hydra.session_security_policy(contact_id)
+hydra.session_security_status(contact_id)
+hydra.begin_session_refresh(contact_id)
+hydra.reply_session_refresh(offer)
+hydra.finish_session_refresh(answer)
 hydra.close_session(contact_id)
 
 // Messaging
@@ -526,7 +586,6 @@ hydra.add_lobby_member(lobby_id, contact_id)
 hydra.remove_lobby_member(lobby_id, contact_id)
 hydra.send_lobby(lobby_id, message)
 hydra.receive_lobby(packet)
-hydra.rekey_lobby(lobby_id)
 hydra.close_lobby(lobby_id)
 
 // Anonymous authorization
@@ -722,7 +781,7 @@ answer confirmation
 session creation/loading/saving/deletion
 send-state advancement
 receive-state advancement
-rekey/close operations
+fresh-session cadence, replacement-handshake, and close operations
 replay checks
 skipped-key storage and consumption
 receive route-tag indexing

@@ -1,5 +1,7 @@
 # HYDRA-MSG
 
+[![CI](https://github.com/peavey2787/hydra-msg/actions/workflows/ci.yml/badge.svg)](https://github.com/peavey2787/hydra-msg/actions/workflows/ci.yml)
+
 HYDRA-MSG is a Rust/WASM encrypted messaging SDK for app developers.
 
 It gives apps a small public API for identities, contacts, handshakes, encrypted messages, attachments, small lobbies, anonymous authorization tokens, encrypted local state, and encrypted backups.
@@ -28,6 +30,8 @@ A normal HYDRA message is key/session based: the receiver needs peer key materia
 Current storage boundary: normal Native/CLI local state is always opened with a state password and sealed into `state.hydra`. Browser/WASM apps that need durable state use IndexedDB through `WasmHydra.openPersistent(name, password)` and explicitly commit changes with `await hydra.flush()`; tests and benchmarks can choose `WasmHydra.openEphemeral(name, password)` for in-memory state. State passwords, backup passwords, and identity seed passwords use per-record scrypt parameters and random salts before AEAD wrapping. Current contact cards expose only the public verification key by default; labeled cards are explicit. Current lobby invites expose the lobby id and max-member policy by default; labels and member lists are explicit. Current anonymous authorization is a one-time bearer-token stopgap for scope/action checks, separate from contact identity and not a blind-credential system.
 
 Transport sizing boundary: apps configure only `hydra.set_packet_size(bytes)`. HYDRA then picks the largest padded packet class that fits, splits larger messages internally, and returns one or more opaque HYDRA packets from `send()`. App code sends every returned packet and feeds each incoming packet to `receive()`; it never sees fragment ids, part counts, chunk records, or session internals.
+
+Session-security boundary: every encrypted envelope advances a one-way ratchet that protects erased past message material. Apps can optionally set a per-contact fresh-session cadence. An interval of one permits one outbound logical message, then blocks the next send until the app carries a fresh authenticated hybrid handshake with the peer. This bounds use of one session but does not claim zero exposure during a live endpoint compromise or automatic post-compromise healing.
 
 For the detailed flow, see [How HYDRA messaging works](docs/impl/message-flow/README.md).
 

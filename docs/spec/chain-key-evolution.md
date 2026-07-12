@@ -196,7 +196,22 @@ Therefore:
 The protocol does not use “perfect forward secrecy” without these
 qualifications.
 
+The public `hydra-msg` facade exposes a persisted send-side cadence through
+`HydraSessionSecurityPolicy`. A finite interval does not alter the symmetric
+ratchet; it makes the SDK stop further application sends after the configured
+number of logical messages until the app transports and completes a fresh
+identity-authenticated X25519+ML-KEM handshake. Interval `1` therefore means
+one logical message per fresh session, not automatic zero-window recovery.
+
 ## 8. Refresh state swap
+
+This section specifies the lower-level confirmed in-session refresh state
+machine. The current public `hydra-msg` cadence uses a complete fresh
+identity-authenticated hybrid handshake as its exposed replacement flow; it
+does not yet expose the lower-level `REFRESH_INIT` / `REFRESH_RESP` /
+`REFRESH_FINISH` exchange directly to apps. Both approaches require carrier
+traffic and fresh peer contributions. Documentation and benchmarks must not
+conflate the public full-session replacement with a transparent local rekey.
 
 A successful refresh derives a new refresh root, session identifier, and two
 fresh direction chains. The refresh transaction commits only after both parties'

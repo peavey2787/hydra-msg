@@ -17,6 +17,7 @@ This directory contains long-lived validation policy, evidence, and release-gove
 ## Validation gates
 
 - [Production QA gate](gates/production-qa-gate.md)
+- [GitHub Actions validation](gates/github-actions.md)
 - [Browser lifecycle E2E](gates/browser-lifecycle-e2e.md)
 - [Miri, sanitizer, and fault-injection gate](gates/miri-sanitizer-fault-injection.md)
 - [Coverage-guided fuzzing](gates/coverage-guided-fuzzing.md)

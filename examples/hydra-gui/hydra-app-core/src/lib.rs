@@ -17,7 +17,8 @@ pub use carrier::{CarrierConfig, CarrierKind};
 pub use hydra_msg::{
     ContactId, HydraContact, HydraIdentitySummary, HydraLobby, HydraLobbyPolicy,
     HydraLobbyRoutingHint, HydraMessage, HydraMsgError, HydraOneTimeContactCard, HydraResult,
-    HydraSessionStatus, HydraStorageDebugStatus, HydraStorageStatus, IdentityId, LobbyId,
+    HydraSessionSecurityPolicy, HydraSessionSecurityStatus, HydraSessionStatus,
+    HydraStorageDebugStatus, HydraStorageStatus, IdentityId, LobbyId,
     MessageId, ReceivedHydraMessage,
 };
 pub use ui::{

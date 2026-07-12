@@ -55,7 +55,10 @@ pub use anonymous_auth::{
 };
 pub use benchmark::HydraBenchmarkReport;
 pub use contacts::{ContactId, HydraContact, HydraOneTimeContactCard};
-pub use handshake::{HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionStatus};
+pub use handshake::{
+    HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionSecurityPolicy,
+    HydraSessionSecurityStatus, HydraSessionStatus,
+};
 pub use identity::{HydraIdentitySummary, IdentityId};
 pub use lobbies::{
     HydraLobby, HydraLobbyInvite, HydraLobbyPolicy, HydraOneTimeLobbyInvite, LobbyId,
@@ -104,6 +107,7 @@ pub enum HydraMsgError {
     IdentityNotFound,
     ContactNotFound,
     SessionNotFound,
+    SessionRefreshRequired,
     LobbyNotFound,
     MessageNotFound,
     Unsupported(&'static str),
@@ -147,6 +151,7 @@ pub struct Hydra {
     pub(crate) contacts: HashMap<ContactId, HydraContact>,
     pub(crate) pending_offers: HashMap<[u8; 32], PendingOffer>,
     pub(crate) sessions: HashMap<ContactId, SessionRecord>,
+    pub(crate) session_security_policies: HashMap<ContactId, HydraSessionSecurityPolicy>,
     pub(crate) receive_routes: HashMap<[u8; 16], Vec<ContactId>>,
     pub(crate) session_route_tags: HashMap<ContactId, Vec<[u8; 16]>>,
     pub(crate) messages: Vec<StoredMessage>,
@@ -202,6 +207,9 @@ mod native_concurrency_tests;
 #[cfg(test)]
 #[path = "tests/public_api_misuse.rs"]
 mod public_api_misuse_tests;
+#[cfg(test)]
+#[path = "tests/session_security.rs"]
+mod session_security_tests;
 #[cfg(test)]
 #[path = "tests/storage_chunks.rs"]
 mod storage_chunk_tests;

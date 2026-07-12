@@ -65,6 +65,13 @@ Future-secrecy recovery requires attacker loss of endpoint access, trustworthy
 identity keys, and at least one unknown fresh hybrid component. An active
 attacker can block recovery.
 
+The public SDK's `HydraSessionSecurityPolicy` can bound the number of outbound
+logical application messages before it refuses another send and requires a
+fresh authenticated hybrid session. This is an enforcement cadence, not a
+claim of transparent continuous post-compromise security. The app must carry
+the replacement offer and answer, and recovery remains conditional on the
+assumptions above.
+
 ## 5. Group authentication
 
 All group recipients possess traffic material and can construct AEAD-valid

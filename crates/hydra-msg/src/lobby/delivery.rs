@@ -14,10 +14,11 @@ impl Hydra {
     ) -> HydraResult<Vec<HydraLobbyEnvelope>> {
         self.active_unlocked_record()?;
         let lobby = self.get_lobby(lobby_id)?;
-        if lobby.members.is_empty() {
+        let members = lobby.members;
+        if members.is_empty() {
             return Err(HydraMsgError::InvalidInput("lobby has no members"));
         }
-        for member in &lobby.members {
+        for member in &members {
             let contact = self.require_contact(*member)?;
             if contact.blocked {
                 return Err(HydraMsgError::InvalidInput("lobby member is blocked"));
@@ -29,13 +30,13 @@ impl Hydra {
             {
                 return Err(HydraMsgError::SessionNotFound);
             }
+            self.reject_send_when_refresh_required(*member)?;
         }
         let message = message.into();
         let packed_message = pack_message(&message)?;
         let lobby_payload = pack_lobby_payload(lobby_id, &packed_message)?;
         let payloads = self.payloads_for_packets(FragmentScope::Lobby(lobby_id), &lobby_payload)?;
-        let packet_count = lobby
-            .members
+        let packet_count = members
             .len()
             .checked_mul(payloads.len())
             .ok_or(HydraMsgError::InvalidInput("lobby outbound packet count"))?;
@@ -54,17 +55,20 @@ impl Hydra {
             ));
         }
         let mut envelopes = Vec::with_capacity(packet_count);
-        for member in lobby.members {
+        for member in &members {
             for payload in &payloads {
                 let routing_hint = HydraLobbyRoutingHint::from_bytes(random_array::<32>()?);
                 envelopes.push(HydraLobbyEnvelope {
-                    recipient: member,
+                    recipient: *member,
                     routing_hint,
-                    envelope: self.seal_payload_for_contact(member, payload)?,
+                    envelope: self.seal_payload_for_contact(*member, payload)?,
                 });
             }
         }
         self.persist()?;
+        for member in members {
+            self.record_outbound_application_message(member)?;
+        }
         Ok(envelopes)
     }
 

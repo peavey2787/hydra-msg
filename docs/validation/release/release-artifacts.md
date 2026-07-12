@@ -53,6 +53,12 @@ A production release should publish the following artifacts when applicable:
 
 Examples and QA-only packages are not production runtime artifacts unless a release explicitly says otherwise.
 
+GitHub-hosted validation logs and generated diagnostics are uploaded by
+`.github/workflows/release-validation.yml` under commit-specific artifact
+names. Those workflow artifacts provide independently executed evidence for the
+exact commit, but they are not checked into Git and are not substitutes for the
+signed release checksum set when a version is published.
+
 ## Hash publication
 
 Every published artifact must appear in the checksum file:

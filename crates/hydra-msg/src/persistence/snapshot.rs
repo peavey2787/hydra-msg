@@ -8,7 +8,8 @@ use crate::{
         MAX_ANONYMOUS_AUTH_SPENT, MAX_CONTACTS, MAX_IDENTITIES, MAX_LOBBIES, MAX_MESSAGES,
         MAX_MESSAGES_PER_CONTACT, MAX_STORED_MESSAGE_BYTES, MAX_STORED_MESSAGE_BYTES_PER_CONTACT,
     },
-    Hydra, HydraMsgError, HydraResult, STATE_SNAPSHOT_MAGIC,
+    ContactId, Hydra, HydraMsgError, HydraResult, HydraSessionSecurityPolicy,
+    STATE_SNAPSHOT_MAGIC,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -87,6 +88,16 @@ impl Hydra {
         for contact in self.contacts.values() {
             append_snapshot_line(&mut out, &encode_contact_line(contact))?;
         }
+        for (contact_id, policy) in &self.session_security_policies {
+            append_snapshot_line(
+                &mut out,
+                &format!(
+                    "session_security_policy\t{}\t{}",
+                    contact_id.hex(),
+                    policy.snapshot_value()
+                ),
+            )?;
+        }
         for message in &self.messages {
             append_snapshot_line(&mut out, &encode_message_line(message))?;
         }
@@ -103,6 +114,7 @@ impl Hydra {
         let mut saw_anonymous_auth_secret = false;
         let mut identity_ids = HashSet::new();
         let mut contact_ids = HashSet::new();
+        let mut session_security_policy_ids = HashSet::new();
         let mut message_ids = HashSet::new();
         let mut lobby_ids = HashSet::new();
         let mut anonymous_auth_spent = HashSet::new();
@@ -182,6 +194,31 @@ impl Hydra {
                         "state contact duplicate",
                     )?;
                 }
+                Some("session_security_policy") => {
+                    reject_collection_limit(
+                        session_security_policy_ids.len(),
+                        MAX_CONTACTS,
+                        "state session security policy count",
+                    )?;
+                    let contact_hex = required_snapshot_value(
+                        parts.next(),
+                        "state session security policy contact",
+                    )?;
+                    let policy_value = required_snapshot_value(
+                        parts.next(),
+                        "state session security policy value",
+                    )?;
+                    reject_extra_snapshot_fields(
+                        parts.next(),
+                        "state session security policy",
+                    )?;
+                    let contact_id = ContactId::from_hex(contact_hex)?;
+                    let _ = HydraSessionSecurityPolicy::from_snapshot_value(policy_value)?;
+                    reject_duplicate_collection_record(
+                        session_security_policy_ids.insert(contact_id),
+                        "state session security policy duplicate",
+                    )?;
+                }
                 Some("message") => {
                     reject_collection_limit(
                         message_ids.len(),
@@ -234,6 +271,14 @@ impl Hydra {
                 _ => return Err(HydraMsgError::InvalidEncoding("state record kind")),
             }
         }
+        if session_security_policy_ids
+            .iter()
+            .any(|contact_id| !contact_ids.contains(contact_id))
+        {
+            return Err(HydraMsgError::InvalidEncoding(
+                "state session security policy contact",
+            ));
+        }
         if !saw_state_generation {
             return Err(HydraMsgError::InvalidEncoding("state generation"));
         }
@@ -254,6 +299,7 @@ impl Hydra {
         self.identities.clear();
         self.active_id = None;
         self.contacts.clear();
+        self.session_security_policies.clear();
         self.pending_offers.clear();
         self.sessions.clear();
         self.receive_routes.clear();
@@ -304,6 +350,19 @@ impl Hydra {
                 Some("contact") => {
                     let contact = decode_contact_line(line)?;
                     self.contacts.insert(contact.id, contact);
+                }
+                Some("session_security_policy") => {
+                    let contact_hex = required_snapshot_value(
+                        parts.next(),
+                        "state session security policy contact",
+                    )?;
+                    let policy_value = required_snapshot_value(
+                        parts.next(),
+                        "state session security policy value",
+                    )?;
+                    let contact_id = ContactId::from_hex(contact_hex)?;
+                    let policy = HydraSessionSecurityPolicy::from_snapshot_value(policy_value)?;
+                    self.session_security_policies.insert(contact_id, policy);
                 }
                 Some("message") => {
                     let message = decode_message_line(line)?;

@@ -60,7 +60,11 @@ fn exercise_hydra_state_transitions(index: usize, bytes: &[u8]) {
         }
     }
 
-    let _ = alice.rekey_session(bob_contact);
+    if let Ok(offer) = alice.begin_session_refresh(bob_contact) {
+        if let Ok(answer) = bob.reply_session_refresh(offer) {
+            let _ = alice.finish_session_refresh(answer);
+        }
+    }
     let _ = alice.close_session(bob_contact);
     let _ = std::fs::remove_dir_all(&base);
 }

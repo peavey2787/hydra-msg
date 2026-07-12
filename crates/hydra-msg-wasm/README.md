@@ -66,6 +66,30 @@ for (const packet of packets) {
 }
 ```
 
+## Optional fresh-session cadence
+
+Browser apps can require a fresh authenticated hybrid session after a chosen
+number of outbound logical messages. Setting the interval to `1` is the
+strongest built-in cadence; setting it to `0` restores ratchet-only mode:
+
+```javascript
+hydra.setSessionRefreshInterval(contactId, 1);
+
+const status = JSON.parse(hydra.sessionSecurityStatus(contactId));
+if (status.refresh_required) {
+  const refreshOffer = hydra.beginSessionRefresh(contactId);
+  appSendToPeer(refreshOffer);
+
+  const refreshAnswer = await appWaitForPeerRefreshAnswer();
+  hydra.finishSessionRefresh(refreshAnswer);
+}
+```
+
+The peer answers with `replySessionRefresh(offer)`. This is an interactive
+carrier round trip, not a local toggle that can transparently heal a live
+compromise. Apps must pause application sends for that contact until both sides
+have completed the replacement handshake.
+
 `openPersistent(name, password)` loads and saves opaque authenticated-encrypted HYDRA chunked state containers in IndexedDB. The JavaScript adapter does not parse identities, contacts, messages, lobbies, attachments, KDF records, or plaintext state records.
 
 `flush()` is the final durable-write boundary for the WASM API. Mutating methods update in-memory HYDRA state synchronously and mark the wrapper dirty; browser apps must call `await hydra.flush()` at transaction boundaries to commit the newest encrypted chunked state container to IndexedDB. This avoids converting every mutating method into an async IndexedDB write and keeps batch updates efficient.

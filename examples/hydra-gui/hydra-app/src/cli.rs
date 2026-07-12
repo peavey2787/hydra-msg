@@ -1,5 +1,8 @@
 use crate::{gui, text::hex_encode};
-use hydra_app_core::{ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, IdentityId, LobbyId};
+use hydra_app_core::{
+    ContactId, HydraApp, HydraLobbyPolicy, HydraMessage, HydraSessionSecurityPolicy, IdentityId,
+    LobbyId,
+};
 use std::{
     env,
     error::Error,
@@ -218,6 +221,42 @@ fn handshake(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
             )?;
         }
         "finish" => app.finish_handshake(fs::read(required(args, 1, "answer path")?)?)?,
+        "policy" => {
+            let id = ContactId::from_hex(required(args, 1, "contact id")?)?;
+            let value = required(args, 2, "ratchet, periodic-50, every-message, or interval")?;
+            app.set_session_security_policy(id, session_security_policy(value)?)?;
+        }
+        "security-status" => {
+            let id = ContactId::from_hex(required(args, 1, "contact id")?)?;
+            let status = app.session_security_status(id)?;
+            println!(
+                "limit={:?}",
+                status.policy().max_outbound_messages_per_session()
+            );
+            println!(
+                "outbound_messages_in_session={}",
+                status.outbound_messages_in_session()
+            );
+            println!("remaining_messages={:?}", status.remaining_messages());
+            println!("refresh_required={}", status.refresh_required());
+        }
+        "refresh-offer" => {
+            let id = ContactId::from_hex(required(args, 1, "contact id")?)?;
+            fs::write(
+                required(args, 2, "offer path")?,
+                app.session_refresh_offer(id)?,
+            )?;
+        }
+        "refresh-answer" => {
+            let offer = fs::read(required(args, 1, "offer path")?)?;
+            fs::write(
+                required(args, 2, "answer path")?,
+                app.session_refresh_answer(offer)?,
+            )?;
+        }
+        "refresh-finish" => {
+            app.finish_session_refresh(fs::read(required(args, 1, "answer path")?)?)?;
+        }
         action => {
             return Err(Box::new(CliError(format!(
                 "unknown handshake action: {action}"
@@ -225,6 +264,25 @@ fn handshake(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
         }
     }
     Ok(())
+}
+
+fn session_security_policy(value: &str) -> CliResult<HydraSessionSecurityPolicy> {
+    match value {
+        "ratchet" | "ratchet-only" | "0" => Ok(HydraSessionSecurityPolicy::ratchet_only()),
+        "periodic-50" => HydraSessionSecurityPolicy::every_messages(50)
+            .map_err(|error| Box::new(error) as Box<dyn Error>),
+        "every-message" | "1" => Ok(HydraSessionSecurityPolicy::fresh_session_every_message()),
+        interval => {
+            let messages = interval.parse::<u64>().map_err(|_| {
+                Box::new(CliError(
+                    "session refresh interval must be ratchet, periodic-50, every-message, or a positive integer"
+                        .to_owned(),
+                )) as Box<dyn Error>
+            })?;
+            HydraSessionSecurityPolicy::every_messages(messages)
+                .map_err(|error| Box::new(error) as Box<dyn Error>)
+        }
+    }
 }
 
 fn messages(app: &mut HydraApp, args: &[String]) -> CliResult<()> {
@@ -425,6 +483,11 @@ Commands:
   handshake offer <contact-id> <output>
   handshake answer <offer> <output>
   handshake finish <answer>
+  handshake policy <contact-id> <ratchet|periodic-50|every-message|interval>
+  handshake security-status <contact-id>
+  handshake refresh-offer <contact-id> <output>
+  handshake refresh-answer <offer> <output>
+  handshake refresh-finish <answer>
 
   messages send <contact-id> <text> <output-prefix>
   messages receive <packet>

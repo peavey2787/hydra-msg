@@ -94,6 +94,13 @@ pub enum HydraSessionStatus {
 pub(crate) struct SessionRecord {
     pub(crate) state: SessionState,
     pub(crate) closed: bool,
+    pub(crate) outbound_messages: u64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum HandshakePurpose {
+    Standard,
+    SessionRefresh,
 }
 
 pub(crate) struct PendingOffer {
@@ -102,4 +109,5 @@ pub(crate) struct PendingOffer {
     pub(crate) x25519_secret: X25519SecretKey,
     pub(crate) kem_decapsulation_key: MlKemDecapsulationKey,
     pub(crate) created_at: HydraInstant,
+    pub(crate) purpose: HandshakePurpose,
 }

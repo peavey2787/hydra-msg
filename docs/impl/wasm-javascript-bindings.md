@@ -16,7 +16,8 @@ Goal: make the same simple HYDRA API usable from browser/mobile apps without exp
 
 ## Rules
 
-- No `HydraConfig`, profiles, builders, or advanced public API.
+- No general `HydraConfig`, builders, protocol-suite selectors, or key-management internals.
+- Session security cadence is exposed narrowly through `setSessionRefreshInterval(contactId, messages)`; `0` keeps ratchet-only behavior and positive values require a fresh authenticated session after that many outbound logical messages.
 - No protocol-info, supported-suite, session export/import, checkpoint, predicate, or lobby-state APIs.
 - Transport sizing is exposed only as `setPacketSize(bytes)` and `packetSize()`; apps do not see chunk controls. `send()` returns one or more opaque packets and `receive()` returns `null` until a full message has been reassembled.
 - WebRTC, relays, HTTP, QR codes, files, Kaspa pointers, and libp2p remain carriers only.
@@ -57,6 +58,12 @@ const answer = hydra.replyHandshake(offer);
 hydra.finishHandshake(answer);
 await hydra.flush();
 
+// Optional: permit one outbound logical message, then require a fresh hybrid
+// handshake before another send. Use 0 for ratchet-only behavior.
+hydra.setSessionRefreshInterval(contactId, 1);
+console.log(JSON.parse(hydra.sessionSecurityStatus(contactId)));
+await hydra.flush();
+
 hydra.setPacketSize(56 * 1024);
 console.log(hydra.packetSize());
 const packets = hydra.send(
@@ -85,6 +92,28 @@ if (data) {
 `flush()` is explicit because IndexedDB is async. After mutating calls, the wrapper marks itself dirty and `flush()` writes the newest encrypted chunked state container. This is the final WASM API shape for this milestone: mutating calls stay synchronous, and apps commit durable browser state by awaiting `flush()` at clear transaction boundaries.
 
 `flush()` is not a blind put. It performs a single IndexedDB `readwrite` transaction that reads the current profile revision and writes only if it still matches the revision loaded by this wrapper. This compare-and-swap rule prevents last-writer-wins corruption when two browser tabs, workers, or mobile page instances open the same profile. A stale writer receives a storage error, remains dirty, and must reopen or ask the user to resolve the conflict before trying to commit again.
+
+## Fresh-session replacement
+
+When `sessionSecurityStatus(contactId)` reports `refresh_required: true`, the
+app pauses application sends and carries a replacement handshake over the same
+carrier boundary:
+
+```javascript
+const refreshOffer = hydra.beginSessionRefresh(contactId);
+appSendToPeer(refreshOffer);
+
+const refreshAnswer = peer.replySessionRefresh(refreshOffer);
+appSendToInitiator(refreshAnswer);
+
+hydra.finishSessionRefresh(refreshAnswer);
+await hydra.flush();
+```
+
+A setting of `1` does not turn a local send into an automatic peer refresh. It
+allows one outbound logical message per fresh session and then fails closed
+until the explicit offer/answer exchange completes. Recovery does not protect
+an endpoint while an attacker still controls it.
 
 ## Ephemeral open
 

@@ -33,6 +33,10 @@ Protocol authority remains in `crates/` and `docs/spec/`. Example applications m
 cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
 ```
 
+The reference app also demonstrates optional per-contact fresh-session cadence.
+An interval of `1` blocks a second logical send until the app transports a new
+authenticated hybrid handshake; the app never derives or imports session keys.
+
 The full example gate runs the reference-app integration tests, three public-SDK app examples, all other native examples, browser-host smoke tests, and WASM builds unless WASM is explicitly skipped.
 
 Unix:
