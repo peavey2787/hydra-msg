@@ -288,16 +288,19 @@ jobs:
           HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"
           HYDRA_COVERAGE_FUZZ_RUNS: ${{ inputs.fuzz_runs || '100000' }}
         run: |
-          mkdir -p target/ci-logs
+          log_dir="$RUNNER_TEMP/hydra-ci-logs"
+          log_file="$log_dir/fuzz.log"
+          mkdir -p "$log_dir"
           set -o pipefail
-          ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee target/ci-logs/fuzz.log
+          ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee "$log_file"
+          test -s "$log_file"
       - name: Upload fuzz evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fuzz-${{ github.sha }}
           path: |
-            target/ci-logs/fuzz.log
+            ${{ runner.temp }}/hydra-ci-logs/fuzz.log
             target/hydra-fuzz-evidence/
           if-no-files-found: warn
           retention-days: 90

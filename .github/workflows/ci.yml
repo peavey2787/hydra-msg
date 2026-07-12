@@ -117,17 +117,19 @@ jobs:
 
       - name: Run deterministic fuzz corpus gate
         run: |
-          mkdir -p target/ci-logs
+          log_dir="$RUNNER_TEMP/hydra-ci-logs"
+          log_file="$log_dir/fuzz-regression.log"
+          mkdir -p "$log_dir"
           set -o pipefail
-          ./qa/ci/fuzz/check-fuzz.sh 2>&1 \
-            | tee target/ci-logs/fuzz-regression.log
+          ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee "$log_file"
+          test -s "$log_file"
 
       - name: Upload fuzz regression evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: fuzz-regression-${{ github.sha }}
-          path: target/ci-logs/fuzz-regression.log
+          path: ${{ runner.temp }}/hydra-ci-logs/fuzz-regression.log
           if-no-files-found: error
           retention-days: 30
 
