@@ -36,6 +36,7 @@ qa_gate=docs/validation/gates/production-qa-gate.md
 wasm=crates/hydra-msg-wasm/src/lib.rs
 wasm_types=crates/hydra-msg-wasm/src/types.rs
 wasm_persistence=crates/hydra-msg/src/browser/persistence.rs
+wasm_persistence_js=crates/hydra-msg/src/browser/persistence_js.rs
 wasm_docs=docs/impl/wasm-javascript-bindings.md
 api_docs=docs/spec/public-developer-api.md
 auth_docs=docs/spec/anonymous-auth.md
@@ -44,7 +45,7 @@ status_file=crates/hydra-msg/src/persistence/status.rs
 lobby_routing=crates/hydra-msg/src/lobby/routing.rs
 
 for file in \
-  "$audit" "$threat" "$release" "$qa_gate" "$wasm" "$wasm_types" "$wasm_persistence" \
+  "$audit" "$threat" "$release" "$qa_gate" "$wasm" "$wasm_types" "$wasm_persistence" "$wasm_persistence_js" \
   "$wasm_docs" "$api_docs" "$auth_docs" "$storage_codec" "$status_file" "$lobby_routing"
 do
   require_file "$file"
@@ -68,8 +69,8 @@ done
 require_text "$wasm_types" "js_name = routingHint"
 require_text "$wasm" "js_name = storageDebugStatus"
 require_text "$wasm" "storage_status(&self) -> String"
-require_text "$wasm_persistence" "revision: nextRevision"
-require_text "$wasm_persistence" "adapterVersion: HYDRA_ADAPTER_VERSION"
+require_text "$wasm_persistence_js" "revision: nextRevision"
+require_text "$wasm_persistence_js" "adapterVersion: HYDRA_ADAPTER_VERSION"
 require_text "$storage_codec" "STORAGE_CHUNK_PLAINTEXT_BYTES"
 require_text "$storage_codec" "chunk_size"
 require_text "$status_file" "HydraStorageDebugStatus"
@@ -86,6 +87,7 @@ require_text "$wasm_docs" "routingHint"
 require_text "$api_docs" "routing_hint"
 
 reject_text "$wasm_persistence" "updatedAtMs"
+reject_text "$wasm_persistence_js" "updatedAtMs"
 reject_text examples/mobile_perf_web/web/app.js "updatedAtMs"
 
 if grep -RInE 'metadata-free|anonymous by default|only transport metadata|fully unlinkable anonymous auth|traffic-flow private' \

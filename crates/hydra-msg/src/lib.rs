@@ -23,6 +23,9 @@ mod anonymous_auth;
 #[path = "api/benchmark.rs"]
 mod benchmark;
 #[cfg(target_arch = "wasm32")]
+#[path = "browser/persistence_js.rs"]
+mod browser_persistence_js;
+#[cfg(target_arch = "wasm32")]
 #[path = "browser/persistence.rs"]
 mod browser_persistence;
 mod codec;

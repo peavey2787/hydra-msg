@@ -17,7 +17,15 @@ require_file qa/browser/playwright/playwright.config.mjs
 require_file qa/browser/playwright/scripts/install-browsers.mjs
 require_file qa/browser/playwright/scripts/serve-test-origin.mjs
 require_file qa/browser/playwright/tests/browser-lifecycle.spec.mjs
-require_file crates/hydra-msg/src/browser/persistence.rs
+persistence_facade=crates/hydra-msg/src/browser/persistence.rs
+persistence_js=crates/hydra-msg/src/browser/persistence_js.rs
+require_file "$persistence_facade"
+require_file "$persistence_js"
+
+production_contains() {
+  marker=$1
+  grep -Fq "$marker" "$persistence_facade" "$persistence_js"
+}
 
 if ! grep -Fq "@playwright/test" qa/browser/playwright/package.json; then
   echo "Playwright test dependency missing" >&2
@@ -37,7 +45,7 @@ do
     echo "browser E2E transaction-settlement marker missing: $transaction_marker" >&2
     exit 1
   fi
-  if ! grep -Fq "$transaction_marker" crates/hydra-msg/src/browser/persistence.rs; then
+  if ! production_contains "$transaction_marker"; then
     echo "production browser adapter transaction-settlement marker missing: $transaction_marker" >&2
     exit 1
   fi
@@ -65,7 +73,7 @@ for required_adapter_marker in \
   "avoids acquiring a cross-tab write lock" \
   "Recheck atomically inside the write transaction"
 do
-  if ! grep -Fq "$required_adapter_marker" crates/hydra-msg/src/browser/persistence.rs; then
+  if ! production_contains "$required_adapter_marker"; then
     echo "production browser adapter readonly-preflight stale-CAS marker missing: $required_adapter_marker" >&2
     exit 1
   fi
@@ -82,7 +90,7 @@ for forbidden_stale_marker in \
   "rejectAndAbortHydraStaleTransaction"
 do
   if grep -Fq "$forbidden_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs \
-    || grep -Fq "$forbidden_stale_marker" crates/hydra-msg/src/browser/persistence.rs; then
+    || production_contains "$forbidden_stale_marker"; then
     echo "obsolete stale-CAS settlement strategy remains: $forbidden_stale_marker" >&2
     exit 1
   fi

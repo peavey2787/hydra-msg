@@ -4,6 +4,24 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
+function Assert-TextInAnyFile($Paths, $Text, $Description) {
+    foreach ($Path in $Paths) {
+        if (Select-String -LiteralPath $Path -SimpleMatch $Text -Quiet) {
+            return
+        }
+    }
+    throw "${Description}: $Text"
+}
+
+function Test-TextInAnyFile($Paths, $Text) {
+    foreach ($Path in $Paths) {
+        if (Select-String -LiteralPath $Path -SimpleMatch $Text -Quiet) {
+            return $true
+        }
+    }
+    return $false
+}
+
 function Assert-FileExists($Path) {
     if (!(Test-Path -LiteralPath $Path -PathType Leaf)) {
         throw "Required browser E2E file missing: $Path"
@@ -22,14 +40,16 @@ $Config = "qa/browser/playwright/playwright.config.mjs"
 $BrowserInstaller = "qa/browser/playwright/scripts/install-browsers.mjs"
 $OriginServer = "qa/browser/playwright/scripts/serve-test-origin.mjs"
 $Spec = "qa/browser/playwright/tests/browser-lifecycle.spec.mjs"
-$Persistence = "crates/hydra-msg/src/browser/persistence.rs"
+$PersistenceFacade = "crates/hydra-msg/src/browser/persistence.rs"
+$PersistenceJs = "crates/hydra-msg/src/browser/persistence_js.rs"
+$PersistenceSources = @($PersistenceFacade, $PersistenceJs)
 Assert-FileExists $Package
 Assert-FileExists $PackageLock
 Assert-FileExists $Config
 Assert-FileExists $BrowserInstaller
 Assert-FileExists $OriginServer
 Assert-FileExists $Spec
-Assert-FileExists $Persistence
+foreach ($Path in $PersistenceSources) { Assert-FileExists $Path }
 Assert-Text $Package "@playwright/test"
 if (Select-String -LiteralPath $Spec -SimpleMatch "about:blank" -Quiet) {
     throw "Browser E2E storage tests must use a real HTTP origin, not about:blank"
@@ -37,7 +57,7 @@ if (Select-String -LiteralPath $Spec -SimpleMatch "about:blank" -Quiet) {
 
 foreach ($Text in @("function transactionFailure", "tx.onabort = () => reject")) {
     Assert-Text $Spec $Text
-    Assert-Text $Persistence $Text
+    Assert-TextInAnyFile $PersistenceSources $Text "Production browser adapter marker missing"
 }
 foreach ($Text in @(
     "readCurrentRevision",
@@ -53,7 +73,7 @@ foreach ($Text in @(
     "readonly transaction",
     "avoids acquiring a cross-tab write lock",
     "Recheck atomically inside the write transaction"
-)) { Assert-Text $Persistence $Text }
+)) { Assert-TextInAnyFile $PersistenceSources $Text "Production browser adapter marker missing" }
 foreach ($Text in @(
     "settleStaleTransactionOnComplete",
     "settleHydraStaleTransactionOnComplete",
@@ -65,7 +85,7 @@ foreach ($Text in @(
     "rejectAndAbortHydraStaleTransaction"
 )) {
     if ((Select-String -LiteralPath $Spec -SimpleMatch $Text -Quiet) -or
-        (Select-String -LiteralPath $Persistence -SimpleMatch $Text -Quiet)) {
+        (Test-TextInAnyFile $PersistenceSources $Text)) {
         throw "Obsolete stale-CAS settlement strategy remains: $Text"
     }
 }

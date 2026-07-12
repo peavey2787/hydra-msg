@@ -30,7 +30,24 @@ reject_text() {
 }
 
 wasm=crates/hydra-msg-wasm/src/lib.rs
-adapter=crates/hydra-msg/src/browser/persistence.rs
+adapter_facade=crates/hydra-msg/src/browser/persistence.rs
+adapter_js=crates/hydra-msg/src/browser/persistence_js.rs
+
+require_adapter_text() {
+  text=$1
+  if ! grep -Fq -- "$text" "$adapter_facade" "$adapter_js"; then
+    echo "browser lifecycle invariant missing from browser persistence adapter: $text" >&2
+    exit 1
+  fi
+}
+
+reject_adapter_text() {
+  text=$1
+  if grep -Fq -- "$text" "$adapter_facade" "$adapter_js"; then
+    echo "forbidden browser lifecycle pattern found in browser persistence adapter: $text" >&2
+    exit 1
+  fi
+}
 wasm_docs=crates/hydra-msg-wasm/README.md
 impl_docs=docs/impl/wasm-javascript-bindings.md
 api_docs=docs/spec/public-developer-api.md
@@ -40,7 +57,8 @@ audit=docs/validation/evidence/wasm-browser-lifecycle-policy.md
 
 for file in \
   "$wasm" \
-  "$adapter" \
+  "$adapter_facade" \
+  "$adapter_js" \
   "$wasm_docs" \
   "$impl_docs" \
   "$api_docs" \
@@ -51,16 +69,16 @@ do
   require_file "$file"
 done
 
-require_text "$adapter" "const HYDRA_DB_VERSION = 2"
-require_text "$adapter" "revision: nextRevision"
-require_text "$adapter" "hydraIndexedDbSave(name, bytes, expectedRevision)"
-require_text "$adapter" "currentRevision !== expectedRevision"
-require_text "$adapter" "persistent record revision missing"
-require_text "$adapter" "staleHydraProfileError"
-require_text "$adapter" "last-writer-wins"
-require_text "$adapter" "storage.persist"
-require_text "$adapter" "hydraBrowserLifecycleStatus"
-require_text "$adapter" "IndexedDB unavailable for HYDRA persistent state"
+require_adapter_text "const HYDRA_DB_VERSION = 2"
+require_adapter_text "revision: nextRevision"
+require_adapter_text "hydraIndexedDbSave(name, bytes, expectedRevision)"
+require_adapter_text "currentRevision !== expectedRevision"
+require_adapter_text "persistent record revision missing"
+require_adapter_text "staleHydraProfileError"
+require_adapter_text "last-writer-wins"
+require_adapter_text "storage.persist"
+require_adapter_text "hydraBrowserLifecycleStatus"
+require_adapter_text "IndexedDB unavailable for HYDRA persistent state"
 
 require_text "$wasm" "persistent_revision: Option<u64>"
 require_text "$wasm" "js_name = persistentRevision"
@@ -68,7 +86,7 @@ require_text "$wasm" "js_name = browserLifecycleStatus"
 require_text "$wasm" "js_name = requestPersistentStorage"
 require_text "$wasm" "flush_browser_persistent"
 require_text "$wasm" "open_browser_persistent"
-require_text "$adapter" "save_encrypted_snapshot("
+require_adapter_text "save_encrypted_snapshot("
 
 require_text "$app" "runMultiTabConcurrencyProbe"
 require_text "$app" "browser-wasm-indexeddb-multi-tab-concurrency"
@@ -98,9 +116,9 @@ require_text "$impl_docs" "requestPersistentStorage"
 require_text "$api_docs" "profile-revision compare-and-swap"
 require_text docs/spec/threat-model.md "wasm-browser-lifecycle-policy.md"
 
-reject_text "$adapter" "localStorage."
-reject_text "$adapter" "localStorage["
-reject_text "$adapter" "updatedAtMs"
+reject_adapter_text "localStorage."
+reject_adapter_text "localStorage["
+reject_adapter_text "updatedAtMs"
 reject_text "$app" "updatedAtMs"
 reject_text "$app" "last writer wins"
 

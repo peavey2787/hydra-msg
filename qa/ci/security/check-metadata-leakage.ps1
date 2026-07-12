@@ -31,6 +31,7 @@ $qaGate = "docs/validation/gates/production-qa-gate.md"
 $wasm = "crates/hydra-msg-wasm/src/lib.rs"
 $wasmTypes = "crates/hydra-msg-wasm/src/types.rs"
 $wasmPersistence = "crates/hydra-msg/src/browser/persistence.rs"
+$wasmPersistenceJs = "crates/hydra-msg/src/browser/persistence_js.rs"
 $wasmDocs = "docs/impl/wasm-javascript-bindings.md"
 $apiDocs = "docs/spec/public-developer-api.md"
 $authDocs = "docs/spec/anonymous-auth.md"
@@ -38,13 +39,14 @@ $storageCodec = "crates/hydra-msg/src/codec/storage.rs"
 $statusFile = "crates/hydra-msg/src/persistence/status.rs"
 $lobbyRouting = "crates/hydra-msg/src/lobby/routing.rs"
 
-@($audit, $threat, $release, $qaGate, $wasm, $wasmTypes, $wasmPersistence, $wasmDocs, $apiDocs, $authDocs, $storageCodec, $statusFile, $lobbyRouting) | ForEach-Object { Require-File $_ }
+@($audit, $threat, $release, $qaGate, $wasm, $wasmTypes, $wasmPersistence, $wasmPersistenceJs, $wasmDocs, $apiDocs, $authDocs, $storageCodec, $statusFile, $lobbyRouting) | ForEach-Object { Require-File $_ }
 
 @("packet count", "timing", "routing", "anonymous-auth", "browser persistence", "Backup metadata", "not fully unlinkable", "blind credentials", "ZK nullifier", "not metadata-free") | ForEach-Object { Require-Text $audit $_ }
 
 Require-Text $wasmTypes "js_name = routingHint"
 Require-Text $wasm "js_name = storageDebugStatus"
-Require-Text $wasmPersistence "revision: nextRevision"
+Require-Text $wasmPersistenceJs "revision: nextRevision"
+Require-Text $wasmPersistenceJs "adapterVersion: HYDRA_ADAPTER_VERSION"
 Require-Text $storageCodec "STORAGE_CHUNK_PLAINTEXT_BYTES"
 Require-Text $statusFile "HydraStorageDebugStatus"
 Require-Text $lobbyRouting "routing_hint()"
@@ -59,6 +61,7 @@ Require-Text $wasmDocs "routingHint"
 Require-Text $apiDocs "routing_hint"
 
 Reject-Text $wasmPersistence "updatedAtMs"
+Reject-Text $wasmPersistenceJs "updatedAtMs"
 Reject-Text "examples/mobile_perf_web/web/app.js" "updatedAtMs"
 
 Write-Host "metadata-leakage checks passed." -ForegroundColor Green

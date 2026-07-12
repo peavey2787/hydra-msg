@@ -33,8 +33,36 @@ function Assert-TextAbsent {
     }
 }
 
+
+function Assert-TextPresentInAny {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Paths,
+        [Parameter(Mandatory = $true)][string]$Text
+    )
+    foreach ($Path in $Paths) {
+        if (Select-String -LiteralPath $Path -SimpleMatch $Text -Quiet) {
+            return
+        }
+    }
+    throw "Browser lifecycle invariant missing from browser persistence adapter: $Text"
+}
+
+function Assert-TextAbsentFromAll {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Paths,
+        [Parameter(Mandatory = $true)][string]$Text
+    )
+    foreach ($Path in $Paths) {
+        if (Select-String -LiteralPath $Path -SimpleMatch $Text -Quiet) {
+            throw "Forbidden browser lifecycle pattern found in ${Path}: $Text"
+        }
+    }
+}
+
 $wasm = "crates/hydra-msg-wasm/src/lib.rs"
-$adapter = "crates/hydra-msg/src/browser/persistence.rs"
+$adapterFacade = "crates/hydra-msg/src/browser/persistence.rs"
+$adapterJs = "crates/hydra-msg/src/browser/persistence_js.rs"
+$adapterSources = @($adapterFacade, $adapterJs)
 $wasmDocs = "crates/hydra-msg-wasm/README.md"
 $implDocs = "docs/impl/wasm-javascript-bindings.md"
 $apiDocs = "docs/spec/public-developer-api.md"
@@ -42,7 +70,7 @@ $app = "examples/mobile_perf_web/web/app.js"
 $hostFile = "examples/mobile_perf_web/src/main.rs"
 $audit = "docs/validation/evidence/wasm-browser-lifecycle-policy.md"
 
-foreach ($path in @($wasm, $adapter, $wasmDocs, $implDocs, $apiDocs, $app, $hostFile, $audit)) {
+foreach ($path in @($wasm, $adapterFacade, $adapterJs, $wasmDocs, $implDocs, $apiDocs, $app, $hostFile, $audit)) {
     Assert-FileExists $path
 }
 
@@ -57,7 +85,7 @@ foreach ($text in @(
     "storage.persist",
     "hydraBrowserLifecycleStatus",
     "IndexedDB unavailable for HYDRA persistent state"
-)) { Assert-TextPresent $adapter $text }
+)) { Assert-TextPresentInAny $adapterSources $text }
 
 foreach ($text in @(
     "persistent_revision: Option<u64>",
@@ -96,9 +124,9 @@ Assert-TextPresent $implDocs "requestPersistentStorage"
 Assert-TextPresent $apiDocs "profile-revision compare-and-swap"
 Assert-TextPresent "docs/spec/threat-model.md" "wasm-browser-lifecycle-policy.md"
 
-Assert-TextAbsent $adapter "localStorage."
-Assert-TextAbsent $adapter "localStorage["
-Assert-TextAbsent $adapter "updatedAtMs"
+Assert-TextAbsentFromAll $adapterSources "localStorage."
+Assert-TextAbsentFromAll $adapterSources "localStorage["
+Assert-TextAbsentFromAll $adapterSources "updatedAtMs"
 Assert-TextAbsent $app "updatedAtMs"
 Assert-TextAbsent $app "last writer wins"
 

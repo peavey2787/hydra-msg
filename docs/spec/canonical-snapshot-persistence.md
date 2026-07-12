@@ -26,7 +26,7 @@ This document defines the current encrypted local-state and backup persistence c
 | Storage codec | `crates/hydra-msg/src/codec/storage.rs` | Seals, opens, chunks, pads, and validates encrypted state/backup containers. |
 | KDF record | `crates/hydra-msg/src/codec/kdf.rs` | Owns password KDF names, profiles, parameters, salts, validation, and key derivation. |
 | Native adapter | `crates/hydra-msg/src/persistence/native_store.rs` | Reads, writes, locks, deletes, and lists opaque encrypted bytes using native file semantics. |
-| Browser adapter | `crates/hydra-msg/src/browser/persistence.rs` | Reads, writes, deletes, and lists opaque encrypted bytes using IndexedDB compare-and-swap revisions. |
+| Browser adapter | `crates/hydra-msg/src/browser/persistence.rs` and `crates/hydra-msg/src/browser/persistence_js.rs` | The Rust facade delegates to an IndexedDB transaction implementation that reads, writes, and deletes opaque encrypted bytes using compare-and-swap revisions. |
 | Rollback guard | `crates/hydra-msg/src/persistence/rollback.rs` | Records local native freshness evidence and rejects locally stale generations where possible. |
 
 Adapters own durability mechanics only. They must not parse or mutate plaintext HYDRA state.

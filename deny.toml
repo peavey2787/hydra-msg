@@ -13,7 +13,17 @@ ignore = []
 multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
-skip = []
+# These exact older-generation crates are pulled by the stable scrypt/X25519/
+# ChaCha20 stack while the post-quantum stack uses the newer RustCrypto APIs.
+# Keep this list exact so cargo-deny still warns on every new duplicate version.
+skip = [
+    { name = "block-buffer", version = "=0.10.4" },
+    { name = "cpufeatures", version = "=0.2.17" },
+    { name = "crypto-common", version = "=0.1.7" },
+    { name = "digest", version = "=0.10.7" },
+    { name = "hmac", version = "=0.12.1" },
+    { name = "rand_core", version = "=0.6.4" },
+]
 skip-tree = []
 
 [licenses]

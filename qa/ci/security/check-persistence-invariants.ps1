@@ -58,6 +58,7 @@ $SnapshotFile = "crates/hydra-msg/src/persistence/snapshot.rs"
 $StorageFile = "crates/hydra-msg/src/api/storage.rs"
 $CodecStorageFile = "crates/hydra-msg/src/codec/storage.rs"
 $WasmPersistenceFile = "crates/hydra-msg/src/browser/persistence.rs"
+$WasmPersistenceJsFile = "crates/hydra-msg/src/browser/persistence_js.rs"
 $StorageTestsFile = "crates/hydra-msg/src/tests/storage.rs"
 $PersistenceTestsFile = "crates/hydra-msg/src/tests/persistence.rs"
 $ParserVectorRoot = "qa/vectors/persistence/parser-stress"
@@ -65,7 +66,7 @@ $PositiveVectorRoot = "qa/vectors/persistence/positive"
 $NegativeVectorRoot = "qa/vectors/persistence/negative"
 $PersistenceVectorRoot = "qa/vectors/persistence"
 
-foreach ($path in @($SnapshotFile, $StorageFile, $CodecStorageFile, $WasmPersistenceFile, $StorageTestsFile, $PersistenceTestsFile, "$ParserVectorRoot/manifest.sha3-256", "$PositiveVectorRoot/manifest.sha3-256", "$NegativeVectorRoot/manifest.sha3-256", "$PersistenceVectorRoot/manifest.sha3-256")) {
+foreach ($path in @($SnapshotFile, $StorageFile, $CodecStorageFile, $WasmPersistenceFile, $WasmPersistenceJsFile, $StorageTestsFile, $PersistenceTestsFile, "$ParserVectorRoot/manifest.sha3-256", "$PositiveVectorRoot/manifest.sha3-256", "$NegativeVectorRoot/manifest.sha3-256", "$PersistenceVectorRoot/manifest.sha3-256")) {
     Assert-FileExists $path
 }
 
@@ -87,7 +88,7 @@ Assert-SourceText $StorageFile "verify_backup(" "passworded backup verification 
 Assert-SourceText $StorageFile "open_verified_backup_snapshot(bytes.as_ref(), password.as_ref())" "backup verification authenticates with supplied password"
 Assert-SourceText $CodecStorageFile "reject_oversize_envelope" "encrypted envelope size limit retained"
 Assert-SourceText $CodecStorageFile "reject_long_envelope_lines" "encrypted envelope line-length limit retained"
-Assert-SourceText $WasmPersistenceFile "indexedDB" "WASM persistence uses IndexedDB"
+Assert-SourceText $WasmPersistenceJsFile "indexedDB" "WASM persistence uses IndexedDB"
 Assert-SourceText $WasmPersistenceFile "opaque" "WASM persistence adapter documents opaque encrypted bytes"
 
 Assert-NoSearchMatch @("crates", "examples") 'localStorage[.\[]' "direct localStorage use for HYDRA state"
