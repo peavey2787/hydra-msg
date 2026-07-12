@@ -78,7 +78,7 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
       expect(revisionA2).toBe(2);
     });
 
-    await test.step('reject the stale page without waiting on an implicit commit', async () => {
+    await test.step('reject the stale page after its no-write transaction completes', async () => {
       const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
       expect(staleError).not.toBeNull();
       expect(staleError.message).toMatch(/stale profile revision/);
@@ -223,31 +223,40 @@ async function installIndexedDbHarness(page, options = {}) {
       });
     }
 
+    function transactionFailure(transaction, operationError, fallback) {
+      if (operationError) return operationError;
+      try {
+        return transaction.error || fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
     function transactionToPromise(transaction, operation) {
       return new Promise((resolve, reject) => {
         let transactionError = null;
         transaction.oncomplete = () => resolve();
         transaction.onerror = () => {
-          transactionError = transaction.error || transactionError
-            || new Error(`IndexedDB ${operation} failed`);
+          transactionError = transactionFailure(
+            transaction,
+            transactionError,
+            new Error(`IndexedDB ${operation} failed`)
+          );
         };
-        transaction.onabort = () => reject(
-          transaction.error || transactionError || new Error(`IndexedDB ${operation} aborted`)
-        );
+        transaction.onabort = () => reject(transactionFailure(
+          transaction,
+          transactionError,
+          new Error(`IndexedDB ${operation} aborted`)
+        ));
       });
     }
 
-    // Stale compare-and-swap failures must resolve deterministically in Firefox too.
-    // Abort the active readwrite transaction after the stale revision is observed and
-    // reject immediately instead of waiting for a browser-specific implicit commit.
-    function rejectAndAbortStaleTransaction(transaction, error, reject, recordError) {
+    // A stale compare-and-swap has not changed IndexedDB state. Record the stale
+    // error and let the read/write transaction finish normally. Rejecting from
+    // oncomplete guarantees that every browser has released the transaction lock;
+    // no semantic no-op write or abort race is required.
+    function settleStaleTransactionOnComplete(error, recordError) {
       recordError(error);
-      try {
-        transaction.abort();
-      } catch (abortError) {
-        recordError(abortError || error);
-      }
-      reject(error);
     }
 
     async function openDb() {
@@ -309,12 +318,17 @@ async function installIndexedDbHarness(page, options = {}) {
               resolve(nextRevision);
             };
             tx.onerror = () => {
-              operationError = operationError || tx.error
-                || new Error('IndexedDB transaction failed');
+              operationError = transactionFailure(
+                tx,
+                operationError,
+                new Error('IndexedDB transaction failed')
+              );
             };
-            tx.onabort = () => reject(
-              operationError || tx.error || new Error('IndexedDB transaction abort')
-            );
+            tx.onabort = () => reject(transactionFailure(
+              tx,
+              operationError,
+              new Error('IndexedDB transaction abort')
+            ));
 
             const get = store.get(name);
             get.onerror = () => {
@@ -327,7 +341,7 @@ async function installIndexedDbHarness(page, options = {}) {
                 const staleError = new Error(
                   `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
                 );
-                rejectAndAbortStaleTransaction(tx, staleError, reject, (error) => {
+                settleStaleTransactionOnComplete(staleError, (error) => {
                   operationError = operationError || error;
                 });
                 return;
@@ -371,9 +385,11 @@ async function installIndexedDbHarness(page, options = {}) {
             tx.objectStore(STORE_NAME).put({ name, bytes: [1], revision: 1 });
             tx.oncomplete = resolve;
             tx.onerror = (event) => event.preventDefault();
-            tx.onabort = () => reject(
-              tx.error || new DOMException('HYDRA test transaction aborted', 'AbortError')
-            );
+            tx.onabort = () => reject(transactionFailure(
+              tx,
+              null,
+              new DOMException('HYDRA test transaction aborted', 'AbortError')
+            ));
             tx.abort();
           });
         } finally {

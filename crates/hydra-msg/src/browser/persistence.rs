@@ -98,20 +98,20 @@ function openHydraIndexedDb() {
 }
 
 function transactionFailure(tx, operationError, fallback) {
-  return operationError || tx.error || fallback;
+  if (operationError) return operationError;
+  try {
+    return tx.error || fallback;
+  } catch (_) {
+    return fallback;
+  }
 }
 
-// Stale compare-and-swap failures must resolve deterministically in Firefox too.
-// Abort the active readwrite transaction after the stale revision is observed and
-// reject immediately instead of waiting for a browser-specific implicit commit.
-function rejectAndAbortHydraStaleTransaction(tx, error, reject, recordError) {
+// A stale compare-and-swap has not changed IndexedDB state. Record the stale
+// error and let the read/write transaction finish normally. Rejecting from
+// oncomplete guarantees that every browser has released the transaction lock;
+// no semantic no-op write or abort race is required.
+function settleHydraStaleTransactionOnComplete(error, recordError) {
   recordError(error);
-  try {
-    tx.abort();
-  } catch (abortError) {
-    recordError(abortError || error);
-  }
-  reject(error);
 }
 
 export async function hydraIndexedDbLoad(name) {
@@ -197,11 +197,11 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
         try {
           const currentRevision = request.result ? hydraRecordRevision(request.result) : 0;
           if (currentRevision !== expectedRevision) {
-            rejectAndAbortHydraStaleTransaction(tx, staleHydraProfileError(
+            settleHydraStaleTransactionOnComplete(staleHydraProfileError(
               name,
               expectedRevision,
               currentRevision
-            ), reject, (error) => {
+            ), (error) => {
               operationError = operationError || error;
             });
             return;
@@ -218,9 +218,11 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
           };
         } catch (error) {
           operationError = error;
-          rejectAndAbortHydraStaleTransaction(tx, error, reject, (abortError) => {
-            operationError = operationError || abortError;
-          });
+          try {
+            tx.abort();
+          } catch (_) {
+            reject(error);
+          }
         }
       };
       request.onerror = () => {

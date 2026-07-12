@@ -35,22 +35,33 @@ if (Select-String -LiteralPath $Spec -SimpleMatch "about:blank" -Quiet) {
     throw "Browser E2E storage tests must use a real HTTP origin, not about:blank"
 }
 
-foreach ($Text in @("operationError || tx.error", "tx.onabort = () => reject")) {
+foreach ($Text in @("function transactionFailure", "tx.onabort = () => reject")) {
     Assert-Text $Spec $Text
     Assert-Text $Persistence $Text
 }
 foreach ($Text in @(
-    "rejectAndAbortStaleTransaction",
-    "transaction.abort()",
-    "reject(error)",
+    "settleStaleTransactionOnComplete",
+    "oncomplete guarantees",
     "uniqueDatabaseName",
     "capturedSaveError"
 )) { Assert-Text $Spec $Text }
 foreach ($Text in @(
-    "rejectAndAbortHydraStaleTransaction",
-    "tx.abort()",
-    "reject(error)"
+    "settleHydraStaleTransactionOnComplete",
+    "oncomplete guarantees"
 )) { Assert-Text $Persistence $Text }
+foreach ($Text in @(
+    "queueNoOpSettlement",
+    "queueHydraNoOpSettlement",
+    "abortStaleTransactionAndWait",
+    "abortHydraStaleTransactionAndWait",
+    "rejectAndAbortStaleTransaction",
+    "rejectAndAbortHydraStaleTransaction"
+)) {
+    if ((Select-String -LiteralPath $Spec -SimpleMatch $Text -Quiet) -or
+        (Select-String -LiteralPath $Persistence -SimpleMatch $Text -Quiet)) {
+        throw "Obsolete stale-CAS settlement strategy remains: $Text"
+    }
+}
 foreach ($Text in @(
     "baseURL",
     "webServer",

@@ -30,7 +30,7 @@ if grep -Fq "about:blank" qa/browser/playwright/tests/browser-lifecycle.spec.mjs
 fi
 
 for transaction_marker in \
-  "operationError || tx.error" \
+  "function transactionFailure" \
   "tx.onabort = () => reject"
 do
   if ! grep -Fq "$transaction_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
@@ -45,25 +45,38 @@ done
 
 
 for required_stale_marker in \
-  "rejectAndAbortStaleTransaction" \
-  "transaction.abort()" \
-  "reject(error)" \
+  "settleStaleTransactionOnComplete" \
+  "oncomplete guarantees" \
   "uniqueDatabaseName" \
   "capturedSaveError"
 do
   if ! grep -Fq "$required_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
-    echo "browser E2E Firefox-safe stale-CAS marker missing: $required_stale_marker" >&2
+    echo "browser E2E normal-completion stale-CAS marker missing: $required_stale_marker" >&2
     exit 1
   fi
 done
 
 for required_adapter_marker in \
-  "rejectAndAbortHydraStaleTransaction" \
-  "tx.abort()" \
-  "reject(error)"
+  "settleHydraStaleTransactionOnComplete" \
+  "oncomplete guarantees"
 do
   if ! grep -Fq "$required_adapter_marker" crates/hydra-msg/src/browser/persistence.rs; then
-    echo "production browser adapter Firefox-safe stale-CAS marker missing: $required_adapter_marker" >&2
+    echo "production browser adapter normal-completion stale-CAS marker missing: $required_adapter_marker" >&2
+    exit 1
+  fi
+done
+
+for forbidden_stale_marker in \
+  "queueNoOpSettlement" \
+  "queueHydraNoOpSettlement" \
+  "abortStaleTransactionAndWait" \
+  "abortHydraStaleTransactionAndWait" \
+  "rejectAndAbortStaleTransaction" \
+  "rejectAndAbortHydraStaleTransaction"
+do
+  if grep -Fq "$forbidden_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs \
+    || grep -Fq "$forbidden_stale_marker" crates/hydra-msg/src/browser/persistence.rs; then
+    echo "obsolete stale-CAS settlement strategy remains: $forbidden_stale_marker" >&2
     exit 1
   fi
 done
