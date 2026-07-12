@@ -19,6 +19,8 @@ function Require-Text($Path, $Text) {
   "qa/fixtures/interop/manifest.sha3-256",
   "qa/tests/interop/Cargo.toml",
   "qa/tests/interop/src/lib.rs",
+  "qa/tests/interop/src/candidate_vectors.rs",
+  "crates/hydra-msg/src/packet_fragments/tests.rs",
   "qa/fixtures/interop/browser/wasm-fixture-probe.js",
   "docs/validation/evidence/interop-test-harness.md",
   "examples/mobile_perf_web/web/app.js",
@@ -58,6 +60,11 @@ try {
 Require-Text "qa/tests/interop/src/lib.rs" "frozen_protocol_packet_opens_in_current_session_runtime"
 Require-Text "qa/tests/interop/src/lib.rs" "native_runtime_accepts_the_same_snapshot_bytes_wasm_persists"
 Require-Text "qa/tests/interop/src/lib.rs" "pre_v1_and_future_fixture_contracts_fail_closed"
+Require-Text "qa/tests/interop/src/candidate_vectors.rs" "candidate_negative_handshake_vectors_fail_closed"
+Require-Text "qa/tests/interop/src/candidate_vectors.rs" "candidate_ratchet_vectors_execute_current_session_runtime"
+Require-Text "qa/tests/interop/src/candidate_vectors.rs" "candidate_group_rejection_vectors_preserve_parent_state"
+Require-Text "crates/hydra-msg/src/packet_fragments/tests.rs" "candidate_direct_fragment_vectors_decode_and_reassemble"
+Require-Text "crates/hydra-msg/src/packet_fragments/tests.rs" "candidate_negative_fragment_vectors_fail_closed"
 Require-Text "examples/mobile_perf_web/web/app.js" "runWasmInteropFixtureProbe"
 Require-Text "examples/mobile_perf_web/web/app.js" "browser-wasm-frozen-fixture-interop"
 Require-Text "docs/validation/evidence/interop-test-harness.md" "CLI ↔ WASM compatibility"

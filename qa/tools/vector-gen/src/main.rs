@@ -12,14 +12,12 @@ use ml_kem::{
     kem::{Decapsulate, KeyExport},
 };
 use shake::{ExtendableOutput, Shake256, Update, XofReader};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{fs, path::{Path, PathBuf}};
 
+mod fragment_vectors;
 mod group_vectors;
 mod protocol_vectors;
+mod vector_matrix;
 
 const ROOT_LABEL: &[u8] = b"HYDRA-MSG/test-vectors/freeze-1";
 
@@ -828,6 +826,40 @@ fn generate_handshake_vectors(root: &Path) {
         entropy: &[],
     };
     write_vector(root, "TV-HS-CONF-000", &conf_metadata, &conf_artifacts);
+
+    let mut tampered_init_signature = init_signature.to_vec();
+    tampered_init_signature[0] ^= 1;
+    let mut tampered_resp_signature = resp_signature.to_vec();
+    tampered_resp_signature[0] ^= 1;
+    let mut tampered_resp_confirm = resp_confirm;
+    tampered_resp_confirm[0] ^= 1;
+    let mut tampered_finish_body = finish_body.clone();
+    let last = tampered_finish_body
+        .last_mut()
+        .expect("FINISH ciphertext and tag are non-empty");
+    *last ^= 1;
+    let bad_artifacts: Vec<(&str, &[u8])> = vec![
+        ("initiator_verification_key", init_verification.as_ref()),
+        ("init_signature_digest", &init_sig_digest),
+        ("tampered_init_signature", &tampered_init_signature),
+        ("responder_verification_key", resp_verification.as_ref()),
+        ("resp_signature_digest", &resp_sig_digest),
+        ("tampered_resp_signature", &tampered_resp_signature),
+        ("confirm_key", &confirm_key),
+        ("confirm_input", &confirm_input),
+        ("tampered_resp_confirm", &tampered_resp_confirm),
+        ("finish_key", &finish_key),
+        ("finish_outer_header", &finish_header),
+        ("tampered_finish_ciphertext_and_tag", &tampered_finish_body),
+    ];
+    let bad_metadata = VectorMetadata {
+        backend: "hydra-crypto; single RustCrypto backend",
+        result: "tampered INIT, RESP, confirmation, and FINISH artifacts rejected",
+        expected_state: "no handshake or session state committed",
+        cleanup: "erase all provisional handshake and authentication material",
+        entropy: &[],
+    };
+    write_vector(root, "TV-HS-TAMPER-000", &bad_metadata, &bad_artifacts);
 }
 
 fn write_provenance(root: &Path) {
@@ -841,21 +873,19 @@ fn write_provenance(root: &Path) {
         fs::read(tool_root.join("src").join("protocol_vectors.rs")).expect("read protocol source");
     let group_vectors_rs =
         fs::read(tool_root.join("src").join("group_vectors.rs")).expect("read group source");
-    let rustc = Command::new("rustc")
-        .arg("--version")
-        .output()
-        .expect("run rustc --version");
-    assert!(rustc.status.success(), "rustc --version must succeed");
+    let fragment_vectors_rs = fs::read(tool_root.join("src").join("fragment_vectors.rs"))
+        .expect("read fragment source");
+    let vector_matrix_rs = fs::read(tool_root.join("src").join("vector_matrix.rs"))
+        .expect("read vector matrix source");
     let text = format!(
-        "claim=local deterministic primitive, envelope, handshake, session, refresh, identity, and group candidate vectors; no PQ interoperability claim\nbackend=HYDRA reference implementation; hydra-session; hydra-group; hydra-crypto RustCrypto candidate adapter; RustCrypto ml-kem 0.3.2 deterministic fixture; RustCrypto ml-dsa 0.1.1 deterministic fixture\nrustc={}\ntool=hydra-vector-gen 0.1.0\ntool_cargo_toml_sha3_256={}\ntool_cargo_lock_sha3_256={}\ntool_main_rs_sha3_256={}\ntool_protocol_vectors_rs_sha3_256={}\ntool_group_vectors_rs_sha3_256={}\n",
-        String::from_utf8(rustc.stdout)
-            .expect("rustc output is UTF-8")
-            .trim(),
+        "claim=local deterministic primitive, envelope, handshake, session, refresh, identity, group, TreeKEM, and fragmentation candidate vectors; no PQ interoperability claim\nbackend=HYDRA reference implementation; hydra-session; hydra-group; hydra-crypto RustCrypto candidate adapter; RustCrypto ml-kem 0.3.2 deterministic fixture; RustCrypto ml-dsa 0.1.1 deterministic fixture\nrustc_policy=MSRV 1.88; actual generator compiler belongs in release evidence, not manifest-bound bytes\ntool=hydra-vector-gen 0.1.0\ntool_cargo_toml_sha3_256={}\ntool_cargo_lock_sha3_256={}\ntool_main_rs_sha3_256={}\ntool_protocol_vectors_rs_sha3_256={}\ntool_group_vectors_rs_sha3_256={}\ntool_fragment_vectors_rs_sha3_256={}\ntool_vector_matrix_rs_sha3_256={}\n",
         sha3_256_hex(&cargo_toml),
         sha3_256_hex(&cargo_lock),
         sha3_256_hex(&main_rs),
         sha3_256_hex(&protocol_vectors_rs),
-        sha3_256_hex(&group_vectors_rs)
+        sha3_256_hex(&group_vectors_rs),
+        sha3_256_hex(&fragment_vectors_rs),
+        sha3_256_hex(&vector_matrix_rs)
     );
     fs::write(directory.join("backend.txt"), text).expect("write provenance");
 }
@@ -863,6 +893,7 @@ fn write_provenance(root: &Path) {
 fn clean_generated_output(root: &Path) {
     for category in [
         "envelope",
+        "fragment",
         "handshake",
         "identity",
         "group",
@@ -1040,6 +1071,8 @@ fn main() {
     let arguments = std::env::args().skip(1).collect::<Vec<_>>();
     if arguments == ["--verify"] {
         verify_manifest(&output).expect("verify existing manifest");
+        vector_matrix::verify(&output).expect("verify candidate vector matrix");
+        fragment_vectors::verify(&output).expect("verify fragment vectors against generator");
         println!("{}", output.display());
         return;
     }
@@ -1052,11 +1085,14 @@ fn main() {
     generate_mldsa(&output);
     generate_envelope_vectors(&output);
     generate_handshake_vectors(&output);
+    fragment_vectors::generate(&output);
     protocol_vectors::generate(&output);
     group_vectors::generate(&output);
     write_provenance(&output);
     write_manifest(&output);
     verify_manifest(&output).expect("verify generated manifest");
+    vector_matrix::verify(&output).expect("verify generated vector matrix");
+    fragment_vectors::verify(&output).expect("verify generated fragment vectors");
 
     println!("{}", output.display());
 }

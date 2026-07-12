@@ -18,8 +18,8 @@ pub use hydra_msg::{
     ContactId, HydraContact, HydraIdentitySummary, HydraLobby, HydraLobbyPolicy,
     HydraLobbyRoutingHint, HydraMessage, HydraMsgError, HydraOneTimeContactCard, HydraResult,
     HydraSessionSecurityPolicy, HydraSessionSecurityStatus, HydraSessionStatus,
-    HydraStorageDebugStatus, HydraStorageStatus, IdentityId, LobbyId,
-    MessageId, ReceivedHydraMessage,
+    HydraStorageDebugStatus, HydraStorageStatus, IdentityId, LobbyId, MessageId,
+    ReceivedHydraMessage,
 };
 pub use ui::{
     AppUiState, ConversationRef, DisplayDirection, DisplayMessage, NotificationPreferences,

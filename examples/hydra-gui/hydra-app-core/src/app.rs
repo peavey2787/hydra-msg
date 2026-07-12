@@ -3,8 +3,7 @@ use crate::{
     HydraContact, HydraIdentitySummary, HydraLobby, HydraLobbyPolicy, HydraLobbyRoutingHint,
     HydraMessage, HydraOneTimeContactCard, HydraResult, HydraSessionSecurityPolicy,
     HydraSessionSecurityStatus, HydraSessionStatus, HydraStorageDebugStatus, HydraStorageStatus,
-    IdentityId, LobbyId, NotificationPreferences,
-    ReceivedHydraMessage, RememberMePolicy,
+    IdentityId, LobbyId, NotificationPreferences, ReceivedHydraMessage, RememberMePolicy,
 };
 use hydra_msg::{Hydra, HydraEnvelope};
 use std::path::Path;

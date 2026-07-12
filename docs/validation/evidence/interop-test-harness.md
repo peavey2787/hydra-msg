@@ -13,7 +13,9 @@ HYDRA-MSG has a dedicated interop gate instead of relying only on fresh same-cod
 
 | Boundary | Enforced by |
 | --- | --- |
-| Frozen packet generated from a candidate vector opens correctly | `qa/tests/interop` receives `TV-DATA-000/envelope.bin` through the current `hydra-session` runtime. |
+| Committed packet and ratchet candidates execute through the current runtime | `qa/tests/interop` receives `TV-DATA-000` plus ordered, damaged, exact-gap, replay, and too-far-ahead ratchet artifacts through `hydra-session`. |
+| Handshake, refresh, and identity candidates remain consumable | `qa/tests/interop` verifies ML-DSA digests/signatures, bootstrap modes/classes, responder confirmation, FINISH authentication, isolated handshake tampering, refresh-signature rejection, and rotation-state preservation. |
+| Negative group candidates preserve parent state | Every generated `TV-GROUP-NEG-*` candidate except the intentional fork transition is checked for identical before/after state commitments. |
 | Frozen outer-header fixture remains canonical | `qa/tests/interop` verifies `TV-HDR-000/outer_header.bin` against the current encoder. |
 | Current state fixture opens across runtime boundary | `qa/tests/interop` creates current chunked encrypted state bytes, writes them as native `state.hydra`, and opens them through the normal public `Hydra::open` path. |
 | Current backup fixture imports across runtime boundary | `qa/tests/interop` creates a current chunked backup, verifies it, and imports it through the public runtime. |

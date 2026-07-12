@@ -8,8 +8,7 @@ use crate::{
         MAX_ANONYMOUS_AUTH_SPENT, MAX_CONTACTS, MAX_IDENTITIES, MAX_LOBBIES, MAX_MESSAGES,
         MAX_MESSAGES_PER_CONTACT, MAX_STORED_MESSAGE_BYTES, MAX_STORED_MESSAGE_BYTES_PER_CONTACT,
     },
-    ContactId, Hydra, HydraMsgError, HydraResult, HydraSessionSecurityPolicy,
-    STATE_SNAPSHOT_MAGIC,
+    ContactId, Hydra, HydraMsgError, HydraResult, HydraSessionSecurityPolicy, STATE_SNAPSHOT_MAGIC,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -208,10 +207,7 @@ impl Hydra {
                         parts.next(),
                         "state session security policy value",
                     )?;
-                    reject_extra_snapshot_fields(
-                        parts.next(),
-                        "state session security policy",
-                    )?;
+                    reject_extra_snapshot_fields(parts.next(), "state session security policy")?;
                     let contact_id = ContactId::from_hex(contact_hex)?;
                     let _ = HydraSessionSecurityPolicy::from_snapshot_value(policy_value)?;
                     reject_duplicate_collection_record(

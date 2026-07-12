@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 
 #[cfg(test)]
+mod candidate_vectors;
+
+#[cfg(test)]
 mod tests {
     use std::{fs, path::PathBuf};
 

@@ -4,8 +4,7 @@
 use hydra_app_core::{
     CarrierConfig, CarrierKind, ContactId, ConversationRef, HydraApp, HydraLobbyPolicy,
     HydraMessage, HydraMsgError, HydraSessionSecurityPolicy, HydraSessionStatus, IdentityId,
-    NotificationPreferences,
-    RememberMePolicy,
+    NotificationPreferences, RememberMePolicy,
 };
 use std::{
     fs,

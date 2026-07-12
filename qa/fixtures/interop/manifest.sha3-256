@@ -5,3 +5,4 @@ d3f1ad9398e9055c8773ad68f7426d27bb8549c12705deee0f8b898db7891165  qa/vectors/per
 a785e283a61d6867cbedac1e5c1b5e1ceda80b0eec55cfc6665c89e2abdcfe7b  qa/vectors/persistence/negative/TV-PERSIST-STALE-GENERATION-000/state_envelope.bin
 58d0344348f094113e613b26ab289ea3f47eed08160039e36dae02f00efd15d3  qa/vectors/cross-version/TV-COMPAT-UNKNOWN-FUTURE-SNAPSHOT-000/state_envelope.bin
 2bad5a810317a49bce3242da53eb5b8356836c01bccc2dec2b1866fbe6a1e76b  qa/vectors/cross-version/TV-COMPAT-UNKNOWN-FUTURE-SNAPSHOT-000/backup.bin
+ff1ed0dd8d511e7f4f0c7bf77650bafe2ddc53cc1a2747e13d8e34c4cbcec513  qa/vectors/candidate/manifest.sha3-256
