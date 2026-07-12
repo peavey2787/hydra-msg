@@ -48,11 +48,8 @@ jobs:
           cargo install cargo-deny --locked
           cargo install wasm-pack --locked
 
-      - name: Refresh CI lock graph
-        run: |
-          rm -f Cargo.lock
-          cargo generate-lockfile
-          cargo fetch
+      - name: Fetch committed lock graph
+        run: cargo fetch --locked
 
       - name: Run bounded core validation
         shell: bash
@@ -146,9 +143,7 @@ jobs:
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
           {
-            rm -f Cargo.lock
-            cargo generate-lockfile
-            cargo fetch
+            cargo fetch --locked
             ./qa/ci/fuzz/check-fuzz.sh
           } 2>&1 | tee -a "$log_file"
 

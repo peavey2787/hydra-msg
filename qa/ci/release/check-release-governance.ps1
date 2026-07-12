@@ -62,7 +62,7 @@ Assert-Text ".github/workflows/ci.yml" 'HYDRA_RUN_BROWSER_E2E: "1"'
 Assert-Text ".github/workflows/ci.yml" "./qa/ci/reliability/check-browser-e2e.sh"
 Assert-Text ".github/workflows/ci.yml" "Deterministic fuzz regression"
 Assert-Text ".github/workflows/ci.yml" "./qa/ci/fuzz/check-fuzz.sh"
-Assert-Text ".github/workflows/ci.yml" "cargo generate-lockfile"
+Assert-Text ".github/workflows/ci.yml" "cargo fetch --locked"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/core.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser-lifecycle.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/fuzz-regression.log"
@@ -89,9 +89,12 @@ if ($badTempArtifactPath) {
 $lockMutation = Get-ChildItem "qa/ci" -Include "*.sh", "*.ps1" -Recurse -File |
     Where-Object { $_.Name -notin @("check-release-governance.sh", "check-release-governance.ps1") } |
     Select-String -Pattern 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile'
-if ($lockMutation) {
+$workflowLockMutation = Get-ChildItem ".github/workflows" -Include "*.yml", "*.yaml" -Recurse -File |
+    Select-String -Pattern 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile'
+if ($lockMutation -or $workflowLockMutation) {
     $lockMutation | ForEach-Object { Write-Host $_ }
-    throw "local QA scripts must not rewrite Cargo.lock; GitHub workflows may refresh their own CI lock graph explicitly"
+    $workflowLockMutation | ForEach-Object { Write-Host $_ }
+    throw "CI must validate the committed Cargo.lock with --locked; workflows and local QA scripts must not rewrite it."
 }
 
 $unpinnedActions = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |

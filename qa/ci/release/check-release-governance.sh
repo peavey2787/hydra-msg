@@ -76,7 +76,7 @@ require_text .github/workflows/ci.yml 'HYDRA_RUN_BROWSER_E2E: "1"'
 require_text .github/workflows/ci.yml './qa/ci/reliability/check-browser-e2e.sh'
 require_text .github/workflows/ci.yml 'Deterministic fuzz regression'
 require_text .github/workflows/ci.yml './qa/ci/fuzz/check-fuzz.sh'
-require_text .github/workflows/ci.yml 'cargo generate-lockfile'
+require_text .github/workflows/ci.yml 'cargo fetch --locked'
 require_text .github/workflows/ci.yml 'target/ci-logs/core.log'
 require_text .github/workflows/ci.yml 'target/ci-logs/browser-lifecycle.log'
 require_text .github/workflows/ci.yml 'target/ci-logs/fuzz-regression.log'
@@ -102,9 +102,12 @@ fi
 lock_mutation=$(grep -RInE 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile' qa/ci \
   --include '*.sh' --include '*.ps1' \
   --exclude 'check-release-governance.sh' --exclude 'check-release-governance.ps1' || true)
-if [ -n "$lock_mutation" ]; then
-  printf '%s\n' "$lock_mutation" >&2
-  echo "local QA scripts must not rewrite Cargo.lock; GitHub workflows may refresh their own CI lock graph explicitly" >&2
+workflow_lock_mutation=$(grep -RInE 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile' .github/workflows \
+  --include '*.yml' --include '*.yaml' || true)
+if [ -n "$lock_mutation$workflow_lock_mutation" ]; then
+  [ -z "$lock_mutation" ] || printf '%s\n' "$lock_mutation" >&2
+  [ -z "$workflow_lock_mutation" ] || printf '%s\n' "$workflow_lock_mutation" >&2
+  echo "CI must validate the committed Cargo.lock with --locked; workflows and local QA scripts must not rewrite it." >&2
   exit 1
 fi
 
