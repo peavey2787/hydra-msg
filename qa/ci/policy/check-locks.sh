@@ -12,6 +12,8 @@ if [ ! -f "$root_lock" ] || [ ! -f "$vector_lock" ]; then
   exit 1
 fi
 
+python3 "$HYDRA_REPO_ROOT/qa/ci/policy/check-workspace-lock.py"
+
 lock_pairs() {
   awk '
     $0 == "[[package]]" {

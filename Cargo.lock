@@ -44,6 +44,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bumpalo"
+version = "3.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1628fb46dfa0b37568d12e5edd512553eccf6a22a78e8bde00bb4aed84d5bdbf"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -226,9 +232,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
  "rand_core 0.10.1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -294,6 +302,14 @@ name = "hydra-core"
 version = "0.1.0"
 
 [[package]]
+name = "hydra-cross-version-compat"
+version = "0.1.0"
+dependencies = [
+ "hydra-core",
+ "hydra-msg",
+]
+
+[[package]]
 name = "hydra-crypto"
 version = "0.1.0"
 dependencies = [
@@ -319,6 +335,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydra-fuzz-gate"
+version = "0.1.0"
+dependencies = [
+ "hydra-core",
+ "hydra-crypto",
+ "hydra-envelope",
+ "hydra-msg",
+ "hydra-session",
+]
+
+[[package]]
 name = "hydra-group"
 version = "0.1.0"
 dependencies = [
@@ -326,6 +353,88 @@ dependencies = [
  "hydra-crypto",
  "hydra-envelope",
  "ml-kem",
+]
+
+[[package]]
+name = "hydra-interop-tests"
+version = "0.1.0"
+dependencies = [
+ "hydra-core",
+ "hydra-crypto",
+ "hydra-envelope",
+ "hydra-msg",
+ "hydra-session",
+]
+
+[[package]]
+name = "hydra-msg"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.4.3",
+ "hydra-core",
+ "hydra-crypto",
+ "hydra-envelope",
+ "hydra-group",
+ "hydra-session",
+ "js-sys",
+ "rand_core 0.10.1",
+ "scrypt",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "zeroize",
+]
+
+[[package]]
+name = "hydra-msg-cli"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-example-attachment-roundtrip"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-example-contact-card"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-example-handshake-roundtrip"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-example-lobby-roundtrip"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-example-mobile-perf-web"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
+
+[[package]]
+name = "hydra-msg-wasm"
+version = "0.1.0"
+dependencies = [
+ "getrandom 0.4.3",
+ "hydra-msg",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -344,6 +453,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01"
 dependencies = [
  "generic-array",
+]
+
+[[package]]
+name = "js-sys"
+version = "0.3.77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cfaf33c695fc6e08064efbc1f72ec937429614f25eef83af942d0e227c3a28f"
+dependencies = [
+ "once_cell",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -371,6 +490,19 @@ name = "libc"
 version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
+
+[[package]]
+name = "log"
+version = "0.4.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
+
+[[package]]
+name = "manual_file_carrier"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
 
 [[package]]
 name = "ml-dsa"
@@ -423,6 +555,12 @@ checksum = "071dfc062690e90b734c0b2273ce72ad0ffa95f0c74596bc250dcfd960262841"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "once_cell"
+version = "1.21.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
 
 [[package]]
 name = "opaque-debug"
@@ -505,6 +643,12 @@ checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
 dependencies = [
  "semver",
 ]
+
+[[package]]
+name = "rustversion"
+version = "1.0.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eded382c5f5f786b989652c49544c4877d9f015cc22e145a5ea8ea66c2921cd2"
 
 [[package]]
 name = "salsa20"
@@ -640,6 +784,94 @@ name = "wasi"
 version = "0.11.1+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
+
+[[package]]
+name = "wasm-bindgen"
+version = "0.2.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1edc8929d7499fc4e8f0be2262a241556cfc54a0bea223790e71446f2aab1ef5"
+dependencies = [
+ "cfg-if",
+ "once_cell",
+ "rustversion",
+ "wasm-bindgen-macro",
+]
+
+[[package]]
+name = "wasm-bindgen-backend"
+version = "0.2.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f0a0651a5c2bc21487bde11ee802ccaf4c51935d0d3d42a6101f98161700bc6"
+dependencies = [
+ "bumpalo",
+ "log",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-futures"
+version = "0.4.50"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "555d470ec0bc3bb57890405e5d4322cc9ea83cebb085523ced7be4144dac1e61"
+dependencies = [
+ "cfg-if",
+ "js-sys",
+ "once_cell",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "wasm-bindgen-macro"
+version = "0.2.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7fe63fc6d09ed3792bd0897b314f53de8e16568c2b3f7982f468c0bf9bd0b407"
+dependencies = [
+ "quote",
+ "wasm-bindgen-macro-support",
+]
+
+[[package]]
+name = "wasm-bindgen-macro-support"
+version = "0.2.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ae87ea40c9f689fc23f209965b6fb8a99ad69aeeb0231408be24920604395de"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "wasm-bindgen-backend",
+ "wasm-bindgen-shared",
+]
+
+[[package]]
+name = "wasm-bindgen-shared"
+version = "0.2.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
+dependencies = [
+ "unicode-ident",
+]
+
+[[package]]
+name = "web-sys"
+version = "0.3.77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "webrtc_manual_carrier"
+version = "0.1.0"
+dependencies = [
+ "hydra-msg",
+]
 
 [[package]]
 name = "x25519-dalek"

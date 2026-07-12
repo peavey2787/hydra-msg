@@ -148,6 +148,9 @@ function Get-LockPairs {
 function Invoke-LockGate {
     Write-Host ""
     Write-Host "==> lock-file checks" -ForegroundColor Cyan
+    python3 .\qa\ci\policy\check-workspace-lock.py
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
     $rootPairs = @(Get-LockPairs "Cargo.lock")
     $rootSet = @{}
     foreach ($pair in $rootPairs) {
@@ -406,6 +409,8 @@ function Invoke-DocsGate {
 
     Write-Host "docs/path/stale-term checks passed." -ForegroundColor Green
 }
+
+Invoke-Step "cargo metadata --locked" { cargo metadata --locked --format-version 1 --no-deps | Out-Null }
 
 if ($CheckFormatOnly) {
     Invoke-Step "cargo fmt --check" { cargo fmt --all -- --check }
