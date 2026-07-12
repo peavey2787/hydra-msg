@@ -78,7 +78,7 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
       expect(revisionA2).toBe(2);
     });
 
-    await test.step('reject the stale page only after its no-write transaction settles', async () => {
+    await test.step('reject the stale page without waiting on an implicit commit', async () => {
       const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
       expect(staleError).not.toBeNull();
       expect(staleError.message).toMatch(/stale profile revision/);
@@ -237,14 +237,17 @@ async function installIndexedDbHarness(page, options = {}) {
       });
     }
 
-    // Firefox can delay completion of a readwrite transaction that performed only a read.
-    // Queue a semantic no-op write so the transaction reaches its normal completion event
-    // without relying on explicit commit() or abort() behavior.
-    function queueNoOpSettlement(store, name, current, recordError) {
-      const request = current ? store.put(current) : store.delete(name);
-      request.onerror = () => {
-        recordError(request.error || new Error('IndexedDB stale transaction settlement failed'));
-      };
+    // Stale compare-and-swap failures must resolve deterministically in Firefox too.
+    // Abort the active readwrite transaction after the stale revision is observed and
+    // reject immediately instead of waiting for a browser-specific implicit commit.
+    function rejectAndAbortStaleTransaction(transaction, error, reject, recordError) {
+      recordError(error);
+      try {
+        transaction.abort();
+      } catch (abortError) {
+        recordError(abortError || error);
+      }
+      reject(error);
     }
 
     async function openDb() {
@@ -321,11 +324,11 @@ async function installIndexedDbHarness(page, options = {}) {
               const current = get.result || null;
               const currentRevision = current ? current.revision : 0;
               if (currentRevision !== expectedRevision) {
-                operationError = new Error(
+                const staleError = new Error(
                   `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
                 );
-                queueNoOpSettlement(store, name, current, (error) => {
-                  operationError = error;
+                rejectAndAbortStaleTransaction(tx, staleError, reject, (error) => {
+                  operationError = operationError || error;
                 });
                 return;
               }

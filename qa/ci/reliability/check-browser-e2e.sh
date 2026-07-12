@@ -45,8 +45,9 @@ done
 
 
 for required_stale_marker in \
-  "queueNoOpSettlement" \
-  "current ? store.put(current) : store.delete(name)" \
+  "rejectAndAbortStaleTransaction" \
+  "transaction.abort()" \
+  "reject(error)" \
   "uniqueDatabaseName" \
   "capturedSaveError"
 do
@@ -57,8 +58,9 @@ do
 done
 
 for required_adapter_marker in \
-  "queueHydraNoOpSettlement" \
-  "current ? store.put(current) : store.delete(name)"
+  "rejectAndAbortHydraStaleTransaction" \
+  "tx.abort()" \
+  "reject(error)"
 do
   if ! grep -Fq "$required_adapter_marker" crates/hydra-msg/src/browser/persistence.rs; then
     echo "production browser adapter Firefox-safe stale-CAS marker missing: $required_adapter_marker" >&2

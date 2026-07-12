@@ -40,14 +40,16 @@ foreach ($Text in @("operationError || tx.error", "tx.onabort = () => reject")) 
     Assert-Text $Persistence $Text
 }
 foreach ($Text in @(
-    "queueNoOpSettlement",
-    "current ? store.put(current) : store.delete(name)",
+    "rejectAndAbortStaleTransaction",
+    "transaction.abort()",
+    "reject(error)",
     "uniqueDatabaseName",
     "capturedSaveError"
 )) { Assert-Text $Spec $Text }
 foreach ($Text in @(
-    "queueHydraNoOpSettlement",
-    "current ? store.put(current) : store.delete(name)"
+    "rejectAndAbortHydraStaleTransaction",
+    "tx.abort()",
+    "reject(error)"
 )) { Assert-Text $Persistence $Text }
 foreach ($Text in @(
     "baseURL",

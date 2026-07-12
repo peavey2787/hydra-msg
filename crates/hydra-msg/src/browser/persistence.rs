@@ -101,14 +101,17 @@ function transactionFailure(tx, operationError, fallback) {
   return operationError || tx.error || fallback;
 }
 
-// Firefox can delay completion of a readwrite transaction that performed only a read.
-// Queue a semantic no-op write so the transaction reaches its normal completion event
-// without relying on explicit commit() or abort() behavior.
-function queueHydraNoOpSettlement(store, name, current, recordError) {
-  const request = current ? store.put(current) : store.delete(name);
-  request.onerror = () => {
-    recordError(request.error || new Error('IndexedDB stale transaction settlement failed'));
-  };
+// Stale compare-and-swap failures must resolve deterministically in Firefox too.
+// Abort the active readwrite transaction after the stale revision is observed and
+// reject immediately instead of waiting for a browser-specific implicit commit.
+function rejectAndAbortHydraStaleTransaction(tx, error, reject, recordError) {
+  recordError(error);
+  try {
+    tx.abort();
+  } catch (abortError) {
+    recordError(abortError || error);
+  }
+  reject(error);
 }
 
 export async function hydraIndexedDbLoad(name) {
@@ -194,12 +197,11 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
         try {
           const currentRevision = request.result ? hydraRecordRevision(request.result) : 0;
           if (currentRevision !== expectedRevision) {
-            operationError = staleHydraProfileError(
+            rejectAndAbortHydraStaleTransaction(tx, staleHydraProfileError(
               name,
               expectedRevision,
               currentRevision
-            );
-            queueHydraNoOpSettlement(store, name, request.result, (error) => {
+            ), reject, (error) => {
               operationError = operationError || error;
             });
             return;
@@ -216,8 +218,8 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
           };
         } catch (error) {
           operationError = error;
-          queueHydraNoOpSettlement(store, name, request.result, (settlementError) => {
-            operationError = operationError || settlementError;
+          rejectAndAbortHydraStaleTransaction(tx, error, reject, (abortError) => {
+            operationError = operationError || abortError;
           });
         }
       };
