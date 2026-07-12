@@ -206,4 +206,6 @@ PowerShell_transcript*.txt
 *.rej
 *.old
 *.new
-/ci-logs/
+/fuzz-regression.log
+/release-fuzz.log
+/release-fuzz-evidence/

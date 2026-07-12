@@ -101,15 +101,14 @@ function transactionFailure(tx, operationError, fallback) {
   return operationError || tx.error || fallback;
 }
 
-function commitHydraNoWriteTransaction(tx) {
-  if (typeof tx.commit !== 'function') {
-    return;
-  }
-  try {
-    tx.commit();
-  } catch (_) {
-    // Automatic commit remains the cross-browser fallback if explicit commit is unavailable.
-  }
+// Firefox can delay completion of a readwrite transaction that performed only a read.
+// Queue a semantic no-op write so the transaction reaches its normal completion event
+// without relying on explicit commit() or abort() behavior.
+function queueHydraNoOpSettlement(store, name, current, recordError) {
+  const request = current ? store.put(current) : store.delete(name);
+  request.onerror = () => {
+    recordError(request.error || new Error('IndexedDB stale transaction settlement failed'));
+  };
 }
 
 export async function hydraIndexedDbLoad(name) {
@@ -200,7 +199,9 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
               expectedRevision,
               currentRevision
             );
-            commitHydraNoWriteTransaction(tx);
+            queueHydraNoOpSettlement(store, name, request.result, (error) => {
+              operationError = operationError || error;
+            });
             return;
           }
           nextRevision = currentRevision + 1;
@@ -215,11 +216,9 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
           };
         } catch (error) {
           operationError = error;
-          try {
-            commitHydraNoWriteTransaction(tx);
-          } catch (_) {
-            // The transaction may already be completing; oncomplete reports operationError.
-          }
+          queueHydraNoOpSettlement(store, name, request.result, (settlementError) => {
+            operationError = operationError || settlementError;
+          });
         }
       };
       request.onerror = () => {

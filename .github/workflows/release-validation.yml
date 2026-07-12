@@ -56,7 +56,7 @@ jobs:
             | tee target/ci-logs/core.log
       - name: Upload core evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-${{ github.sha }}
           path: target/ci-logs/core.log
@@ -92,7 +92,7 @@ jobs:
           } 2>&1 | tee target/ci-logs/governance.log
       - name: Upload governance evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: governance-${{ github.sha }}
           path: target/ci-logs/governance.log
@@ -122,7 +122,7 @@ jobs:
           ./qa/ci/reliability/check-memory-safety.sh 2>&1 | tee target/ci-logs/miri.log
       - name: Upload Miri evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: miri-${{ github.sha }}
           path: target/ci-logs/miri.log
@@ -154,7 +154,7 @@ jobs:
           ./qa/ci/reliability/check-memory-safety.sh 2>&1 | tee target/ci-logs/sanitizer-address.log
       - name: Upload sanitizer evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: sanitizer-address-${{ github.sha }}
           path: target/ci-logs/sanitizer-address.log
@@ -187,7 +187,7 @@ jobs:
           ./qa/ci/reliability/check-browser-e2e.sh 2>&1 | tee target/ci-logs/browser.log
       - name: Upload browser evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-${{ github.sha }}
           path: |
@@ -222,7 +222,7 @@ jobs:
           ./qa/ci/quality/check-coverage.sh 2>&1 | tee target/ci-logs/coverage.log
       - name: Upload coverage evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: coverage-${{ github.sha }}
           path: |
@@ -256,7 +256,7 @@ jobs:
           ./qa/ci/quality/check-mutation.sh 2>&1 | tee target/ci-logs/mutation.log
       - name: Upload mutation evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mutation-${{ github.sha }}
           path: |
@@ -287,24 +287,28 @@ jobs:
         env:
           HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"
           HYDRA_COVERAGE_FUZZ_RUNS: ${{ inputs.fuzz_runs || '100000' }}
+          HYDRA_COVERAGE_FUZZ_EVIDENCE_DIR: ${{ github.workspace }}/release-fuzz-evidence
         run: |
-          # Keep upload inputs under the workspace. upload-artifact v7 runs in a
-          # container on Linux, where runner.temp can resolve to a different mount.
-          log_dir="$GITHUB_WORKSPACE/ci-logs"
-          log_file="$log_dir/fuzz.log"
-          mkdir -p "$log_dir"
+          log_file="$GITHUB_WORKSPACE/release-fuzz.log"
           set -o pipefail
           ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee "$log_file"
           test -s "$log_file"
+      - name: Verify fuzz artifact inputs
+        if: always()
+        run: |
+          test -s "$GITHUB_WORKSPACE/release-fuzz.log"
+          test -s "$GITHUB_WORKSPACE/release-fuzz-evidence/README.txt"
+          find "$GITHUB_WORKSPACE/release-fuzz-evidence" -maxdepth 2 -type f -print
+          sha256sum "$GITHUB_WORKSPACE/release-fuzz.log"
       - name: Upload fuzz evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: fuzz-${{ github.sha }}
           path: |
-            ci-logs/fuzz.log
-            target/hydra-fuzz-evidence/
-          if-no-files-found: warn
+            ${{ github.workspace }}/release-fuzz.log
+            ${{ github.workspace }}/release-fuzz-evidence/
+          if-no-files-found: error
           retention-days: 90
 
   summary:

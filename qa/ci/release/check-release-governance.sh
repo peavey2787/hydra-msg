@@ -73,8 +73,7 @@ require_text .github/workflows/ci.yml './qa/ci/check-all.sh --only browser --ski
 require_text .github/workflows/ci.yml 'target/ci-logs/rust-policy-examples.log'
 require_text .github/workflows/ci.yml 'target/ci-logs/browser.log'
 require_text .github/workflows/ci.yml './qa/ci/fuzz/check-fuzz.sh'
-require_text .github/workflows/ci.yml 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
-require_text .github/workflows/ci.yml 'ci-logs/fuzz-regression.log'
+require_text .github/workflows/ci.yml '${{ github.workspace }}/fuzz-regression.log'
 require_text .github/workflows/ci.yml 'cargo fetch --locked'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
@@ -83,8 +82,7 @@ require_text .github/workflows/release-validation.yml 'target/ci-logs/core.log'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE: "1"'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_MUTATION: "1"'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
-require_text .github/workflows/release-validation.yml 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
-require_text .github/workflows/release-validation.yml 'ci-logs/fuzz.log'
+require_text .github/workflows/release-validation.yml '${{ github.workspace }}/release-fuzz.log'
 require_text .github/workflows/release-validation.yml 'cargo fetch --locked'
 require_text .github/workflows/release-validation.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/dependabot.yml 'package-ecosystem: github-actions'
@@ -103,7 +101,7 @@ if [ -n "$unpinned_actions" ]; then
 fi
 for workflow in .github/workflows/ci.yml .github/workflows/release-validation.yml; do
   require_text "$workflow" 'actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0'
-  require_text "$workflow" 'actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
+  require_text "$workflow" 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2'
 done
 require_text .github/workflows/ci.yml 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0'
 require_text .github/workflows/release-validation.yml 'actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0'

@@ -50,7 +50,7 @@ jobs:
 
       - name: Upload core CI evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-ci-${{ github.sha }}
           path: target/ci-logs/rust-policy-examples.log
@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload browser evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-lifecycle-${{ github.sha }}
           path: |
@@ -117,21 +117,24 @@ jobs:
 
       - name: Run deterministic fuzz corpus gate
         run: |
-          # Keep upload inputs under the workspace. upload-artifact v7 runs in a
-          # container on Linux, where runner.temp can resolve to a different mount.
-          log_dir="$GITHUB_WORKSPACE/ci-logs"
-          log_file="$log_dir/fuzz-regression.log"
-          mkdir -p "$log_dir"
+          log_file="$GITHUB_WORKSPACE/fuzz-regression.log"
           set -o pipefail
           ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee "$log_file"
           test -s "$log_file"
 
+      - name: Verify fuzz artifact input
+        if: always()
+        run: |
+          test -s "$GITHUB_WORKSPACE/fuzz-regression.log"
+          ls -l "$GITHUB_WORKSPACE/fuzz-regression.log"
+          sha256sum "$GITHUB_WORKSPACE/fuzz-regression.log"
+
       - name: Upload fuzz regression evidence
         if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: fuzz-regression-${{ github.sha }}
-          path: ci-logs/fuzz-regression.log
+          path: ${{ github.workspace }}/fuzz-regression.log
           if-no-files-found: error
           retention-days: 30
 

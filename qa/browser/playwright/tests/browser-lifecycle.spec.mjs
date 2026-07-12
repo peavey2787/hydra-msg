@@ -237,15 +237,14 @@ async function installIndexedDbHarness(page, options = {}) {
       });
     }
 
-    function commitNoWriteTransaction(transaction) {
-      if (typeof transaction.commit !== 'function') {
-        return;
-      }
-      try {
-        transaction.commit();
-      } catch (_) {
-        // Automatic commit remains the cross-browser fallback if explicit commit is unavailable.
-      }
+    // Firefox can delay completion of a readwrite transaction that performed only a read.
+    // Queue a semantic no-op write so the transaction reaches its normal completion event
+    // without relying on explicit commit() or abort() behavior.
+    function queueNoOpSettlement(store, name, current, recordError) {
+      const request = current ? store.put(current) : store.delete(name);
+      request.onerror = () => {
+        recordError(request.error || new Error('IndexedDB stale transaction settlement failed'));
+      };
     }
 
     async function openDb() {
@@ -325,7 +324,9 @@ async function installIndexedDbHarness(page, options = {}) {
                 operationError = new Error(
                   `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
                 );
-                commitNoWriteTransaction(tx);
+                queueNoOpSettlement(store, name, current, (error) => {
+                  operationError = error;
+                });
                 return;
               }
 
