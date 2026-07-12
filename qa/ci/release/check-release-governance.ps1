@@ -59,6 +59,8 @@ Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --only browser --sk
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/rust-policy-examples.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser.log"
 Assert-Text ".github/workflows/ci.yml" '${{ github.workspace }}/fuzz-regression.log'
+Assert-Text ".github/workflows/ci.yml" "hashFiles('fuzz-regression.log') != ''"
+Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"
 Assert-Text ".github/workflows/release-validation.yml" "./qa/ci/check-all.sh --through examples --skip-permissions"
@@ -67,6 +69,8 @@ Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE: "1"'
 Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_MUTATION: "1"'
 Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
 Assert-Text ".github/workflows/release-validation.yml" '${{ github.workspace }}/release-fuzz.log'
+Assert-Text ".github/workflows/release-validation.yml" "hashFiles('release-fuzz.log') != ''"
+Assert-Text ".github/workflows/release-validation.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/release-validation.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/dependabot.yml" "package-ecosystem: github-actions"
 

@@ -112,25 +112,27 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
 
-      - name: Fetch locked workspace dependencies
-        run: cargo fetch --locked
-
       - name: Run deterministic fuzz corpus gate
         run: |
           log_file="$GITHUB_WORKSPACE/fuzz-regression.log"
+          printf '%s\n' \
+            "HYDRA-MSG deterministic fuzz regression" \
+            "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          ./qa/ci/fuzz/check-fuzz.sh 2>&1 | tee "$log_file"
-          test -s "$log_file"
+          {
+            cargo fetch --locked
+            ./qa/ci/fuzz/check-fuzz.sh
+          } 2>&1 | tee -a "$log_file"
 
       - name: Verify fuzz artifact input
-        if: always()
+        if: ${{ always() && hashFiles('fuzz-regression.log') != '' }}
         run: |
           test -s "$GITHUB_WORKSPACE/fuzz-regression.log"
           ls -l "$GITHUB_WORKSPACE/fuzz-regression.log"
           sha256sum "$GITHUB_WORKSPACE/fuzz-regression.log"
 
       - name: Upload fuzz regression evidence
-        if: always()
+        if: ${{ always() && hashFiles('fuzz-regression.log') != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: fuzz-regression-${{ github.sha }}
