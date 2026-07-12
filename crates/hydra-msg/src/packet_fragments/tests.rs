@@ -49,19 +49,12 @@ fn fragment_count_and_index_boundaries_are_exact() {
 
 #[test]
 fn candidate_direct_fragment_vectors_decode_and_reassemble() {
-    const EXPECTED: &[u8] = include_bytes!(
-        "../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/payload.bin"
-    );
+    const EXPECTED: &[u8] =
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/payload.bin");
     let records: [&[u8]; 3] = [
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_0.bin"
-        ),
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_1.bin"
-        ),
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_2.bin"
-        ),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_0.bin"),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_1.bin"),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-DIRECT-000/part_2.bin"),
     ];
 
     let mut reassembled = Vec::new();
@@ -80,20 +73,14 @@ fn candidate_direct_fragment_vectors_decode_and_reassemble() {
 fn candidate_lobby_fragment_vectors_preserve_scope() {
     use crate::LobbyId;
 
-    const LOBBY_ID: &[u8] = include_bytes!(
-        "../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/lobby_id.bin"
-    );
-    const EXPECTED: &[u8] = include_bytes!(
-        "../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/payload.bin"
-    );
+    const LOBBY_ID: &[u8] =
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/lobby_id.bin");
+    const EXPECTED: &[u8] =
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/payload.bin");
     let lobby_id = LobbyId(LOBBY_ID.try_into().unwrap());
     let records: [&[u8]; 2] = [
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/part_0.bin"
-        ),
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/part_1.bin"
-        ),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/part_0.bin"),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-LOBBY-000/part_1.bin"),
     ];
 
     let mut reassembled = Vec::new();
@@ -111,9 +98,7 @@ fn candidate_lobby_fragment_vectors_preserve_scope() {
 #[test]
 fn candidate_negative_fragment_vectors_fail_closed() {
     let malformed: [&[u8]; 6] = [
-        include_bytes!(
-            "../../../../qa/vectors/candidate/fragment/TV-FRAG-BAD-000/zero_total.bin"
-        ),
+        include_bytes!("../../../../qa/vectors/candidate/fragment/TV-FRAG-BAD-000/zero_total.bin"),
         include_bytes!(
             "../../../../qa/vectors/candidate/fragment/TV-FRAG-BAD-000/index_equal_total.bin"
         ),

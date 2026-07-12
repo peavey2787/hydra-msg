@@ -1,6 +1,9 @@
 use std::{fs, path::PathBuf};
 
-use hydra_core::{types::{EnvelopeClass, OuterMode}, SUITE_ID};
+use hydra_core::{
+    types::{EnvelopeClass, OuterMode},
+    SUITE_ID,
+};
 use hydra_crypto::{
     CryptoBackend, MlDsaKeyPair, MlDsaVerificationKey, RustCryptoBackend, SecretBytes,
 };
@@ -26,8 +29,8 @@ fn exact<const N: usize>(bytes: Vec<u8>) -> [u8; N] {
 fn responder(vector_id: &str) -> SessionState {
     let transcript = exact::<64>(artifact("ratchet", vector_id, "transcript_hash.bin"));
     let handshake_secret = exact::<32>(artifact("ratchet", vector_id, "handshake_secret.bin"));
-    let secrets = derive_initial_secrets(&SecretBytes::from_array(handshake_secret), &transcript)
-        .unwrap();
+    let secrets =
+        derive_initial_secrets(&SecretBytes::from_array(handshake_secret), &transcript).unwrap();
     SessionState::established(
         SessionRole::Responder,
         transcript,
@@ -83,22 +86,16 @@ fn candidate_negative_handshake_vectors_fail_closed() {
         "initiator_verification_key.bin",
     ))
     .unwrap();
-    assert!(
-        initiator
-            .verify_digest(
-                &artifact(
-                    "handshake",
-                    "TV-HS-TAMPER-000",
-                    "init_signature_digest.bin",
-                ),
-                &artifact(
-                    "handshake",
-                    "TV-HS-TAMPER-000",
-                    "tampered_init_signature.bin",
-                ),
-            )
-            .is_err()
-    );
+    assert!(initiator
+        .verify_digest(
+            &artifact("handshake", "TV-HS-TAMPER-000", "init_signature_digest.bin",),
+            &artifact(
+                "handshake",
+                "TV-HS-TAMPER-000",
+                "tampered_init_signature.bin",
+            ),
+        )
+        .is_err());
 
     let responder = MlDsaVerificationKey::from_bytes(&artifact(
         "handshake",
@@ -106,63 +103,45 @@ fn candidate_negative_handshake_vectors_fail_closed() {
         "responder_verification_key.bin",
     ))
     .unwrap();
-    assert!(
-        responder
-            .verify_digest(
-                &artifact(
-                    "handshake",
-                    "TV-HS-TAMPER-000",
-                    "resp_signature_digest.bin",
-                ),
-                &artifact(
-                    "handshake",
-                    "TV-HS-TAMPER-000",
-                    "tampered_resp_signature.bin",
-                ),
-            )
-            .is_err()
-    );
+    assert!(responder
+        .verify_digest(
+            &artifact("handshake", "TV-HS-TAMPER-000", "resp_signature_digest.bin",),
+            &artifact(
+                "handshake",
+                "TV-HS-TAMPER-000",
+                "tampered_resp_signature.bin",
+            ),
+        )
+        .is_err());
 
     let confirm_key = SecretBytes::from_array(exact::<32>(artifact(
         "handshake",
         "TV-HS-TAMPER-000",
         "confirm_key.bin",
     )));
-    assert!(
-        RustCryptoBackend::verify_hmac_sha3_256(
-            &confirm_key,
-            &artifact("handshake", "TV-HS-TAMPER-000", "confirm_input.bin"),
-            &artifact(
-                "handshake",
-                "TV-HS-TAMPER-000",
-                "tampered_resp_confirm.bin",
-            ),
-        )
-        .is_err()
-    );
+    assert!(RustCryptoBackend::verify_hmac_sha3_256(
+        &confirm_key,
+        &artifact("handshake", "TV-HS-TAMPER-000", "confirm_input.bin"),
+        &artifact("handshake", "TV-HS-TAMPER-000", "tampered_resp_confirm.bin",),
+    )
+    .is_err());
 
     let finish_key = SecretBytes::from_array(exact::<32>(artifact(
         "handshake",
         "TV-HS-TAMPER-000",
         "finish_key.bin",
     )));
-    assert!(
-        RustCryptoBackend::aead_open(
-            &finish_key,
-            &[0_u8; 12],
-            &artifact(
-                "handshake",
-                "TV-HS-TAMPER-000",
-                "finish_outer_header.bin",
-            ),
-            &artifact(
-                "handshake",
-                "TV-HS-TAMPER-000",
-                "tampered_finish_ciphertext_and_tag.bin",
-            ),
-        )
-        .is_err()
-    );
+    assert!(RustCryptoBackend::aead_open(
+        &finish_key,
+        &[0_u8; 12],
+        &artifact("handshake", "TV-HS-TAMPER-000", "finish_outer_header.bin",),
+        &artifact(
+            "handshake",
+            "TV-HS-TAMPER-000",
+            "tampered_finish_ciphertext_and_tag.bin",
+        ),
+    )
+    .is_err());
 }
 
 #[test]
@@ -208,15 +187,13 @@ fn candidate_refresh_signatures_verify_and_mutation_fails() {
         "identity_xi.bin",
     )))
     .unwrap();
-    assert!(
-        bad_key
-            .verification_key
-            .verify_digest(
-                &digest,
-                &artifact("refresh", "TV-REFRESH-001", "mutated_signature.bin"),
-            )
-            .is_err()
-    );
+    assert!(bad_key
+        .verification_key
+        .verify_digest(
+            &digest,
+            &artifact("refresh", "TV-REFRESH-001", "mutated_signature.bin"),
+        )
+        .is_err());
     assert_eq!(
         artifact("refresh", "TV-REFRESH-001", "state_before.bin"),
         artifact("refresh", "TV-REFRESH-001", "state_after.bin")
@@ -260,11 +237,7 @@ fn candidate_ratchet_vectors_execute_current_session_runtime() {
     let mut ordered = responder("TV-RATCHET-001");
     assert_eq!(
         ordered.test_state_hash(),
-        exact::<32>(artifact(
-            "ratchet",
-            "TV-RATCHET-001",
-            "state_before.bin",
-        ))
+        exact::<32>(artifact("ratchet", "TV-RATCHET-001", "state_before.bin",))
     );
     let received = ordered
         .receive(&artifact("ratchet", "TV-RATCHET-001", "envelope.bin"))
@@ -275,24 +248,18 @@ fn candidate_ratchet_vectors_execute_current_session_runtime() {
     );
     assert_eq!(
         ordered.test_state_hash(),
-        exact::<32>(artifact(
-            "ratchet",
-            "TV-RATCHET-001",
-            "state_after.bin",
-        ))
+        exact::<32>(artifact("ratchet", "TV-RATCHET-001", "state_after.bin",))
     );
 
     let mut damaged = responder("TV-RATCHET-002");
     let before = damaged.test_state_hash();
-    assert!(
-        damaged
-            .receive(&artifact(
-                "ratchet",
-                "TV-RATCHET-002",
-                "mutated_envelope.bin",
-            ))
-            .is_err()
-    );
+    assert!(damaged
+        .receive(&artifact(
+            "ratchet",
+            "TV-RATCHET-002",
+            "mutated_envelope.bin",
+        ))
+        .is_err());
     assert_eq!(damaged.test_state_hash(), before);
 
     let mut boundary = responder("TV-RATCHET-003");
@@ -333,15 +300,13 @@ fn candidate_ratchet_vectors_execute_current_session_runtime() {
 
     let mut too_far = responder("TV-RATCHET-004");
     let before = too_far.test_state_hash();
-    assert!(
-        too_far
-            .receive(&artifact(
-                "ratchet",
-                "TV-RATCHET-004",
-                "future_envelope.bin",
-            ))
-            .is_err()
-    );
+    assert!(too_far
+        .receive(&artifact(
+            "ratchet",
+            "TV-RATCHET-004",
+            "future_envelope.bin",
+        ))
+        .is_err());
     assert_eq!(too_far.test_state_hash(), before);
 }
 
