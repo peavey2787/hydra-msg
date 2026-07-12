@@ -73,7 +73,8 @@ require_text .github/workflows/ci.yml './qa/ci/check-all.sh --only browser --ski
 require_text .github/workflows/ci.yml 'target/ci-logs/rust-policy-examples.log'
 require_text .github/workflows/ci.yml 'target/ci-logs/browser.log'
 require_text .github/workflows/ci.yml './qa/ci/fuzz/check-fuzz.sh'
-require_text .github/workflows/ci.yml '${{ runner.temp }}/hydra-ci-logs/fuzz-regression.log'
+require_text .github/workflows/ci.yml 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
+require_text .github/workflows/ci.yml 'ci-logs/fuzz-regression.log'
 require_text .github/workflows/ci.yml 'cargo fetch --locked'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
@@ -82,10 +83,16 @@ require_text .github/workflows/release-validation.yml 'target/ci-logs/core.log'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE: "1"'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_MUTATION: "1"'
 require_text .github/workflows/release-validation.yml 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
-require_text .github/workflows/release-validation.yml '${{ runner.temp }}/hydra-ci-logs/fuzz.log'
+require_text .github/workflows/release-validation.yml 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
+require_text .github/workflows/release-validation.yml 'ci-logs/fuzz.log'
 require_text .github/workflows/release-validation.yml 'cargo fetch --locked'
 require_text .github/workflows/release-validation.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/dependabot.yml 'package-ecosystem: github-actions'
+
+if grep -RInF '${{ runner.temp }}/hydra-ci-logs' .github/workflows; then
+  echo "GitHub artifact logs must stay under github.workspace, not runner.temp" >&2
+  exit 1
+fi
 
 unpinned_actions=$(grep -RInE '^[[:space:]]*uses:[[:space:]]+[^[:space:]]+@' .github/workflows \
   | grep -vE '@[0-9a-fA-F]{40}([[:space:]]|#|$)' || true)

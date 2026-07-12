@@ -58,7 +58,8 @@ Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --through examples 
 Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --only browser --skip-permissions"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/rust-policy-examples.log"
 Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser.log"
-Assert-Text ".github/workflows/ci.yml" '${{ runner.temp }}/hydra-ci-logs/fuzz-regression.log'
+Assert-Text ".github/workflows/ci.yml" 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
+Assert-Text ".github/workflows/ci.yml" 'ci-logs/fuzz-regression.log'
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"
 Assert-Text ".github/workflows/release-validation.yml" "./qa/ci/check-all.sh --through examples --skip-permissions"
@@ -66,9 +67,16 @@ Assert-Text ".github/workflows/release-validation.yml" "target/ci-logs/core.log"
 Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE: "1"'
 Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_MUTATION: "1"'
 Assert-Text ".github/workflows/release-validation.yml" 'HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"'
-Assert-Text ".github/workflows/release-validation.yml" '${{ runner.temp }}/hydra-ci-logs/fuzz.log'
+Assert-Text ".github/workflows/release-validation.yml" 'log_dir="$GITHUB_WORKSPACE/ci-logs"'
+Assert-Text ".github/workflows/release-validation.yml" 'ci-logs/fuzz.log'
 Assert-Text ".github/workflows/release-validation.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/dependabot.yml" "package-ecosystem: github-actions"
+
+$badTempArtifactPath = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |
+    Select-String -SimpleMatch '${{ runner.temp }}/hydra-ci-logs'
+if ($badTempArtifactPath) {
+    throw "GitHub artifact logs must stay under github.workspace, not runner.temp"
+}
 
 $unpinnedActions = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |
     Select-String -Pattern '^\s*uses:\s+\S+@' |

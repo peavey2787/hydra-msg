@@ -288,7 +288,9 @@ jobs:
           HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"
           HYDRA_COVERAGE_FUZZ_RUNS: ${{ inputs.fuzz_runs || '100000' }}
         run: |
-          log_dir="$RUNNER_TEMP/hydra-ci-logs"
+          # Keep upload inputs under the workspace. upload-artifact v7 runs in a
+          # container on Linux, where runner.temp can resolve to a different mount.
+          log_dir="$GITHUB_WORKSPACE/ci-logs"
           log_file="$log_dir/fuzz.log"
           mkdir -p "$log_dir"
           set -o pipefail
@@ -300,7 +302,7 @@ jobs:
         with:
           name: fuzz-${{ github.sha }}
           path: |
-            ${{ runner.temp }}/hydra-ci-logs/fuzz.log
+            ci-logs/fuzz.log
             target/hydra-fuzz-evidence/
           if-no-files-found: warn
           retention-days: 90

@@ -206,3 +206,4 @@ PowerShell_transcript*.txt
 *.rej
 *.old
 *.new
+/ci-logs/
