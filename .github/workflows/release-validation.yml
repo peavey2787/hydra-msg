@@ -281,6 +281,8 @@ jobs:
           rustup default stable
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz --locked
+      - name: Fetch locked workspace dependencies
+        run: cargo fetch --locked
       - name: Run fuzz gate
         env:
           HYDRA_RUN_COVERAGE_GUIDED_FUZZ: "1"

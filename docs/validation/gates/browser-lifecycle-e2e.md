@@ -81,3 +81,10 @@ HYDRA_BROWSER_TEST_URL=http://127.0.0.1:PORT HYDRA_RUN_BROWSER_E2E=1 \
 Replace `PORT` with the `examples/mobile_perf_web` host port.
 
 For a separately managed lifecycle-test origin, set `HYDRA_BROWSER_TEST_ORIGIN` to that trusted HTTP(S) origin. The repository-owned loopback server is disabled when this override is present.
+
+
+## Firefox transaction determinism
+
+Each lifecycle test uses a distinct IndexedDB database name so a failed or retried test cannot leave state that blocks the next case. Stale compare-and-swap writes queue no mutation; where supported, the adapter explicitly commits that no-write transaction and reports the stale revision only from the transaction's final completion event. Browsers without `IDBTransaction.commit()` use normal automatic commit semantics.
+
+GitHub Actions retains an HTML report, failure screenshots, and an `on-first-retry` trace. Those diagnostics are uploaded even when the browser job fails.

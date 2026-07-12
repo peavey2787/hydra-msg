@@ -58,9 +58,15 @@ export default defineConfig({
   fullyParallel: false,
   workers: workerCount,
   retries: process.env.CI ? 1 : 0,
-  reporter: [['list'], ['json', { outputFile: 'test-results/browser-lifecycle.json' }]],
+  reporter: [
+    ['list'],
+    ['json', { outputFile: 'test-results/browser-lifecycle.json' }],
+    ['html', { open: 'never', outputFolder: 'playwright-report' }]
+  ],
   use: {
-    baseURL: TEST_ORIGIN
+    baseURL: TEST_ORIGIN,
+    screenshot: 'only-on-failure',
+    trace: 'on-first-retry'
   },
   webServer: process.env.HYDRA_BROWSER_TEST_ORIGIN
     ? undefined

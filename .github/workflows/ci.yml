@@ -97,12 +97,47 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  fuzz-regression:
+    name: Deterministic fuzz regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install Rust stable toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Fetch locked workspace dependencies
+        run: cargo fetch --locked
+
+      - name: Run deterministic fuzz corpus gate
+        run: |
+          mkdir -p target/ci-logs
+          set -o pipefail
+          ./qa/ci/fuzz/check-fuzz.sh 2>&1 \
+            | tee target/ci-logs/fuzz-regression.log
+
+      - name: Upload fuzz regression evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-regression-${{ github.sha }}
+          path: target/ci-logs/fuzz-regression.log
+          if-no-files-found: error
+          retention-days: 30
+
   summary:
     name: CI summary
     if: always()
     needs:
       - rust-and-policy
       - browser-lifecycle
+      - fuzz-regression
     runs-on: ubuntu-24.04
     steps:
       - name: Publish commit validation summary
@@ -116,6 +151,7 @@ jobs:
           |---|---|
           | Rust, policy, and examples | ${{ needs['rust-and-policy'].result }} |
           | Browser lifecycle | ${{ needs['browser-lifecycle'].result }} |
+          | Deterministic fuzz regression | ${{ needs['fuzz-regression'].result }} |
 
           Complete console logs are attached to this workflow run as commit-named artifacts.
           EOF2

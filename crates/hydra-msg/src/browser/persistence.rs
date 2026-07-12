@@ -101,6 +101,17 @@ function transactionFailure(tx, operationError, fallback) {
   return operationError || tx.error || fallback;
 }
 
+function commitHydraNoWriteTransaction(tx) {
+  if (typeof tx.commit !== 'function') {
+    return;
+  }
+  try {
+    tx.commit();
+  } catch (_) {
+    // Automatic commit remains the cross-browser fallback if explicit commit is unavailable.
+  }
+}
+
 export async function hydraIndexedDbLoad(name) {
   name = validateHydraSnapshotName(name);
   const db = await openHydraIndexedDb();
@@ -189,7 +200,7 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
               expectedRevision,
               currentRevision
             );
-            tx.abort();
+            commitHydraNoWriteTransaction(tx);
             return;
           }
           nextRevision = currentRevision + 1;
@@ -205,7 +216,7 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
         } catch (error) {
           operationError = error;
           try {
-            tx.abort();
+            commitHydraNoWriteTransaction(tx);
           } catch (_) {
             // The transaction may already be completing; oncomplete reports operationError.
           }

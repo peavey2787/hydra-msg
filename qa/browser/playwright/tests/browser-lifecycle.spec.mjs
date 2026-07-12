@@ -1,6 +1,36 @@
 import { expect, test } from '@playwright/test';
 
 const APP_URL = process.env.HYDRA_BROWSER_TEST_URL || '';
+let databaseSequence = 0;
+
+function uniqueDatabaseName(testInfo) {
+  databaseSequence += 1;
+  return [
+    'hydra-browser-lifecycle-e2e',
+    testInfo.project.name,
+    testInfo.workerIndex,
+    testInfo.retry,
+    databaseSequence
+  ].join('-');
+}
+
+async function capturedSaveError(page, name, bytes, expectedRevision) {
+  return page.evaluate(async ({ profileName, profileBytes, revision }) => {
+    try {
+      await window.__hydraLifecycle.save(profileName, profileBytes, revision);
+      return null;
+    } catch (error) {
+      return {
+        name: error instanceof Error || error instanceof DOMException ? error.name : '',
+        message: error instanceof Error || error instanceof DOMException ? error.message : String(error)
+      };
+    }
+  }, {
+    profileName: name,
+    profileBytes: bytes,
+    revision: expectedRevision
+  });
+}
 
 test.describe('HYDRA browser storage lifecycle policy in real browser contexts', () => {
   test('IndexedDB unavailable/private-mode style denial fails closed without localStorage fallback', async ({ page }) => {
@@ -25,13 +55,14 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     expect(result.hydraLocalStorageKeys).toBe(0);
   });
 
-  test('compare-and-swap rejects stale two-tab writes and delete-while-open writes', async ({ context }) => {
+  test('compare-and-swap rejects stale two-tab writes and delete-while-open writes', async ({ context }, testInfo) => {
     const pageA = await context.newPage();
     const pageB = await context.newPage();
     await pageA.goto('/');
     await pageB.goto('/');
-    await installIndexedDbHarness(pageA);
-    await installIndexedDbHarness(pageB);
+    const databaseName = uniqueDatabaseName(testInfo);
+    await installIndexedDbHarness(pageA, { databaseName });
+    await installIndexedDbHarness(pageB, { databaseName });
 
     await test.step('establish two-tab revision divergence', async () => {
       await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
@@ -47,10 +78,10 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
       expect(revisionA2).toBe(2);
     });
 
-    await test.step('reject the stale page only after its transaction aborts', async () => {
-      await expect(
-        pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [7, 8, 9], 1))
-      ).rejects.toThrow(/stale profile revision/);
+    await test.step('reject the stale page only after its no-write transaction settles', async () => {
+      const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
+      expect(staleError).not.toBeNull();
+      expect(staleError.message).toMatch(/stale profile revision/);
       expect(await pageA.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
         bytes: [4, 5, 6],
         revision: 2
@@ -59,9 +90,9 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
 
     await test.step('delete while the second page remains open and reject its stale write', async () => {
       await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
-      await expect(
-        pageB.evaluate(() => window.__hydraLifecycle.save('same-profile', [10], 1))
-      ).rejects.toThrow(/stale profile revision/);
+      const staleAfterDelete = await capturedSaveError(pageB, 'same-profile', [10], 1);
+      expect(staleAfterDelete).not.toBeNull();
+      expect(staleAfterDelete.message).toMatch(/stale profile revision/);
       expect(await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
         bytes: null,
         revision: 0
@@ -69,9 +100,12 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     });
   });
 
-  test('QuotaExceededError is surfaced and does not commit partial data', async ({ page }) => {
+  test('QuotaExceededError is surfaced and does not commit partial data', async ({ page }, testInfo) => {
     await page.goto('/');
-    await installIndexedDbHarness(page, { quotaBytes: 4 });
+    await installIndexedDbHarness(page, {
+      databaseName: uniqueDatabaseName(testInfo),
+      quotaBytes: 4
+    });
     await page.evaluate(() => window.__hydraLifecycle.deleteProfile('quota-profile'));
 
     const quotaError = await page.evaluate(async () => {
@@ -93,9 +127,9 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     expect(loaded).toEqual({ bytes: null, revision: 0 });
   });
 
-  test('aborted tab-crash-style transaction rejects and leaves no committed profile', async ({ page }) => {
+  test('aborted tab-crash-style transaction rejects and leaves no committed profile', async ({ page }, testInfo) => {
     await page.goto('/');
-    await installIndexedDbHarness(page);
+    await installIndexedDbHarness(page, { databaseName: uniqueDatabaseName(testInfo) });
     await page.evaluate(() => window.__hydraLifecycle.deleteProfile('abort-profile'));
     await expect(page.evaluate(() => window.__hydraLifecycle.abortDuringFlush('abort-profile')))
       .rejects.toThrow(/AbortError|transaction abort/);
@@ -103,21 +137,22 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     expect(loaded).toEqual({ bytes: null, revision: 0 });
   });
 
-  test('reload with dirty in-memory state preserves only the last flushed revision', async ({ page }) => {
+  test('reload with dirty in-memory state preserves only the last flushed revision', async ({ page }, testInfo) => {
+    const databaseName = uniqueDatabaseName(testInfo);
     await page.goto('/');
-    await installIndexedDbHarness(page);
+    await installIndexedDbHarness(page, { databaseName });
     await page.evaluate(() => window.__hydraLifecycle.deleteProfile('reload-profile'));
     await page.evaluate(() => window.__hydraLifecycle.save('reload-profile', [1], 0));
     await page.evaluate(() => { window.__dirtyHydraBytes = [9, 9, 9]; });
     await page.reload();
-    await installIndexedDbHarness(page);
+    await installIndexedDbHarness(page, { databaseName });
     const loaded = await page.evaluate(() => window.__hydraLifecycle.load('reload-profile'));
     expect(loaded).toEqual({ bytes: [1], revision: 1 });
   });
 
-  test('mobile pagehide handler can flush before background/kill', async ({ page }) => {
+  test('mobile pagehide handler can flush before background/kill', async ({ page }, testInfo) => {
     await page.goto('/');
-    await installIndexedDbHarness(page);
+    await installIndexedDbHarness(page, { databaseName: uniqueDatabaseName(testInfo) });
     await page.evaluate(() => window.__hydraLifecycle.deleteProfile('pagehide-profile'));
     const flushed = await page.evaluate(async () => {
       let revision = 0;
@@ -173,8 +208,11 @@ async function runActionAndExpectKind(page, action, kind) {
 }
 
 async function installIndexedDbHarness(page, options = {}) {
-  await page.evaluate(({ quotaBytes = Number.MAX_SAFE_INTEGER } = {}) => {
-    const DB_NAME = 'hydra-browser-lifecycle-e2e';
+  await page.evaluate(({
+    databaseName = 'hydra-browser-lifecycle-e2e',
+    quotaBytes = Number.MAX_SAFE_INTEGER
+  } = {}) => {
+    const DB_NAME = databaseName;
     const DB_VERSION = 2;
     const STORE_NAME = 'snapshots';
 
@@ -197,6 +235,17 @@ async function installIndexedDbHarness(page, options = {}) {
           transaction.error || transactionError || new Error(`IndexedDB ${operation} aborted`)
         );
       });
+    }
+
+    function commitNoWriteTransaction(transaction) {
+      if (typeof transaction.commit !== 'function') {
+        return;
+      }
+      try {
+        transaction.commit();
+      } catch (_) {
+        // Automatic commit remains the cross-browser fallback if explicit commit is unavailable.
+      }
     }
 
     async function openDb() {
@@ -276,7 +325,7 @@ async function installIndexedDbHarness(page, options = {}) {
                 operationError = new Error(
                   `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
                 );
-                tx.abort();
+                commitNoWriteTransaction(tx);
                 return;
               }
 

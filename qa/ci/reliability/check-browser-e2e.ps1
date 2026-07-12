@@ -35,17 +35,29 @@ if (Select-String -LiteralPath $Spec -SimpleMatch "about:blank" -Quiet) {
     throw "Browser E2E storage tests must use a real HTTP origin, not about:blank"
 }
 
-if ((Select-String -LiteralPath $Spec -SimpleMatch "tx.commit()" -Quiet) -or
-    (Select-String -LiteralPath $Persistence -SimpleMatch "tx.commit()" -Quiet)) {
-    throw "Browser IndexedDB stale-write handling must settle through abort, not explicit commit"
-}
-foreach ($Text in @("operationError || tx.error", "tx.onabort = () => reject", "tx.abort();")) {
+foreach ($Text in @("operationError || tx.error", "tx.onabort = () => reject")) {
     Assert-Text $Spec $Text
     Assert-Text $Persistence $Text
 }
-foreach ($Text in @("baseURL", "webServer", "serve-test-origin.mjs", "HYDRA_BROWSER_WORKERS", "workers: workerCount")) {
-    Assert-Text $Config $Text
-}
+foreach ($Text in @(
+    "commitNoWriteTransaction",
+    "typeof transaction.commit !== 'function'",
+    "uniqueDatabaseName",
+    "capturedSaveError"
+)) { Assert-Text $Spec $Text }
+foreach ($Text in @(
+    "commitHydraNoWriteTransaction",
+    "typeof tx.commit !== 'function'"
+)) { Assert-Text $Persistence $Text }
+foreach ($Text in @(
+    "baseURL",
+    "webServer",
+    "serve-test-origin.mjs",
+    "HYDRA_BROWSER_WORKERS",
+    "workers: workerCount",
+    "trace: 'on-first-retry'",
+    "playwright-report"
+)) { Assert-Text $Config $Text }
 
 foreach ($Text in @(
     "IndexedDB unavailable/private-mode style denial",

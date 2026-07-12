@@ -79,6 +79,33 @@ assert_reference_app_sdk_boundary() {
 
 assert_reference_app_sdk_boundary
 
+assert_wasm_package_metadata() {
+  wasm_manifest=crates/hydra-msg-wasm/Cargo.toml
+  wasm_license=crates/hydra-msg-wasm/LICENSE
+  wasm_readme=crates/hydra-msg-wasm/README.md
+
+  for file in "$wasm_manifest" "$wasm_license" "$wasm_readme"; do
+    if [ ! -f "$file" ]; then
+      echo "WASM package metadata file missing: $file" >&2
+      exit 1
+    fi
+  done
+  if ! grep -Fq 'description = "WebAssembly and JavaScript bindings' "$wasm_manifest"; then
+    echo "hydra-msg-wasm package description is missing" >&2
+    exit 1
+  fi
+  if ! grep -Fq 'readme = "README.md"' "$wasm_manifest"; then
+    echo "hydra-msg-wasm package README declaration is missing" >&2
+    exit 1
+  fi
+  if ! cmp -s LICENSE "$wasm_license"; then
+    echo "hydra-msg-wasm package-local LICENSE must match the repository LICENSE" >&2
+    exit 1
+  fi
+}
+
+assert_wasm_package_metadata
+
 run_web_host_step() {
   name=$1
   manifest=$2

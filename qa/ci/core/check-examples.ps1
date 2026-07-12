@@ -88,6 +88,31 @@ function Assert-ReferenceAppSdkBoundary {
 
 Assert-ReferenceAppSdkBoundary
 
+function Assert-WasmPackageMetadata {
+    $manifest = "crates/hydra-msg-wasm/Cargo.toml"
+    $license = "crates/hydra-msg-wasm/LICENSE"
+    $readme = "crates/hydra-msg-wasm/README.md"
+
+    foreach ($file in @($manifest, $license, $readme)) {
+        if (!(Test-Path -LiteralPath $file -PathType Leaf)) {
+            throw "WASM package metadata file missing: $file"
+        }
+    }
+    if (!(Select-String -LiteralPath $manifest -SimpleMatch 'description = "WebAssembly and JavaScript bindings' -Quiet)) {
+        throw "hydra-msg-wasm package description is missing"
+    }
+    if (!(Select-String -LiteralPath $manifest -SimpleMatch 'readme = "README.md"' -Quiet)) {
+        throw "hydra-msg-wasm package README declaration is missing"
+    }
+    $rootLicenseHash = (Get-FileHash -Algorithm SHA256 -LiteralPath "LICENSE").Hash
+    $wasmLicenseHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $license).Hash
+    if ($rootLicenseHash -ne $wasmLicenseHash) {
+        throw "hydra-msg-wasm package-local LICENSE must match the repository LICENSE"
+    }
+}
+
+Assert-WasmPackageMetadata
+
 function Invoke-WebHostStep {
     param(
         [Parameter(Mandatory = $true)]

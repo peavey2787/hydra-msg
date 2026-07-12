@@ -21,12 +21,12 @@ the independently executed workflow result.
 - workspace formatting, tests, Clippy, policy, supply-chain, and documentation
   gates;
 - all maintained examples and WASM builds; and
-- the real Chromium, Firefox, and mobile-Chromium storage lifecycle suite.
+- the real Chromium, Firefox, and mobile-Chromium storage lifecycle suite; and
+- the deterministic fuzz corpus/state-machine regression gate.
 
-Both normal jobs retain their complete validation console logs as commit-named Actions
-artifacts, and a final summary job records each gate result on the workflow run. The browser job also uploads Playwright diagnostic output when
-present. Normal CI is kept below the release campaign's mutation and fuzzing
-cost so every change can receive prompt feedback.
+All normal jobs retain their complete validation console logs as commit-named Actions artifacts, and a final summary job records each gate result on the workflow run. The browser job also uploads its JSON report, HTML report, screenshots, and retry traces when present.
+
+Normal CI runs deterministic fuzz regression cases, but it intentionally omits the expensive mutation, measured coverage, Miri, sanitizer, and 100,000-run-per-target libFuzzer campaigns so every push receives prompt feedback.
 
 ## Release validation
 
@@ -46,9 +46,9 @@ Each job uploads its validation console log and any generated diagnostic directo
 commit-specific artifact name. A final summary job records all eight release-gate results on the workflow run. Artifacts are supporting evidence, not source
 files, and are not committed to the repository.
 
-The manual workflow accepts the fuzz-run count and mutation-job count. The
-normal release default remains 100,000 runs per fuzz target and one mutation
-worker.
+The manual workflow accepts the fuzz-run count and mutation-job count. The normal release default remains 100,000 runs per fuzz target and one mutation worker.
+
+This release workflow is the GitHub-hosted counterpart to the complete local `qa/ci/check-all.sh` pipeline; normal push/PR CI is deliberately smaller.
 
 ## Security and reproducibility rules
 
