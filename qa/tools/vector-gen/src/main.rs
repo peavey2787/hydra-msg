@@ -12,7 +12,10 @@ use ml_kem::{
     kem::{Decapsulate, KeyExport},
 };
 use shake::{ExtendableOutput, Shake256, Update, XofReader};
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 mod fragment_vectors;
 mod group_vectors;
@@ -873,8 +876,8 @@ fn write_provenance(root: &Path) {
         fs::read(tool_root.join("src").join("protocol_vectors.rs")).expect("read protocol source");
     let group_vectors_rs =
         fs::read(tool_root.join("src").join("group_vectors.rs")).expect("read group source");
-    let fragment_vectors_rs = fs::read(tool_root.join("src").join("fragment_vectors.rs"))
-        .expect("read fragment source");
+    let fragment_vectors_rs =
+        fs::read(tool_root.join("src").join("fragment_vectors.rs")).expect("read fragment source");
     let vector_matrix_rs = fs::read(tool_root.join("src").join("vector_matrix.rs"))
         .expect("read vector matrix source");
     let text = format!(

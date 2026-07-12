@@ -199,17 +199,17 @@ fn compare_generated(expected_root: &Path, actual_root: &Path) -> Result<(), Str
         let actual = fs::read(actual_fragment.join(&relative))
             .map_err(|error| format!("read committed fragment {relative}: {error}"))?;
         if expected != actual {
-            return Err(format!("fragment vector differs from generator: {relative}"));
+            return Err(format!(
+                "fragment vector differs from generator: {relative}"
+            ));
         }
     }
     Ok(())
 }
 
 pub fn verify(root: &Path) -> Result<(), String> {
-    let temporary = std::env::temp_dir().join(format!(
-        "hydra-fragment-vectors-{}",
-        std::process::id()
-    ));
+    let temporary =
+        std::env::temp_dir().join(format!("hydra-fragment-vectors-{}", std::process::id()));
     if temporary.exists() {
         fs::remove_dir_all(&temporary)
             .map_err(|error| format!("remove stale fragment vector temp directory: {error}"))?;
