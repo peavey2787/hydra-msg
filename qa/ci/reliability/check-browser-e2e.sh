@@ -45,28 +45,35 @@ done
 
 
 for required_stale_marker in \
-  "settleStaleTransactionOnComplete" \
-  "oncomplete guarantees" \
+  "readCurrentRevision" \
+  "readonly transaction" \
+  "never acquires an IndexedDB write lock" \
+  "Recheck inside the readwrite transaction" \
   "uniqueDatabaseName" \
-  "capturedSaveError"
+  "capturedSaveError" \
+  "saveReadwriteTransactions"
 do
   if ! grep -Fq "$required_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
-    echo "browser E2E normal-completion stale-CAS marker missing: $required_stale_marker" >&2
+    echo "browser E2E readonly-preflight stale-CAS marker missing: $required_stale_marker" >&2
     exit 1
   fi
 done
 
 for required_adapter_marker in \
-  "settleHydraStaleTransactionOnComplete" \
-  "oncomplete guarantees"
+  "readHydraCurrentRevision" \
+  "readonly transaction" \
+  "avoids acquiring a cross-tab write lock" \
+  "Recheck atomically inside the write transaction"
 do
   if ! grep -Fq "$required_adapter_marker" crates/hydra-msg/src/browser/persistence.rs; then
-    echo "production browser adapter normal-completion stale-CAS marker missing: $required_adapter_marker" >&2
+    echo "production browser adapter readonly-preflight stale-CAS marker missing: $required_adapter_marker" >&2
     exit 1
   fi
 done
 
 for forbidden_stale_marker in \
+  "settleStaleTransactionOnComplete" \
+  "settleHydraStaleTransactionOnComplete" \
   "queueNoOpSettlement" \
   "queueHydraNoOpSettlement" \
   "abortStaleTransactionAndWait" \

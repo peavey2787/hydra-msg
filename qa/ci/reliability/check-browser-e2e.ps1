@@ -40,16 +40,23 @@ foreach ($Text in @("function transactionFailure", "tx.onabort = () => reject"))
     Assert-Text $Persistence $Text
 }
 foreach ($Text in @(
-    "settleStaleTransactionOnComplete",
-    "oncomplete guarantees",
+    "readCurrentRevision",
+    "readonly transaction",
+    "never acquires an IndexedDB write lock",
+    "Recheck inside the readwrite transaction",
     "uniqueDatabaseName",
-    "capturedSaveError"
+    "capturedSaveError",
+    "saveReadwriteTransactions"
 )) { Assert-Text $Spec $Text }
 foreach ($Text in @(
-    "settleHydraStaleTransactionOnComplete",
-    "oncomplete guarantees"
+    "readHydraCurrentRevision",
+    "readonly transaction",
+    "avoids acquiring a cross-tab write lock",
+    "Recheck atomically inside the write transaction"
 )) { Assert-Text $Persistence $Text }
 foreach ($Text in @(
+    "settleStaleTransactionOnComplete",
+    "settleHydraStaleTransactionOnComplete",
     "queueNoOpSettlement",
     "queueHydraNoOpSettlement",
     "abortStaleTransactionAndWait",

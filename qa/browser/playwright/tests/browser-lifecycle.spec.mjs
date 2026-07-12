@@ -78,10 +78,13 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
       expect(revisionA2).toBe(2);
     });
 
-    await test.step('reject the stale page after its no-write transaction completes', async () => {
+    await test.step('reject the stale page without acquiring a write transaction', async () => {
+      const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
       const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
+      const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
       expect(staleError).not.toBeNull();
       expect(staleError.message).toMatch(/stale profile revision/);
+      expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
       expect(await pageA.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
         bytes: [4, 5, 6],
         revision: 2
@@ -90,9 +93,12 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
 
     await test.step('delete while the second page remains open and reject its stale write', async () => {
       await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
+      const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
       const staleAfterDelete = await capturedSaveError(pageB, 'same-profile', [10], 1);
+      const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
       expect(staleAfterDelete).not.toBeNull();
       expect(staleAfterDelete.message).toMatch(/stale profile revision/);
+      expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
       expect(await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
         bytes: null,
         revision: 0
@@ -215,6 +221,7 @@ async function installIndexedDbHarness(page, options = {}) {
     const DB_NAME = databaseName;
     const DB_VERSION = 2;
     const STORE_NAME = 'snapshots';
+    let saveReadwriteTransactions = 0;
 
     function requestToPromise(request) {
       return new Promise((resolve, reject) => {
@@ -251,12 +258,40 @@ async function installIndexedDbHarness(page, options = {}) {
       });
     }
 
-    // A stale compare-and-swap has not changed IndexedDB state. Record the stale
-    // error and let the read/write transaction finish normally. Rejecting from
-    // oncomplete guarantees that every browser has released the transaction lock;
-    // no semantic no-op write or abort race is required.
-    function settleStaleTransactionOnComplete(error, recordError) {
-      recordError(error);
+    async function readCurrentRevision(db, name) {
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        let revision = 0;
+        let operationError = null;
+
+        tx.oncomplete = () => {
+          if (operationError) {
+            reject(operationError);
+            return;
+          }
+          resolve(revision);
+        };
+        tx.onerror = () => {
+          operationError = transactionFailure(
+            tx,
+            operationError,
+            new Error('IndexedDB revision preflight failed')
+          );
+        };
+        tx.onabort = () => reject(transactionFailure(
+          tx,
+          operationError,
+          new Error('IndexedDB revision preflight aborted')
+        ));
+
+        const get = tx.objectStore(STORE_NAME).get(name);
+        get.onsuccess = () => {
+          revision = get.result ? get.result.revision : 0;
+        };
+        get.onerror = () => {
+          operationError = get.error || new Error('IndexedDB revision preflight failed');
+        };
+      });
     }
 
     async function openDb() {
@@ -279,6 +314,10 @@ async function installIndexedDbHarness(page, options = {}) {
     }
 
     window.__hydraLifecycle = {
+      stats() {
+        return { saveReadwriteTransactions };
+      },
+
       async load(name) {
         const db = await openDb();
         try {
@@ -300,7 +339,20 @@ async function installIndexedDbHarness(page, options = {}) {
         }
         const db = await openDb();
         try {
+          // Reject known-stale callers using a readonly transaction. This is the
+          // normal two-tab stale path and never acquires an IndexedDB write lock.
+          const preflightRevision = await readCurrentRevision(db, name);
+          if (preflightRevision !== expectedRevision) {
+            throw new Error(
+              `stale profile revision: expected ${expectedRevision}, got ${preflightRevision}`
+            );
+          }
+
+          // Recheck inside the readwrite transaction before writing. The second
+          // check preserves atomic compare-and-swap if another context commits
+          // between the readonly preflight and this transaction.
           return await new Promise((resolve, reject) => {
+            saveReadwriteTransactions += 1;
             const tx = db.transaction(STORE_NAME, 'readwrite');
             const store = tx.objectStore(STORE_NAME);
             let nextRevision = null;
@@ -338,12 +390,14 @@ async function installIndexedDbHarness(page, options = {}) {
               const current = get.result || null;
               const currentRevision = current ? current.revision : 0;
               if (currentRevision !== expectedRevision) {
-                const staleError = new Error(
+                operationError = new Error(
                   `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
                 );
-                settleStaleTransactionOnComplete(staleError, (error) => {
-                  operationError = operationError || error;
-                });
+                try {
+                  tx.abort();
+                } catch {
+                  reject(operationError);
+                }
                 return;
               }
 

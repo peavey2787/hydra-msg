@@ -106,12 +106,47 @@ function transactionFailure(tx, operationError, fallback) {
   }
 }
 
-// A stale compare-and-swap has not changed IndexedDB state. Record the stale
-// error and let the read/write transaction finish normally. Rejecting from
-// oncomplete guarantees that every browser has released the transaction lock;
-// no semantic no-op write or abort race is required.
-function settleHydraStaleTransactionOnComplete(error, recordError) {
-  recordError(error);
+async function readHydraCurrentRevision(db, name) {
+  return await new Promise((resolve, reject) => {
+    const tx = db.transaction(HYDRA_STORE_NAME, 'readonly');
+    let revision = 0;
+    let operationError = null;
+
+    tx.oncomplete = () => {
+      if (operationError) {
+        reject(operationError);
+        return;
+      }
+      resolve(revision);
+    };
+    tx.onerror = () => {
+      operationError = transactionFailure(
+        tx,
+        operationError,
+        new Error('IndexedDB revision preflight failed')
+      );
+    };
+    tx.onabort = () => reject(
+      transactionFailure(tx, operationError, new Error('IndexedDB revision preflight aborted'))
+    );
+
+    const request = tx.objectStore(HYDRA_STORE_NAME).get(name);
+    request.onsuccess = () => {
+      try {
+        revision = request.result ? hydraRecordRevision(request.result) : 0;
+      } catch (error) {
+        operationError = error;
+        try {
+          tx.abort();
+        } catch (_) {
+          reject(error);
+        }
+      }
+    };
+    request.onerror = () => {
+      operationError = request.error || new Error('IndexedDB revision preflight failed');
+    };
+  });
 }
 
 export async function hydraIndexedDbLoad(name) {
@@ -164,6 +199,15 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
   expectedRevision = validateHydraRevision(expectedRevision);
   const db = await openHydraIndexedDb();
   try {
+    // Reject the normal known-stale path through a readonly transaction. This
+    // avoids acquiring a cross-tab write lock when no write can be committed.
+    const preflightRevision = await readHydraCurrentRevision(db, name);
+    if (preflightRevision !== expectedRevision) {
+      throw staleHydraProfileError(name, expectedRevision, preflightRevision);
+    }
+
+    // Recheck atomically inside the write transaction before committing. This
+    // catches a tab/worker that wins the race after the readonly preflight.
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(HYDRA_STORE_NAME, 'readwrite');
       const store = tx.objectStore(HYDRA_STORE_NAME);
@@ -197,13 +241,12 @@ export async function hydraIndexedDbSave(name, bytes, expectedRevision) {
         try {
           const currentRevision = request.result ? hydraRecordRevision(request.result) : 0;
           if (currentRevision !== expectedRevision) {
-            settleHydraStaleTransactionOnComplete(staleHydraProfileError(
-              name,
-              expectedRevision,
-              currentRevision
-            ), (error) => {
-              operationError = operationError || error;
-            });
+            operationError = staleHydraProfileError(name, expectedRevision, currentRevision);
+            try {
+              tx.abort();
+            } catch (_) {
+              reject(operationError);
+            }
             return;
           }
           nextRevision = currentRevision + 1;
