@@ -105,8 +105,8 @@ $env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
 
 | Script | Purpose |
 |---|---|
-| `core/check-tests.ps1` / `core/check-tests.sh` | Tests/static checks only. Fuzz is intentionally reserved for the final `check-all` step. |
-| `core/check-rust.sh` | Workspace `cargo fmt --check`, `cargo test --workspace`, and `cargo clippy --workspace --all-targets -- -D warnings`. |
+| `core/check-tests.ps1` / `core/check-tests.sh` | Tests/static checks only. `check-all` calls this with release-heavy static probes deferred so the real Miri, sanitizer, browser, coverage, mutation, and fuzz sections run later. |
+| `core/check-rust.sh` | Committed-lock metadata validation, workspace `cargo fmt --check`, `cargo test --workspace --all-targets`, and `cargo clippy --workspace --all-targets -- -D warnings`. |
 | `core/check-examples.ps1` / `core/check-examples.sh` | Runs every package under `examples/`, including app-core examples, app help, browser host smoke runs, and browser package checks. |
 | `core/build-wasm-web.ps1` / `core/build-wasm-web.sh` | Reusable web package builder. |
 | `core/linux-permissions.sh` | Restores Unix execute bits and repairs stale Git worktree metadata after ZIP extraction. |
@@ -118,14 +118,14 @@ $env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
 | `policy/check-docs.sh` | Docs/static checks, README/product-doc navigation, stale terminology checks, and local Markdown link resolution. |
 | `policy/check-markdown-links.ps1` / `policy/check-markdown-links.sh` | Local Markdown link resolver used by docs checks. |
 | `policy/check-rust-file-sizes.ps1` / `policy/check-rust-file-sizes.sh` | Rust source-size ownership checks across `crates/` with documented exceptions in `policy/rust-size-allowlist.txt`. |
-| `policy/check-locks.sh` | Lock-file alignment checks for offline validation. |
+| `policy/check-locks.sh` | Lock-file coverage checks plus shared-version conflict checks between the root lock and the independent vector-tool lock. Vector-tool-only transitives are allowed. |
 | `policy/check-vectors.sh` | Vector generator and candidate manifest verification. |
 
 ## Security scripts
 
 | Script | Purpose |
 |---|---|
-| `security/check-supply-chain.ps1` / `security/check-supply-chain.sh` | cargo-audit, cargo-deny, license allowlist, advisory, yanked-crate, ban, and source provenance gate. |
+| `security/check-supply-chain.ps1` / `security/check-supply-chain.sh` | Verifies the committed root lock with `cargo fetch --locked`, then runs cargo-audit, cargo-deny, license allowlist, advisory, yanked-crate, ban, and source provenance gates. |
 | `security/check-privacy-invariants.ps1` / `security/check-privacy-invariants.sh` | Static implementation privacy guardrails for facade handshake and hardened boundaries. |
 | `security/check-resource-limits.ps1` / `security/check-resource-limits.sh` | Hostile-input sizes, bounded retained state/work, sparse fragment reassembly, and adversarial resource-limit tests. |
 | `security/check-metadata-leakage.ps1` / `security/check-metadata-leakage.sh` | Formal metadata-leakage audit gate. |

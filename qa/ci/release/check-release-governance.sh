@@ -68,12 +68,19 @@ require_text docs/validation/release/msrv-policy.md 'rust-version = "1.88"'
 require_text .github/workflows/ci.yml 'push:'
 require_text .github/workflows/ci.yml 'pull_request:'
 require_text .github/workflows/ci.yml 'workflow_dispatch:'
-require_text .github/workflows/ci.yml './qa/ci/check-all.sh --skip-permissions'
-require_text .github/workflows/ci.yml 'target/ci-logs/check-all.log'
-require_text .github/workflows/ci.yml 'Full sequential check-all'
+require_text .github/workflows/ci.yml 'Core bounded CI'
+require_text .github/workflows/ci.yml './qa/ci/core/check-tests.sh --skip-vectors --skip-release-static'
+require_text .github/workflows/ci.yml './qa/ci/core/check-examples.sh'
+require_text .github/workflows/ci.yml 'Browser lifecycle'
+require_text .github/workflows/ci.yml 'HYDRA_RUN_BROWSER_E2E: "1"'
+require_text .github/workflows/ci.yml './qa/ci/reliability/check-browser-e2e.sh'
+require_text .github/workflows/ci.yml 'Deterministic fuzz regression'
+require_text .github/workflows/ci.yml './qa/ci/fuzz/check-fuzz.sh'
+require_text .github/workflows/ci.yml 'cargo generate-lockfile'
+require_text .github/workflows/ci.yml 'target/ci-logs/core.log'
+require_text .github/workflows/ci.yml 'target/ci-logs/browser-lifecycle.log'
+require_text .github/workflows/ci.yml 'target/ci-logs/fuzz-regression.log'
 require_text .github/workflows/ci.yml 'tee -a "$log_file"'
-require_text .github/workflows/ci.yml 'cargo install cargo-fuzz --locked'
-require_text .github/workflows/ci.yml 'HYDRA_CHECK_ALL_ARGS'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
 require_text .github/workflows/release-validation.yml './qa/ci/check-all.sh'
@@ -89,6 +96,15 @@ require_text .github/dependabot.yml 'package-ecosystem: github-actions'
 
 if grep -RInF '${{ runner.temp }}/hydra-ci-logs' .github/workflows; then
   echo "GitHub artifact logs must stay under github.workspace, not runner.temp" >&2
+  exit 1
+fi
+
+lock_mutation=$(grep -RInE 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile' qa/ci \
+  --include '*.sh' --include '*.ps1' \
+  --exclude 'check-release-governance.sh' --exclude 'check-release-governance.ps1' || true)
+if [ -n "$lock_mutation" ]; then
+  printf '%s\n' "$lock_mutation" >&2
+  echo "local QA scripts must not rewrite Cargo.lock; GitHub workflows may refresh their own CI lock graph explicitly" >&2
   exit 1
 fi
 

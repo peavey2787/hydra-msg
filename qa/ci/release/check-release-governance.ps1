@@ -54,12 +54,19 @@ Assert-Text "docs/validation/release/msrv-policy.md" 'rust-version = "1.88"'
 Assert-Text ".github/workflows/ci.yml" "push:"
 Assert-Text ".github/workflows/ci.yml" "pull_request:"
 Assert-Text ".github/workflows/ci.yml" "workflow_dispatch:"
-Assert-Text ".github/workflows/ci.yml" "./qa/ci/check-all.sh --skip-permissions"
-Assert-Text ".github/workflows/ci.yml" "target/ci-logs/check-all.log"
-Assert-Text ".github/workflows/ci.yml" "Full sequential check-all"
+Assert-Text ".github/workflows/ci.yml" "Core bounded CI"
+Assert-Text ".github/workflows/ci.yml" "./qa/ci/core/check-tests.sh --skip-vectors --skip-release-static"
+Assert-Text ".github/workflows/ci.yml" "./qa/ci/core/check-examples.sh"
+Assert-Text ".github/workflows/ci.yml" "Browser lifecycle"
+Assert-Text ".github/workflows/ci.yml" 'HYDRA_RUN_BROWSER_E2E: "1"'
+Assert-Text ".github/workflows/ci.yml" "./qa/ci/reliability/check-browser-e2e.sh"
+Assert-Text ".github/workflows/ci.yml" "Deterministic fuzz regression"
+Assert-Text ".github/workflows/ci.yml" "./qa/ci/fuzz/check-fuzz.sh"
+Assert-Text ".github/workflows/ci.yml" "cargo generate-lockfile"
+Assert-Text ".github/workflows/ci.yml" "target/ci-logs/core.log"
+Assert-Text ".github/workflows/ci.yml" "target/ci-logs/browser-lifecycle.log"
+Assert-Text ".github/workflows/ci.yml" "target/ci-logs/fuzz-regression.log"
 Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
-Assert-Text ".github/workflows/ci.yml" "cargo install cargo-fuzz --locked"
-Assert-Text ".github/workflows/ci.yml" "HYDRA_CHECK_ALL_ARGS"
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"
 Assert-Text ".github/workflows/release-validation.yml" "./qa/ci/check-all.sh"
@@ -77,6 +84,14 @@ $badTempArtifactPath = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |
     Select-String -SimpleMatch '${{ runner.temp }}/hydra-ci-logs'
 if ($badTempArtifactPath) {
     throw "GitHub artifact logs must stay under github.workspace, not runner.temp"
+}
+
+$lockMutation = Get-ChildItem "qa/ci" -Include "*.sh", "*.ps1" -Recurse -File |
+    Where-Object { $_.Name -notin @("check-release-governance.sh", "check-release-governance.ps1") } |
+    Select-String -Pattern 'rm -f Cargo\.lock|Remove-Item.*Cargo\.lock|cargo generate-lockfile'
+if ($lockMutation) {
+    $lockMutation | ForEach-Object { Write-Host $_ }
+    throw "local QA scripts must not rewrite Cargo.lock; GitHub workflows may refresh their own CI lock graph explicitly"
 }
 
 $unpinnedActions = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |

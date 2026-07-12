@@ -37,10 +37,8 @@ if ! grep -q 'license = "GPL-2.0-or-later"' Cargo.toml; then
   exit 1
 fi
 
-printf '\n==> refresh root Cargo.lock\n'
-rm -f Cargo.lock
-cargo generate-lockfile
-cargo fetch
+printf '\n==> verify committed root Cargo.lock\n'
+cargo fetch --locked
 
 printf '\n==> cargo-audit advisories\n'
 cargo audit --deny warnings

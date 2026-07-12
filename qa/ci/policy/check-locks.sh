@@ -34,17 +34,25 @@ lock_pairs() {
 
 root_pairs=$(mktemp)
 vector_pairs=$(mktemp)
-missing_pairs=$(mktemp)
-trap 'rm -f "$root_pairs" "$vector_pairs" "$missing_pairs"' EXIT HUP INT TERM
+conflict_pairs=$(mktemp)
+trap 'rm -f "$root_pairs" "$vector_pairs" "$conflict_pairs"' EXIT HUP INT TERM
 
 lock_pairs "$root_lock" > "$root_pairs"
 lock_pairs "$vector_lock" | grep -v '^hydra-vector-gen 0\.1\.0$' > "$vector_pairs"
-comm -23 "$vector_pairs" "$root_pairs" > "$missing_pairs"
 
-if [ -s "$missing_pairs" ]; then
-  echo "vector tool lock contains package versions not present in the main workspace lock:" >&2
-  sed 's/^/  /' "$missing_pairs" >&2
-  echo "Run the vector tool lock update on a machine that can fetch crates, then commit qa/tools/vector-gen/Cargo.lock." >&2
+# The vector generator is intentionally locked as an independent tool. It may have
+# tool-only transitive dependencies that are not present in the main workspace
+# lock after Cargo regenerates the root graph. What must never happen is a shared
+# package resolving to a different version between the two locks.
+awk '
+  NR == FNR { root_pair[$1 " " $2] = 1; root_name[$1] = 1; next }
+  root_name[$1] && !root_pair[$1 " " $2] { print $0 }
+' "$root_pairs" "$vector_pairs" > "$conflict_pairs"
+
+if [ -s "$conflict_pairs" ]; then
+  echo "vector tool lock conflicts with main workspace package versions:" >&2
+  sed 's/^/  /' "$conflict_pairs" >&2
+  echo "Regenerate both Cargo.lock files on a machine that can fetch crates, then commit them together." >&2
   exit 1
 fi
 

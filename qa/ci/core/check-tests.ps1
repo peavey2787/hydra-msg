@@ -5,7 +5,8 @@
 [CmdletBinding()]
 param(
     [switch]$CheckFormatOnly,
-    [switch]$SkipVectors
+    [switch]$SkipVectors,
+    [switch]$SkipReleaseStatic
 )
 
 Set-StrictMode -Version Latest
@@ -410,21 +411,14 @@ function Invoke-DocsGate {
     Write-Host "docs/path/stale-term checks passed." -ForegroundColor Green
 }
 
-Invoke-Step "refresh root Cargo.lock" {
-    Remove-Item -LiteralPath "Cargo.lock" -Force -ErrorAction SilentlyContinue
-    cargo generate-lockfile
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    cargo fetch
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-}
-Invoke-Step "cargo metadata" { cargo metadata --format-version 1 --no-deps | Out-Null }
+Invoke-Step "cargo metadata --locked" { cargo metadata --locked --format-version 1 --no-deps | Out-Null }
 
 if ($CheckFormatOnly) {
     Invoke-Step "cargo fmt --check" { cargo fmt --all -- --check }
 } else {
     Invoke-Step "cargo fmt" { cargo fmt --all }
 }
-Invoke-Step "cargo test --workspace" { cargo test --workspace }
+Invoke-Step "cargo test --workspace --all-targets" { cargo test --workspace --all-targets }
 Invoke-Step "cargo clippy --workspace --all-targets -- -D warnings" {
     cargo clippy --workspace --all-targets -- -D warnings
 }
@@ -433,14 +427,22 @@ Invoke-Step "rust file size ownership checks" { .\qa\ci\policy\check-rust-file-s
 Invoke-Step "privacy invariant checks" { .\qa\ci\security\check-privacy-invariants.ps1 }
 Invoke-Step "resource-exhaustion/DoS limit checks" { .\qa\ci\security\check-resource-limits.ps1 }
 Invoke-Step "crash-consistency matrix checks" { .\qa\ci\reliability\check-crash-consistency.ps1 }
-Invoke-Step "Miri/sanitizer/fault-injection checks" { .\qa\ci\reliability\check-memory-safety.ps1 }
-Invoke-Step "WASM/browser lifecycle checks" { .\qa\ci\reliability\check-browser-lifecycle.ps1 }
+if (-not $SkipReleaseStatic) {
+    Invoke-Step "Miri/sanitizer/fault-injection checks" { .\qa\ci\reliability\check-memory-safety.ps1 }
+    Invoke-Step "WASM/browser lifecycle checks" { .\qa\ci\reliability\check-browser-lifecycle.ps1 }
+} else {
+    Write-Host "Miri/sanitizer and browser lifecycle gates deferred to check-all release sections." -ForegroundColor Yellow
+}
 Invoke-Step "metadata-leakage checks" { .\qa\ci\security\check-metadata-leakage.ps1 }
 Invoke-Step "persistence API shape checks" { .\qa\ci\security\check-persistence-api-shape.ps1 }
 Invoke-Step "persistence invariant checks" { .\qa\ci\security\check-persistence-invariants.ps1 }
 Invoke-Step "cross-runtime interop harness checks" { .\qa\ci\reliability\check-interop.ps1 }
-Invoke-Step "critical-path coverage target checks" { .\qa\ci\quality\check-coverage.ps1 }
-Invoke-Step "mutation target checks" { .\qa\ci\quality\check-mutation.ps1 }
+if (-not $SkipReleaseStatic) {
+    Invoke-Step "critical-path coverage target checks" { .\qa\ci\quality\check-coverage.ps1 }
+    Invoke-Step "mutation target checks" { .\qa\ci\quality\check-mutation.ps1 }
+} else {
+    Write-Host "Coverage and mutation gates deferred to check-all release sections." -ForegroundColor Yellow
+}
 Invoke-Step "cross-version compatibility checks" { .\qa\ci\reliability\check-cross-version-compat.ps1 }
 Invoke-Step "mobile perf web persistence checks" { .\qa\ci\reliability\check-mobile-perf-web.ps1 }
 Invoke-DocsGate

@@ -16,35 +16,30 @@ the independently executed workflow result.
 ## Pull-request and push CI
 
 `.github/workflows/ci.yml` runs on pushes to `main`, pull requests targeting
-`main`, and manual dispatch. Its default job invokes `qa/ci/check-all.sh` without
-a section cutoff, so CI follows the same ordered pipeline as the local full gate:
+`main`, and manual dispatch. Normal GitHub CI is a bounded commit gate, not the
+local release-complete `check-all` runner. It runs separate jobs for:
 
-- workspace formatting, tests, Clippy, policy, supply-chain, and documentation
-  gates;
-- all maintained examples and WASM builds;
-- Miri and sanitizer evidence;
-- the real Chromium, Firefox, and mobile-Chromium storage lifecycle suite;
-- measured branch coverage;
-- mutation testing; and
-- deterministic plus coverage-guided fuzzing, with the coverage-guided fuzz
-  campaign intentionally last.
+- core workspace/static validation plus maintained examples and WASM package
+  checks;
+- the real Chromium, Firefox, and mobile-Chromium browser lifecycle suite; and
+- the deterministic fuzz regression gate.
 
-The job is sequential and stops on the first failing section. Manual dispatch can
-pass extra `check-all` arguments such as `--from browser`, `--only fuzz`, or
-`--fuzz-runs 10000` through the `check_all_args` input when a maintainer
-intentionally wants a partial/resumed run. The default push/PR path remains the
-complete run.
+The GitHub jobs may regenerate their temporary runner copy of `Cargo.lock` before
+fetching dependencies so remote CI is not blocked by a stale checked-in lock while
+validating the current manifests. Local QA scripts do not rewrite committed lock
+files; `./qa/ci/check-all.sh` treats stale locks as failures that must be fixed
+and committed.
 
-The job retains its complete validation console log as a commit-named Actions
-artifact and also uploads generated coverage, mutation, fuzz, and browser
-reports when present.
+Each job stops on the first failing command inside that job and uploads a
+commit-named evidence log. The expensive release-evidence gates remain reserved
+for local `check-all` and the release-validation workflow.
 
 ## Release validation
 
 `.github/workflows/release-validation.yml` runs by manual dispatch and for
-version tags matching `v*`. It also invokes the full sequential `qa/ci/check-all.sh`
+version tags matching `v*`. It invokes the full sequential `qa/ci/check-all.sh`
 pipeline, using the same section order and stop-on-first-failure behavior as
-push/PR CI.
+the local release-complete gate.
 
 The release workflow uploads its validation console log and generated diagnostic
 directories using a commit-specific artifact name. Artifacts are supporting

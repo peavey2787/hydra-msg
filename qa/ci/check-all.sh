@@ -321,11 +321,11 @@ fi
 
 if should_run tests "$skip_tests"; then
   ran_any=1
+  set -- qa/ci/core/check-tests.sh --skip-release-static
   if [ "$skip_vectors" -eq 1 ]; then
-    run_step "tests/static validation" qa/ci/core/check-tests.sh --skip-vectors
-  else
-    run_step "tests/static validation" qa/ci/core/check-tests.sh
+    set -- "$@" --skip-vectors
   fi
+  run_step "tests/static validation" "$@"
 fi
 
 if should_run examples "$skip_examples"; then

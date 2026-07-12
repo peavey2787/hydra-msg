@@ -145,7 +145,7 @@ if (Test-ShouldRun "permissions" $SkipPermissions.IsPresent) {
 
 if (Test-ShouldRun "tests" $SkipTests.IsPresent) {
     $RanAny = $true
-    $testArgs = @()
+    $testArgs = @("-SkipReleaseStatic")
     if ($CheckFormatOnly) { $testArgs += "-CheckFormatOnly" }
     if ($SkipVectors) { $testArgs += "-SkipVectors" }
     Invoke-Step "tests/static validation" { .\qa\ci\core\check-tests.ps1 @testArgs }
