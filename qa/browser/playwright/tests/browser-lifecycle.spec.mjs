@@ -33,13 +33,20 @@ async function capturedSaveError(page, name, bytes, expectedRevision) {
 }
 
 async function closeLifecyclePage(page) {
+  if (page.isClosed()) return;
+
+  // Firefox may leave a page.evaluate() promise pending while the page is
+  // closing. Never await that promise again after the bounded grace period;
+  // doing so turns successful assertions into a 60-second teardown timeout.
   const closeRequest = page.evaluate(() => window.__hydraLifecycle?.close()).catch(() => {});
   await Promise.race([
     closeRequest,
     new Promise((resolve) => setTimeout(resolve, 1_000))
   ]);
-  await page.close({ runBeforeUnload: false }).catch(() => {});
-  await closeRequest;
+  await Promise.race([
+    page.close({ runBeforeUnload: false }).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, 5_000))
+  ]);
 }
 
 test.describe('HYDRA browser storage lifecycle policy in real browser contexts', () => {
@@ -127,7 +134,8 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
         expect((await pageB.evaluate(() => window.__hydraLifecycle.stats())).databaseOpens).toBe(1);
       });
     } finally {
-      await Promise.all([closeLifecyclePage(pageA), closeLifecyclePage(pageB)]);
+      await closeLifecyclePage(pageB);
+      await closeLifecyclePage(pageA);
     }
   });
 

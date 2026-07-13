@@ -111,11 +111,16 @@ if ($SpecCloseCount -ne 2) {
 if ($ProductionCloseCount -ne 1) {
     throw "Production browser adapter must close its cached IndexedDB connection only on versionchange"
 }
+if ((Get-Content -Raw $Spec).Contains("await closeRequest;")) {
+    throw "Firefox browser E2E teardown must not re-await a timed-out page.evaluate request"
+}
+
 foreach ($Text in @(
     "async function closeLifecyclePage",
     "window.__hydraLifecycle?.close()",
     "page.close({ runBeforeUnload: false })",
-    "await Promise.all([closeLifecyclePage(pageA), closeLifecyclePage(pageB)])"
+    "await closeLifecyclePage(pageB)",
+    "await closeLifecyclePage(pageA)"
 )) { Assert-Text $Spec $Text }
 
 foreach ($Text in @(

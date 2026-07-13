@@ -119,11 +119,17 @@ if [ "$production_close_count" -ne 1 ]; then
   exit 1
 fi
 
+if grep -Fq "await closeRequest;" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
+  echo "Firefox browser E2E teardown must not re-await a timed-out page.evaluate request" >&2
+  exit 1
+fi
+
 for teardown_marker in \
   "async function closeLifecyclePage" \
   "window.__hydraLifecycle?.close()" \
   "page.close({ runBeforeUnload: false })" \
-  "await Promise.all([closeLifecyclePage(pageA), closeLifecyclePage(pageB)])"
+  "await closeLifecyclePage(pageB)" \
+  "await closeLifecyclePage(pageA)"
 do
   if ! grep -Fq "$teardown_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
     echo "Firefox browser E2E deterministic teardown marker missing: $teardown_marker" >&2
