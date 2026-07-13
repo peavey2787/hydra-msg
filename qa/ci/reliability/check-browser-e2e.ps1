@@ -66,13 +66,20 @@ foreach ($Text in @(
     "Recheck inside the readwrite transaction",
     "uniqueDatabaseName",
     "capturedSaveError",
-    "saveReadwriteTransactions"
+    "saveReadwriteTransactions",
+    "let dbPromise = null",
+    "databaseOpens",
+    "Do not abort or queue a semantic no-op"
 )) { Assert-Text $Spec $Text }
 foreach ($Text in @(
     "readHydraCurrentRevision",
     "readonly transaction",
     "avoids acquiring a cross-tab write lock",
-    "Recheck atomically inside the write transaction"
+    "Recheck atomically inside the write transaction",
+    "let hydraDbPromise = null",
+    "async function hydraIndexedDb()",
+    "Reuse one connection per browser realm",
+    "No write request is queued"
 )) { Assert-TextInAnyFile $PersistenceSources $Text "Production browser adapter marker missing" }
 foreach ($Text in @(
     "settleStaleTransactionOnComplete",
@@ -89,6 +96,21 @@ foreach ($Text in @(
         throw "Obsolete stale-CAS settlement strategy remains: $Text"
     }
 }
+
+# A per-operation open/close cycle can leave Firefox connections close-pending
+# and block the next tab. The only close is the versionchange safety handler.
+$SpecCloseCount = (Select-String -LiteralPath $Spec -SimpleMatch "db.close();").Count
+$ProductionCloseCount = 0
+foreach ($Path in $PersistenceSources) {
+    $ProductionCloseCount += (Select-String -LiteralPath $Path -SimpleMatch "db.close();").Count
+}
+if ($SpecCloseCount -ne 1) {
+    throw "Browser E2E harness must close its cached IndexedDB connection only on versionchange"
+}
+if ($ProductionCloseCount -ne 1) {
+    throw "Production browser adapter must close its cached IndexedDB connection only on versionchange"
+}
+
 foreach ($Text in @(
     "baseURL",
     "webServer",
