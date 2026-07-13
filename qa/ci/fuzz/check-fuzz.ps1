@@ -10,13 +10,43 @@ if (-not $env:HYDRA_FUZZ_CASES) {
     $env:HYDRA_FUZZ_CASES = "8"
 }
 
+$DeterministicExitCode = 0
+
+function Invoke-DeterministicFuzzWithEphemeralRootLock {
+    $LockFile = Join-Path $RepoRoot "Cargo.lock"
+    $BackupFile = [System.IO.Path]::GetTempFileName()
+    $LockExisted = Test-Path -LiteralPath $LockFile -PathType Leaf
+    if ($LockExisted) {
+        Copy-Item -LiteralPath $LockFile -Destination $BackupFile -Force
+    }
+
+    $ExitCode = 0
+    try {
+        Write-Host "Local coverage-guided fuzzing: resolving an ephemeral root lock for the deterministic preflight"
+        cargo run -p hydra-fuzz-gate --
+        $ExitCode = $LASTEXITCODE
+    } finally {
+        if ($LockExisted) {
+            Copy-Item -LiteralPath $BackupFile -Destination $LockFile -Force
+        } else {
+            Remove-Item -LiteralPath $LockFile -Force -ErrorAction SilentlyContinue
+        }
+        Remove-Item -LiteralPath $BackupFile -Force -ErrorAction SilentlyContinue
+    }
+    $script:DeterministicExitCode = $ExitCode
+}
+
 if ($env:HYDRA_CI_EPHEMERAL_LOCK_REFRESH -eq "1") {
     cargo run -p hydra-fuzz-gate --
+    $DeterministicExitCode = $LASTEXITCODE
+} elseif ($env:HYDRA_RUN_COVERAGE_GUIDED_FUZZ -eq "1") {
+    Invoke-DeterministicFuzzWithEphemeralRootLock
 } else {
     cargo run --locked -p hydra-fuzz-gate --
+    $DeterministicExitCode = $LASTEXITCODE
 }
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
+if ($DeterministicExitCode -ne 0) {
+    exit $DeterministicExitCode
 }
 
 if ($env:HYDRA_RUN_COVERAGE_GUIDED_FUZZ -ne "1") {

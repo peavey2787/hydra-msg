@@ -70,6 +70,9 @@ Assert-Text ".github/workflows/ci.yml" "target/ci-logs/fuzz-regression.log"
 Assert-Text "qa/ci/core/check-rust.sh" "cargo metadata --locked"
 Assert-Text "qa/ci/security/check-supply-chain.sh" "cargo fetch --locked"
 Assert-Text "qa/ci/fuzz/check-fuzz.sh" "cargo run --locked -p hydra-fuzz-gate --"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" "run_deterministic_fuzz_with_ephemeral_root_lock"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" "HYDRA_RUN_COVERAGE_GUIDED_FUZZ"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" "trap restore_root_lock 0 1 2 15"
 Assert-Text "qa/ci/check-all.sh" 'fuzz_mode=${HYDRA_FUZZ_MODE:-smoke}'
 Assert-Text "qa/ci/check-all.sh" 'fuzz_runs=${fuzz_runs:-256}'
 Assert-Text "qa/ci/check-all.sh" "--overnight"
