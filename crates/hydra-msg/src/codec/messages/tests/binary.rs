@@ -17,13 +17,8 @@ fn binary_message_roundtrips_all_variants_and_minimum_payload() {
         ],
     };
     let packed = pack_message(&message).unwrap();
-    let unpacked = unpack_message(
-        &packed,
-        contact(),
-        MessageId::from_u64(2),
-        Some(lobby()),
-    )
-    .unwrap();
+    let unpacked =
+        unpack_message(&packed, contact(), MessageId::from_u64(2), Some(lobby())).unwrap();
     assert_eq!(unpacked.plaintext(), message.plaintext());
     assert_eq!(unpacked.attachments(), message.attachments());
     assert_eq!(unpacked.lobby_id(), Some(lobby()));
@@ -101,10 +96,7 @@ fn binary_message_rejects_truncation_invalid_discriminants_and_trailing_data() {
     oversized_attachment.push(2);
     write_u32(&mut oversized_attachment, 1);
     oversized_attachment.push(b'a');
-    write_u64(
-        &mut oversized_attachment,
-        (MAX_ATTACHMENT_BYTES + 1) as u64,
-    );
+    write_u64(&mut oversized_attachment, (MAX_ATTACHMENT_BYTES + 1) as u64);
     assert_eq!(
         unpack_message(
             &oversized_attachment,

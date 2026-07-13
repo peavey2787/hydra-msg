@@ -137,8 +137,8 @@ fn deterministic_kdf() -> PasswordKdfRecord {
 
 fn state_fixture() -> (SecretBytes<32>, Vec<u8>) {
     let key = SecretBytes::from_array([0x55; 32]);
-    let envelope = encode_encrypted_state(b"fixture", &key, &deterministic_kdf(), [0x66; 12])
-        .unwrap();
+    let envelope =
+        encode_encrypted_state(b"fixture", &key, &deterministic_kdf(), [0x66; 12]).unwrap();
     (key, envelope)
 }
 

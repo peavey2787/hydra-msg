@@ -46,13 +46,9 @@ fn signed_group_data_rejects_missing_roster_key_and_mutated_signature() {
         .roster
         .retain(|entry| entry.member_id != member(1));
     assert_eq!(
-        verify_group_data_signature(
-            &missing_roster_state,
-            &header,
-            &step,
-            &record,
-            |_| Some(keypair.verification_key.clone()),
-        ),
+        verify_group_data_signature(&missing_roster_state, &header, &step, &record, |_| Some(
+            keypair.verification_key.clone()
+        ),),
         Err(GroupError::InvalidGroupSignature)
     );
 
@@ -66,13 +62,9 @@ fn signed_group_data_rejects_missing_roster_key_and_mutated_signature() {
     );
     *record.content.last_mut().unwrap() ^= 1;
     assert_eq!(
-        verify_group_data_signature(
-            &mutated_signature_state,
-            &header,
-            &step,
-            &record,
-            |_| Some(keypair.verification_key.clone()),
-        ),
+        verify_group_data_signature(&mutated_signature_state, &header, &step, &record, |_| Some(
+            keypair.verification_key.clone()
+        ),),
         Err(GroupError::InvalidGroupSignature)
     );
 }
@@ -82,12 +74,8 @@ fn group_signature_cannot_replay_across_authenticated_contexts() {
     let keypair = RustCryptoBackend::mldsa65_generate().unwrap();
     let mut baseline = signed_lite_state(&keypair.verification_key);
     let class = signed_group_data_class(baseline.mode, 7).unwrap();
-    let (header, step, record) = signed_record_fixture(
-        &mut baseline,
-        &keypair.signing_key,
-        b"context",
-        class,
-    );
+    let (header, step, record) =
+        signed_record_fixture(&mut baseline, &keypair.signing_key, b"context", class);
 
     let mut changed_group = signed_lite_state(&keypair.verification_key);
     changed_group.group_id.0[0] ^= 1;
@@ -168,13 +156,9 @@ fn signature_digest_binds_sender_index_route_and_identity_key() {
         next_chain_key: Secret32::new([2; 32]),
         route_tag: step.route_tag,
     };
-    let sender_digest = group_data_signature_digest(
-        &state,
-        EnvelopeClass::Lite,
-        &changed_sender,
-        b"payload",
-    )
-    .unwrap();
+    let sender_digest =
+        group_data_signature_digest(&state, EnvelopeClass::Lite, &changed_sender, b"payload")
+            .unwrap();
     assert_ne!(baseline, sender_digest);
     changed_sender.clear();
 
@@ -187,13 +171,8 @@ fn signature_digest_binds_sender_index_route_and_identity_key() {
     };
     assert_ne!(
         baseline,
-        group_data_signature_digest(
-            &state,
-            EnvelopeClass::Lite,
-            &changed_index,
-            b"payload"
-        )
-        .unwrap()
+        group_data_signature_digest(&state, EnvelopeClass::Lite, &changed_index, b"payload")
+            .unwrap()
     );
 
     let mut route_tag = step.route_tag;
@@ -207,13 +186,8 @@ fn signature_digest_binds_sender_index_route_and_identity_key() {
     };
     assert_ne!(
         baseline,
-        group_data_signature_digest(
-            &state,
-            EnvelopeClass::Lite,
-            &changed_route,
-            b"payload"
-        )
-        .unwrap()
+        group_data_signature_digest(&state, EnvelopeClass::Lite, &changed_route, b"payload")
+            .unwrap()
     );
 
     let other_keypair = RustCryptoBackend::mldsa65_generate().unwrap();
@@ -267,7 +241,6 @@ fn group_record_rejects_wrong_kind_and_authenticated_metadata() {
         );
     }
 }
-
 
 #[test]
 fn group_signature_rejects_cross_domain_replay() {

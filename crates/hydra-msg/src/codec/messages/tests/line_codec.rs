@@ -82,10 +82,8 @@ fn message_state_line_rejects_malformed_records() {
         Err(HydraMsgError::InvalidEncoding("attachment source"))
     );
     let oversized_name = "00".repeat(MAX_ATTACHMENT_FILENAME_BYTES + 1);
-    let oversized_name_record = format!(
-        "{}\tbytes\t{oversized_name}\t00",
-        message_line("out", "1")
-    );
+    let oversized_name_record =
+        format!("{}\tbytes\t{oversized_name}\t00", message_line("out", "1"));
     assert_eq!(
         decode_message_line(&oversized_name_record),
         Err(HydraMsgError::InvalidEncoding("attachment filename size"))
