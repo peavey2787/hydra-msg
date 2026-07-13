@@ -1,7 +1,7 @@
-//! Hidden parser hooks used only by the external cargo-fuzz workspace.
+//! Parser hooks compiled only under cargo-fuzz's `--cfg fuzzing` build.
 //!
-//! This module is excluded from normal builds. It keeps fuzz harnesses fast and
-//! in-memory without expanding the supported application API.
+//! This module does not exist in normal, release, or application builds. It keeps
+//! fuzz harnesses fast and in-memory without expanding the supported v1 facade.
 
 use crate::{
     codec::{decode_message_line, pack_message, unpack_message},

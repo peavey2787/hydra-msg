@@ -79,10 +79,21 @@ Assert-Text "qa/ci/fuzz/check-fuzz.sh" "message_stateful_flow"
 Assert-Text "qa/ci/fuzz/check-fuzz.sh" 'cargo fuzz build --fuzz-dir "$FUZZ_DIR"'
 Assert-Text "qa/ci/fuzz/check-fuzz.ps1" 'cargo fuzz build --fuzz-dir $FuzzDir'
 Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/group_commit_message_parser.rs" "encode_roster(GroupMode::Lite, &roster)"
-Assert-Text "crates/hydra-msg/Cargo.toml" "fuzzing = []"
-Assert-Text "qa/fuzz/cargo-fuzz/Cargo.toml" 'features = ["fuzzing"]'
+Assert-Text "Cargo.toml" "check-cfg = ['cfg(fuzzing)']"
+Assert-Text "crates/hydra-msg/src/lib.rs" "#[cfg(fuzzing)]"
+Assert-Text "qa/fuzz/cargo-fuzz/Cargo.toml" 'hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg" }'
 Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs" "fuzzing::decode_message_payload"
 Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/message_stateful_flow.rs" "common::paired"
+
+if ((Get-Content "crates/hydra-msg/Cargo.toml" -Raw).Contains("fuzzing = []")) {
+    throw "cargo-fuzz hooks must not be exposed as a hydra-msg Cargo feature"
+}
+if ((Get-Content "qa/fuzz/cargo-fuzz/Cargo.toml" -Raw).Contains('features = ["fuzzing"]')) {
+    throw "cargo-fuzz must use --cfg fuzzing, not a public hydra-msg feature"
+}
+if ((Get-Content "crates/hydra-msg/src/lib.rs" -Raw).Contains("#[doc(hidden)]")) {
+    throw "hydra-msg fuzz support must not create doc-hidden facade APIs"
+}
 Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"

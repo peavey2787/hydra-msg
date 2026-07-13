@@ -95,10 +95,24 @@ require_text qa/ci/fuzz/check-fuzz.ps1 'cargo fuzz build --fuzz-dir $FuzzDir'
 require_text qa/fuzz/cargo-fuzz/fuzz_targets/group_commit_message_parser.rs 'encode_roster(GroupMode::Lite, &roster)'
 require_text qa/ci/fuzz/check-fuzz.sh 'FAST_BUDGET="${HYDRA_COVERAGE_FUZZ_RUNS:-256}"'
 require_text qa/ci/fuzz/check-fuzz.sh 'FAST_BUDGET="${HYDRA_COVERAGE_FUZZ_RUNS:-100000}"'
-require_text crates/hydra-msg/Cargo.toml 'fuzzing = []'
-require_text qa/fuzz/cargo-fuzz/Cargo.toml 'features = ["fuzzing"]'
+require_text Cargo.toml "check-cfg = ['cfg(fuzzing)']"
+require_text crates/hydra-msg/src/lib.rs '#[cfg(fuzzing)]'
+require_text qa/fuzz/cargo-fuzz/Cargo.toml 'hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg" }'
 require_text qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs 'fuzzing::decode_message_payload'
 require_text qa/fuzz/cargo-fuzz/fuzz_targets/message_stateful_flow.rs 'common::paired'
+
+if grep -Fq 'fuzzing = []' crates/hydra-msg/Cargo.toml; then
+  echo "cargo-fuzz hooks must not be exposed as a hydra-msg Cargo feature" >&2
+  exit 1
+fi
+if grep -Fq 'features = ["fuzzing"]' qa/fuzz/cargo-fuzz/Cargo.toml; then
+  echo "cargo-fuzz must use --cfg fuzzing, not a public hydra-msg feature" >&2
+  exit 1
+fi
+if grep -Fq '#[doc(hidden)]' crates/hydra-msg/src/lib.rs; then
+  echo "hydra-msg fuzz support must not create doc-hidden facade APIs" >&2
+  exit 1
+fi
 require_text .github/workflows/ci.yml 'tee -a "$log_file"'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'

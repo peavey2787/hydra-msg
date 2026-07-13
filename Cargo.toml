@@ -32,6 +32,7 @@ repository = "https://github.com/peavey2787/hydra-msg"
 
 [workspace.lints.rust]
 unsafe_code = "deny"
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
 
 [workspace.lints.clippy]
 missing_panics_doc = "allow"
