@@ -1,3 +1,8 @@
+#![allow(dead_code)]
+
+// Each fuzz target is compiled as a separate binary and intentionally uses only a subset
+// of these shared helpers. Suppress per-binary dead-code noise without hiding warnings
+// in the target implementations themselves.
 use hydra_msg::{ContactId, Hydra};
 use std::path::PathBuf;
 

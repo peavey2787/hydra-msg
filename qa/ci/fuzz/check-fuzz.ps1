@@ -146,6 +146,12 @@ New-Item -ItemType Directory -Force -Path $EvidenceRoot | Out-Null
 
 try {
     $env:RUSTUP_TOOLCHAIN = $FuzzToolchain
+    Write-Host "==> preflight: compile all coverage-guided fuzz targets"
+    cargo fuzz build --fuzz-dir $FuzzDir
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+
     foreach ($Target in $FastTargets) {
         Invoke-FuzzTarget $Target $FastBudgetKind $FastBudget
     }

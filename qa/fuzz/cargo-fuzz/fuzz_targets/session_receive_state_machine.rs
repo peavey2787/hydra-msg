@@ -1,7 +1,5 @@
 #![no_main]
 
-mod common;
-
 use hydra_core::types::EnvelopeClass;
 use hydra_crypto::SecretBytes;
 use hydra_session::{derive_initial_secrets, SessionRole, SessionState};

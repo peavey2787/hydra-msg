@@ -75,6 +75,9 @@ Assert-Text "qa/ci/check-all.sh" 'fuzz_runs=${fuzz_runs:-256}'
 Assert-Text "qa/ci/check-all.sh" "--overnight"
 Assert-Text "qa/ci/check-all.sh" "--deep-fuzz"
 Assert-Text "qa/ci/fuzz/check-fuzz.sh" "message_stateful_flow"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" 'cargo fuzz build --fuzz-dir "$FUZZ_DIR"'
+Assert-Text "qa/ci/fuzz/check-fuzz.ps1" 'cargo fuzz build --fuzz-dir $FuzzDir'
+Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/group_commit_message_parser.rs" "encode_roster(GroupMode::Lite, &roster)"
 Assert-Text "crates/hydra-msg/Cargo.toml" "fuzzing = []"
 Assert-Text "qa/fuzz/cargo-fuzz/Cargo.toml" 'features = ["fuzzing"]'
 Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs" "fuzzing::decode_message_payload"

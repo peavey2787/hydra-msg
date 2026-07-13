@@ -149,6 +149,9 @@ echo "Fast target budget: $FAST_BUDGET_KIND=$FAST_BUDGET"
 echo "Stateful target budget: $STATEFUL_BUDGET_KIND=$STATEFUL_BUDGET"
 mkdir -p "$EVIDENCE_ROOT"
 
+echo "==> preflight: compile all coverage-guided fuzz targets"
+RUSTUP_TOOLCHAIN="$FUZZ_TOOLCHAIN" cargo fuzz build --fuzz-dir "$FUZZ_DIR"
+
 for target in $FAST_TARGETS; do
   run_target "$target" "$FAST_BUDGET_KIND" "$FAST_BUDGET"
 done

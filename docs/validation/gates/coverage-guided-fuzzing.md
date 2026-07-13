@@ -29,6 +29,12 @@ The separately budgeted slow target is:
 
 Separating the two message targets prevents parser fuzzing from paying profile, filesystem, and handshake costs on every iteration.
 
+## Compile preflight
+
+Before any corpus execution begins, the fuzz gate builds every declared cargo-fuzz target.
+This catches API drift or a broken late target immediately instead of after earlier campaigns
+have consumed their full budgets.
+
 ## Running campaigns
 
 Install tooling:

@@ -66,7 +66,7 @@ fuzz_target!(|data: &[u8]| {
     let _ = validate_signature_set(&signatures);
     let _ = encode_signature_set(&signatures);
     let roster = vec![active_entry(1, GroupRole::Member)];
-    let _ = encode_roster(&roster);
+    let _ = encode_roster(GroupMode::Lite, &roster);
     let mode_policy = ModePolicy::default();
     let _ = encode_governance_policy(&governance);
     let _ = encode_mode_policy(mode_policy);
