@@ -4,41 +4,9 @@ set -eu
 . "$(dirname -- "$0")/../lib/repo-root.sh"
 hydra_enter_repo_root
 
-run_deterministic_fuzz_with_ephemeral_root_lock() (
-  lock_file="$HYDRA_REPO_ROOT/Cargo.lock"
-  backup_file=$(mktemp "${TMPDIR:-/tmp}/hydra-root-lock.XXXXXX")
-  lock_existed=0
-  cleanup_done=0
-
-  if [ -f "$lock_file" ]; then
-    cp "$lock_file" "$backup_file"
-    lock_existed=1
-  fi
-
-  restore_root_lock() {
-    if [ "$cleanup_done" -eq 1 ]; then
-      return
-    fi
-    cleanup_done=1
-    if [ "$lock_existed" -eq 1 ]; then
-      cp "$backup_file" "$lock_file"
-    else
-      rm -f "$lock_file"
-    fi
-    rm -f "$backup_file"
-  }
-  trap restore_root_lock 0 1 2 15
-
-  echo "Local coverage-guided fuzzing: resolving an ephemeral root lock for the deterministic preflight"
-  HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
-    cargo run -p hydra-fuzz-gate --
-)
-
 if [ "${HYDRA_CI_EPHEMERAL_LOCK_REFRESH:-0}" = "1" ]; then
   HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
     cargo run -p hydra-fuzz-gate --
-elif [ "${HYDRA_RUN_COVERAGE_GUIDED_FUZZ:-0}" = "1" ]; then
-  run_deterministic_fuzz_with_ephemeral_root_lock
 else
   HYDRA_FUZZ_CASES="${HYDRA_FUZZ_CASES:-8}" \
     cargo run --locked -p hydra-fuzz-gate --
