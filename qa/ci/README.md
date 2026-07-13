@@ -43,7 +43,7 @@ PowerShell:
 
 ## Top-level gate
 
-`check-all` is the full release validation runner. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the overnight coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
+`check-all` is the full release validation runner. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the bounded coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
 
 Unix:
 
@@ -66,8 +66,10 @@ The Unix runner supports section-aware resume and granular skips:
 ./qa/ci/check-all.sh --resume-from browser --skip-browser-install
 ./qa/ci/check-all.sh --from coverage --through mutation
 ./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
-./qa/ci/check-all.sh --only fuzz --fuzz-runs 10000
-./qa/ci/check-all.sh --section fuzz --fuzz-runs 10000
+./qa/ci/check-all.sh --only fuzz
+./qa/ci/check-all.sh --only fuzz --overnight
+./qa/ci/check-all.sh --only fuzz --deep-fuzz
+./qa/ci/check-all.sh --section fuzz --fuzz-runs 1000
 ```
 
 Sections run in this order: `permissions`, `tests`, `examples`, `miri`, `sanitizers`, `browser`, `coverage`, `mutation`, `fuzz`. Run `./qa/ci/check-all.sh --help` for all `--skip-*` flags.
@@ -87,18 +89,19 @@ sanitizer release evidence
 real-browser Playwright lifecycle evidence
 coverage report evidence
 mutation testing evidence
-overnight coverage-guided fuzz evidence, last
+bounded coverage-guided fuzz evidence, last
 ```
 
-The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Override that only when you intentionally want a shorter or longer campaign:
+The default fuzz mode runs 256 iterations per target. Longer modes are explicit:
 
 ```bash
-HYDRA_COVERAGE_FUZZ_RUNS=10000 ./qa/ci/check-all.sh
+./qa/ci/check-all.sh --only fuzz --overnight
+./qa/ci/check-all.sh --only fuzz --deep-fuzz
 ```
 
 ```powershell
-$env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
-.\qa\ci\check-all.ps1
+.\qa\ci\check-all.ps1 -Only fuzz -Overnight
+.\qa\ci\check-all.ps1 -Only fuzz -DeepFuzz
 ```
 
 ## Core scripts
@@ -150,7 +153,7 @@ $env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
 |---|---|
 | `quality/check-coverage.ps1` / `quality/check-coverage.sh` | Critical-path coverage manifest gate, plus optional `HYDRA_RUN_COVERAGE=1` LCOV/HTML coverage generation and threshold enforcement. |
 | `quality/check-mutation.ps1` / `quality/check-mutation.sh` | Mutation-target manifest gate, plus optional `HYDRA_RUN_MUTATION=1` cargo-mutants run over the manifest-listed critical files. The measured run uses a baseline-derived timeout rather than a fixed baseline cutoff. |
-| `fuzz/check-fuzz.ps1` / `fuzz/check-fuzz.sh` | Bounded deterministic fuzz-smoke gate plus nightly cargo-fuzz/libFuzzer release campaigns. Local/release runs use `cargo run --locked`; normal bounded GitHub CI may set `HYDRA_CI_EPHEMERAL_LOCK_REFRESH=1` to use the freshly resolved CI lock graph. The scripts propagate `HYDRA_FUZZ_TOOLCHAIN` (default `nightly`) into cargo-fuzz's nested Cargo build. `check-all` calls this last with `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000` unless you override it. |
+| `fuzz/check-fuzz.ps1` / `fuzz/check-fuzz.sh` | Bounded deterministic fuzz-smoke gate plus nightly cargo-fuzz/libFuzzer release campaigns. Local/release runs use `cargo run --locked`; normal bounded GitHub CI may set `HYDRA_CI_EPHEMERAL_LOCK_REFRESH=1` to use the freshly resolved CI lock graph. The scripts propagate `HYDRA_FUZZ_TOOLCHAIN` (default `nightly`) into cargo-fuzz's nested Cargo build. `check-all` calls this last with `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1`. Smoke mode defaults to 256 runs per target; overnight mode is time-bounded; deep mode uses 100,000 runs for fast targets and 1,000 for the slow stateful target. |
 | `release/check-release-governance.ps1` / `release/check-release-governance.sh` | Static release-governance gate for changelog, security policy, MSRV, SBOM/signing/reproducible-build docs, and release helper scripts. |
 
 ## Common commands

@@ -15,7 +15,7 @@ hydra-core = { version = "0.1.0", path = "../../../crates/hydra-core" }
 hydra-crypto = { version = "0.1.0", path = "../../../crates/hydra-crypto" }
 hydra-envelope = { version = "0.1.0", path = "../../../crates/hydra-envelope" }
 hydra-group = { version = "0.1.0", path = "../../../crates/hydra-group" }
-hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg" }
+hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg", features = ["fuzzing"] }
 hydra-session = { version = "0.1.0", path = "../../../crates/hydra-session" }
 libfuzzer-sys = "=0.4.9"
 
@@ -38,6 +38,13 @@ bench = false
 [[bin]]
 name = "message_codec"
 path = "fuzz_targets/message_codec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "message_stateful_flow"
+path = "fuzz_targets/message_stateful_flow.rs"
 test = false
 doc = false
 bench = false

@@ -30,9 +30,9 @@ PowerShell:
 .\qa\ci\check-all.ps1
 ```
 
-`check-all` is release-complete. It includes workspace fmt/test/clippy, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last.
+`check-all` is release-complete. It includes workspace fmt/test/clippy, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the coverage-guided fuzz campaign last. Local runs default to bounded smoke mode; release validation selects deep mode.
 
-The final fuzz campaign defaults to 100,000 libFuzzer runs per target. For publication, save the logs and generated reports under `release-evidence/<version>/`.
+Local `check-all` defaults to 256 runs per target. Release validation explicitly selects deep mode: 100,000 runs per fast target and 1,000 runs for the stateful message-flow target. For publication, save the logs and generated reports under `release-evidence/<version>/`.
 
 Individual lower-level scripts may still be run while debugging a failure, but they are no longer separate release steps.
 

@@ -70,6 +70,15 @@ Assert-Text ".github/workflows/ci.yml" "target/ci-logs/fuzz-regression.log"
 Assert-Text "qa/ci/core/check-rust.sh" "cargo metadata --locked"
 Assert-Text "qa/ci/security/check-supply-chain.sh" "cargo fetch --locked"
 Assert-Text "qa/ci/fuzz/check-fuzz.sh" "cargo run --locked -p hydra-fuzz-gate --"
+Assert-Text "qa/ci/check-all.sh" 'fuzz_mode=${HYDRA_FUZZ_MODE:-smoke}'
+Assert-Text "qa/ci/check-all.sh" 'fuzz_runs=${fuzz_runs:-256}'
+Assert-Text "qa/ci/check-all.sh" "--overnight"
+Assert-Text "qa/ci/check-all.sh" "--deep-fuzz"
+Assert-Text "qa/ci/fuzz/check-fuzz.sh" "message_stateful_flow"
+Assert-Text "crates/hydra-msg/Cargo.toml" "fuzzing = []"
+Assert-Text "qa/fuzz/cargo-fuzz/Cargo.toml" 'features = ["fuzzing"]'
+Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs" "fuzzing::decode_message_payload"
+Assert-Text "qa/fuzz/cargo-fuzz/fuzz_targets/message_stateful_flow.rs" "common::paired"
 Assert-Text ".github/workflows/ci.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/ci.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/workflows/release-validation.yml" "workflow_dispatch:"
@@ -80,9 +89,14 @@ Assert-Text ".github/workflows/release-validation.yml" "cargo install cargo-muta
 Assert-Text ".github/workflows/release-validation.yml" "cargo install cargo-fuzz --locked"
 Assert-Text ".github/workflows/release-validation.yml" 'tee -a "$log_file"'
 Assert-Text ".github/workflows/release-validation.yml" "HYDRA_RELEASE_FUZZ_RUNS"
+Assert-Text ".github/workflows/release-validation.yml" "--deep-fuzz"
 Assert-Text ".github/workflows/release-validation.yml" "HYDRA_RELEASE_MUTATION_JOBS"
 Assert-Text ".github/workflows/release-validation.yml" "GITHUB_STEP_SUMMARY"
 Assert-Text ".github/dependabot.yml" "package-ecosystem: github-actions"
+
+if (Select-String -Path "qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs" -Pattern 'common::(paired|fresh|temp_case_dir)|import_messages' -Quiet) {
+    throw "fast message_codec fuzz target must remain in-memory and stateless"
+}
 
 $badTempArtifactPath = Get-ChildItem ".github/workflows" -Filter "*.yml" -File |
     Select-String -SimpleMatch '${{ runner.temp }}/hydra-ci-logs'

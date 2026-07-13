@@ -58,7 +58,7 @@ PowerShell:
 | Browser lifecycle E2E | `HYDRA_RUN_BROWSER_E2E=1 qa/ci/reliability/check-browser-e2e.*` |
 | Coverage report | `HYDRA_RUN_COVERAGE=1 qa/ci/quality/check-coverage.*` |
 | Mutation testing | `HYDRA_RUN_MUTATION=1 qa/ci/quality/check-mutation.*` |
-| Coverage-guided fuzzing | `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 qa/ci/fuzz/check-fuzz.*` with default `HYDRA_COVERAGE_FUZZ_RUNS=100000` |
+| Coverage-guided fuzzing | `qa/ci/check-all.* --deep-fuzz`: 100,000 runs per fast target and 1,000 stateful message-flow runs |
 
 Archive the command line, tool versions, logs, generated reports, crash artifacts, minimized fuzz reproducers, and exit status. If a gate is impossible on a target, the release notes must say which target was skipped, why it was skipped, and what alternative evidence was used.
 

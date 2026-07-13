@@ -33,6 +33,9 @@ mod codec;
 mod contacts;
 #[path = "envelope/limits.rs"]
 mod envelope_limits;
+#[cfg(feature = "fuzzing")]
+#[doc(hidden)]
+pub mod fuzzing;
 mod handshake;
 #[path = "api/identity.rs"]
 mod identity;

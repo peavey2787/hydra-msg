@@ -9,11 +9,11 @@
 
 ## Targets
 
-The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/`. The validation scripts pass that nonstandard location explicitly with cargo-fuzz's `--fuzz-dir` option, so cargo-fuzz never falls back to a nonexistent root `fuzz/Cargo.toml`. Cargo-fuzz's sanitizer instrumentation requires nightly Rust; the scripts select `nightly` for the outer command and every nested Cargo/rustc process. Set `HYDRA_FUZZ_TOOLCHAIN` only when intentionally pinning another installed nightly toolchain. It covers:
+The cargo-fuzz harness lives in `qa/fuzz/cargo-fuzz/` and uses nightly Rust through the QA runners. The fast targets are:
 
 - `envelope_header_decoding` — outer header decoding.
 - `protected_record_decoding` — protected-record decoding in every envelope class.
-- `message_codec` — public message import/send/receive and attachment packaging paths.
+- `message_codec` — in-memory message binary/state-line decoding and encode/decode round trips.
 - `storage_backup_chunk_parser` — encrypted state and chunked backup parser boundaries.
 - `contact_card_parser` — contact-card preview/add/import boundaries.
 - `handshake_offer_answer_parser` — handshake offer/answer parser and valid-offer mutation paths.
@@ -23,6 +23,12 @@ The `cargo-fuzz` harness lives in `qa/fuzz/cargo-fuzz/`. The validation scripts 
 - `session_receive_state_machine` — lower-level session receive, replay, refresh, close, and malformed envelope paths.
 - `group_commit_message_parser` — group canonical commit helpers and group message open/seal paths.
 
+The separately budgeted slow target is:
+
+- `message_stateful_flow` — profile creation, identity/contact setup, handshake, encrypted send/receive, attachments, and tampered packet delivery.
+
+Separating the two message targets prevents parser fuzzing from paying profile, filesystem, and handshake costs on every iteration.
+
 ## Running campaigns
 
 Install tooling:
@@ -31,36 +37,32 @@ Install tooling:
 ./scripts/setup-dev-env.sh
 ```
 
-The equivalent minimum manual setup is:
+Default bounded smoke campaign, 256 iterations per target:
 
 ```bash
-rustup toolchain install nightly
-cargo install cargo-fuzz --locked
+./qa/ci/check-all.sh --only fuzz
 ```
 
-Run the fuzz gate directly while debugging:
+Time-bounded overnight campaign, 15 minutes per fast target and 5 minutes for the stateful target:
 
 ```bash
-./qa/ci/fuzz/check-fuzz.sh
+./qa/ci/check-all.sh --only fuzz --overnight
 ```
 
-Run the release-candidate coverage-guided fuzz campaign through the full gate:
+Deep campaign, 100,000 runs per fast target and 1,000 stateful runs:
 
 ```bash
-./qa/ci/check-all.sh
+./qa/ci/check-all.sh --only fuzz --deep-fuzz
 ```
 
-PowerShell:
+Custom bounded campaign:
 
-```powershell
-.\qa\ci\check-all.ps1
+```bash
+./qa/ci/check-all.sh --only fuzz --fuzz-runs 1000 --stateful-fuzz-runs 128
 ```
 
-Evidence is written to `target/hydra-fuzz-evidence/` by default. Release managers should archive the command line, target list, run count, crash artifacts, and minimized reproducers.
+PowerShell uses `-Only fuzz`, `-Overnight`, `-DeepFuzz`, `-FuzzRuns`, and `-StatefulFuzzRuns`. Evidence is written to `target/hydra-fuzz-evidence/`.
 
 ## Release requirement
 
-A release candidate must either:
-
-- complete all listed coverage-guided fuzz targets without crashes for the release policy's configured run budget; or
-- document every crash with a minimized reproducer, fix, and regression test before release.
+A release candidate must either complete the configured deep campaign without crashes or document every crash with a minimized reproducer, fix, and regression test. Archive the mode, target list, budgets, toolchain, crash artifacts, and minimized reproducers.

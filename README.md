@@ -114,7 +114,7 @@ Runnable examples are in [examples](examples/README.md).
 
 ## Release validation
 
-`./qa/ci/check-all.sh` is the release-complete validation gate. It runs the normal workspace/static/example checks first, then the long release-evidence gates, and leaves the overnight coverage-guided fuzz campaign last.
+`./qa/ci/check-all.sh` is the complete local validation gate. It runs the normal workspace/static/example checks first, then the heavy evidence gates, and leaves a bounded coverage-guided fuzz campaign last.
 
 ```bash
 ./qa/ci/check-all.sh
@@ -129,7 +129,7 @@ Resume a failed release run at a named section instead of repeating earlier gree
 ./qa/ci/check-all.sh --from mutation --skip-mutation-baseline
 ```
 
-Skip the mutation baseline only when the same tree already passed its Rust tests; otherwise leave the baseline enabled so cargo-mutants can derive a safe timeout. Run `./qa/ci/check-all.sh --help` for every section and granular `--skip-*` option. The final fuzz campaign defaults to 100,000 libFuzzer runs per target. Set `HYDRA_COVERAGE_FUZZ_RUNS` or pass `--fuzz-runs N` only when intentionally changing the release campaign length.
+Skip the mutation baseline only when the same tree already passed its Rust tests; otherwise leave the baseline enabled so cargo-mutants can derive a safe timeout. Run `./qa/ci/check-all.sh --help` for every section and granular `--skip-*` option. The final fuzz campaign defaults to 256 runs per target. Use `--overnight` for a time-bounded campaign or `--deep-fuzz` for 100,000 runs per fast target and 1,000 runs for the deliberately slower stateful target.
 
 ## Repository layout
 
@@ -190,7 +190,7 @@ The full release-complete gate is:
 ./qa/ci/check-all.sh
 ```
 
-It includes workspace format/test/clippy checks, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign last. Archive the generated logs and reports for release candidates as described in [Release criteria](docs/validation/release/release-criteria.md).
+It includes workspace format/test/clippy checks, supply-chain checks, static policy gates, examples, WASM package checks, Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the bounded coverage-guided fuzz campaign last. Release validation explicitly selects deep fuzz mode. Archive the generated logs and reports for release candidates as described in [Release criteria](docs/validation/release/release-criteria.md).
 
 ## Security and release governance
 

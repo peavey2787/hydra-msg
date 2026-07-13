@@ -8,7 +8,7 @@ usage() {
   cat <<'USAGE'
 Usage: qa/ci/check-all.sh [options]
 
-Run the complete HYDRA release-validation pipeline by default. The runner stops on the first failing section, or resumes/selects sections when flags are provided.
+Run the complete HYDRA validation pipeline by default. The runner stops on the first failing section, or resumes/selects sections when flags are provided.
 
 Section selection:
   --from SECTION            Start at SECTION and run everything after it.
@@ -45,7 +45,11 @@ Nested-gate options:
   --mutation-minimum-timeout N
                             Minimum seconds allowed per mutant after baseline measurement.
   --mutation-jobs N         Number of concurrent cargo-mutants jobs.
-  --fuzz-runs N             Override coverage-guided runs per fuzz target.
+  --fuzz-runs N             Override runs for fast fuzz targets in smoke/deep mode.
+  --stateful-fuzz-runs N    Override runs for the slow stateful fuzz target.
+  --overnight               Time-bound fast targets to 15 minutes and stateful targets to 5 minutes.
+  --deep-fuzz               Run 100,000 iterations per fast target and 1,000 stateful iterations.
+  --fuzz-mode MODE          Explicitly select smoke, overnight, or deep.
 
 Other:
   -h, --help                Show this help.
@@ -57,6 +61,9 @@ Examples:
   qa/ci/check-all.sh --from coverage --through mutation
   qa/ci/check-all.sh --only browser --skip-browser-install
   qa/ci/check-all.sh --from mutation --skip-mutation-baseline
+  qa/ci/check-all.sh --only fuzz
+  qa/ci/check-all.sh --only fuzz --overnight
+  qa/ci/check-all.sh --only fuzz --deep-fuzz
   qa/ci/check-all.sh --skip-miri --skip-sanitizers --skip-fuzz
 USAGE
 }
@@ -154,7 +161,12 @@ mutation_timeout=${HYDRA_MUTATION_TIMEOUT:-1200}
 mutation_timeout_multiplier=${HYDRA_MUTATION_TIMEOUT_MULTIPLIER:-2}
 mutation_minimum_timeout=${HYDRA_MUTATION_MINIMUM_TEST_TIMEOUT:-120}
 mutation_jobs=${HYDRA_MUTATION_JOBS:-1}
-fuzz_runs=${HYDRA_COVERAGE_FUZZ_RUNS:-100000}
+fuzz_mode=${HYDRA_FUZZ_MODE:-smoke}
+fuzz_mode_flag=
+fuzz_runs=${HYDRA_COVERAGE_FUZZ_RUNS:-}
+stateful_fuzz_runs=${HYDRA_STATEFUL_FUZZ_RUNS:-}
+fuzz_seconds=${HYDRA_COVERAGE_FUZZ_SECONDS:-}
+stateful_fuzz_seconds=${HYDRA_STATEFUL_FUZZ_SECONDS:-}
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -261,6 +273,57 @@ while [ "$#" -gt 0 ]; do
       require_positive_integer --fuzz-runs "$fuzz_runs"
       shift
       ;;
+    --stateful-fuzz-runs)
+      require_value "$1" "${2:-}"
+      require_positive_integer "$1" "$2"
+      stateful_fuzz_runs=$2
+      shift 2
+      ;;
+    --stateful-fuzz-runs=*)
+      stateful_fuzz_runs=${1#*=}
+      require_positive_integer --stateful-fuzz-runs "$stateful_fuzz_runs"
+      shift
+      ;;
+    --overnight)
+      if [ -n "$fuzz_mode_flag" ] && [ "$fuzz_mode_flag" != overnight ]; then
+        echo "--overnight cannot be combined with another fuzz mode flag" >&2
+        exit 2
+      fi
+      fuzz_mode=overnight
+      fuzz_mode_flag=overnight
+      shift
+      ;;
+    --deep-fuzz)
+      if [ -n "$fuzz_mode_flag" ] && [ "$fuzz_mode_flag" != deep ]; then
+        echo "--deep-fuzz cannot be combined with another fuzz mode flag" >&2
+        exit 2
+      fi
+      fuzz_mode=deep
+      fuzz_mode_flag=deep
+      shift
+      ;;
+    --fuzz-mode)
+      require_value "$1" "${2:-}"
+      case "$2" in smoke|overnight|deep) ;; *) echo "--fuzz-mode must be smoke, overnight, or deep" >&2; exit 2 ;; esac
+      if [ -n "$fuzz_mode_flag" ] && [ "$fuzz_mode_flag" != "$2" ]; then
+        echo "--fuzz-mode cannot conflict with another fuzz mode flag" >&2
+        exit 2
+      fi
+      fuzz_mode=$2
+      fuzz_mode_flag=$2
+      shift 2
+      ;;
+    --fuzz-mode=*)
+      value=${1#*=}
+      case "$value" in smoke|overnight|deep) ;; *) echo "--fuzz-mode must be smoke, overnight, or deep" >&2; exit 2 ;; esac
+      if [ -n "$fuzz_mode_flag" ] && [ "$fuzz_mode_flag" != "$value" ]; then
+        echo "--fuzz-mode cannot conflict with another fuzz mode flag" >&2
+        exit 2
+      fi
+      fuzz_mode=$value
+      fuzz_mode_flag=$value
+      shift
+      ;;
     -h|--help)
       usage
       exit 0
@@ -272,6 +335,25 @@ while [ "$#" -gt 0 ]; do
       ;;
   esac
 done
+
+case "$fuzz_mode" in
+  smoke)
+    fuzz_runs=${fuzz_runs:-256}
+    stateful_fuzz_runs=${stateful_fuzz_runs:-256}
+    ;;
+  overnight)
+    fuzz_seconds=${fuzz_seconds:-900}
+    stateful_fuzz_seconds=${stateful_fuzz_seconds:-300}
+    ;;
+  deep)
+    fuzz_runs=${fuzz_runs:-100000}
+    stateful_fuzz_runs=${stateful_fuzz_runs:-1000}
+    ;;
+  *)
+    echo "HYDRA_FUZZ_MODE must be smoke, overnight, or deep; got: $fuzz_mode" >&2
+    exit 2
+    ;;
+esac
 
 if [ -n "$only_section" ]; then
   if [ "$from_was_set" -eq 1 ] || [ "$through_was_set" -eq 1 ]; then
@@ -411,13 +493,40 @@ if should_run mutation "$skip_mutation"; then
 fi
 
 if should_run fuzz "$skip_fuzz"; then
-  require_positive_integer --fuzz-runs "$fuzz_runs"
   ran_any=1
   print_release_header
-  run_env_step "overnight coverage-guided fuzz evidence" \
-    HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 \
-    HYDRA_COVERAGE_FUZZ_RUNS="$fuzz_runs" \
-    qa/ci/fuzz/check-fuzz.sh
+  case "$fuzz_mode" in
+    smoke)
+      require_positive_integer --fuzz-runs "$fuzz_runs"
+      require_positive_integer --stateful-fuzz-runs "$stateful_fuzz_runs"
+      run_env_step "bounded coverage-guided fuzz evidence" \
+        HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 \
+        HYDRA_FUZZ_MODE=smoke \
+        HYDRA_COVERAGE_FUZZ_RUNS="$fuzz_runs" \
+        HYDRA_STATEFUL_FUZZ_RUNS="$stateful_fuzz_runs" \
+        qa/ci/fuzz/check-fuzz.sh
+      ;;
+    overnight)
+      require_positive_integer HYDRA_COVERAGE_FUZZ_SECONDS "$fuzz_seconds"
+      require_positive_integer HYDRA_STATEFUL_FUZZ_SECONDS "$stateful_fuzz_seconds"
+      run_env_step "overnight coverage-guided fuzz evidence" \
+        HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 \
+        HYDRA_FUZZ_MODE=overnight \
+        HYDRA_COVERAGE_FUZZ_SECONDS="$fuzz_seconds" \
+        HYDRA_STATEFUL_FUZZ_SECONDS="$stateful_fuzz_seconds" \
+        qa/ci/fuzz/check-fuzz.sh
+      ;;
+    deep)
+      require_positive_integer --fuzz-runs "$fuzz_runs"
+      require_positive_integer --stateful-fuzz-runs "$stateful_fuzz_runs"
+      run_env_step "deep coverage-guided fuzz evidence" \
+        HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1 \
+        HYDRA_FUZZ_MODE=deep \
+        HYDRA_COVERAGE_FUZZ_RUNS="$fuzz_runs" \
+        HYDRA_STATEFUL_FUZZ_RUNS="$stateful_fuzz_runs" \
+        qa/ci/fuzz/check-fuzz.sh
+      ;;
+  esac
 fi
 
 if [ "$ran_any" -eq 0 ]; then

@@ -1,37 +1,27 @@
 #![no_main]
 
-mod common;
-
-use hydra_msg::HydraMessage;
+use hydra_msg::{fuzzing, HydraMessage};
 use libfuzzer_sys::fuzz_target;
 
-fuzz_target!(|data: &[u8]| {
-    let base = common::temp_case_dir("message-codec", data);
-    let Some(mut hydra) = common::fresh(base.join("parser")) else {
-        return;
-    };
-    let _ = hydra.import_messages(data);
+const MAX_FAST_MESSAGE_BYTES: usize = 8192;
 
-    if let Some((mut alice, mut bob, _alice_contact, bob_contact)) = common::paired("message-flow", data) {
-        let bounded = common::bounded(data, 8192);
-        let mut message = HydraMessage::bytes(bounded.clone());
-        if !bounded.is_empty() {
-            if let Ok(attached) = message.clone().attach_bytes("fuzz.bin", bounded.clone()) {
-                message = attached;
-            }
-        }
-        if let Ok(packets) = alice.send(bob_contact, message) {
-            for packet in packets {
-                let _ = bob.receive(packet.clone());
-                let mut tampered = packet.into_bytes();
-                let index = data.len() % tampered.len().max(1);
-                if let Some(byte) = tampered.get_mut(index) {
-                    *byte ^= 0x5a;
-                }
-                let _ = bob.receive(tampered);
-            }
-        }
+fuzz_target!(|data: &[u8]| {
+    let _ = fuzzing::decode_message_payload(data);
+    let _ = fuzzing::decode_message_state_line(data);
+
+    let bounded = &data[..data.len().min(MAX_FAST_MESSAGE_BYTES)];
+    let split = bounded.len() / 2;
+    let mut message = HydraMessage::bytes(bounded[..split].to_vec());
+    if bounded.first().is_some_and(|byte| *byte & 1 == 1) {
+        message = message
+            .attach_bytes("fuzz.bin", bounded[split..].to_vec())
+            .expect("bounded in-memory attachment must be accepted");
     }
-    let _ = std::fs::remove_dir_all(common::temp_case_dir("message-codec", data));
-    let _ = std::fs::remove_dir_all(common::temp_case_dir("message-flow", data));
+
+    let packed = fuzzing::encode_message_payload(&message)
+        .expect("bounded in-memory message must encode");
+    let decoded = fuzzing::decode_message_payload(&packed)
+        .expect("production codec must decode its own output");
+    assert_eq!(decoded.plaintext(), message.plaintext());
+    assert_eq!(decoded.attachments(), message.attachments());
 });

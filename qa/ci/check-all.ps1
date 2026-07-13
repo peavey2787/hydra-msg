@@ -30,7 +30,12 @@ param(
     [double]$MutationTimeoutMultiplier = 2,
     [int]$MutationMinimumTimeout = 120,
     [int]$MutationJobs = 1,
-    [int]$FuzzRuns = 100000
+    [ValidateSet("smoke", "overnight", "deep")]
+    [string]$FuzzMode = "smoke",
+    [switch]$Overnight,
+    [switch]$DeepFuzz,
+    [int]$FuzzRuns = 0,
+    [int]$StatefulFuzzRuns = 0
 )
 
 Set-StrictMode -Version Latest
@@ -60,6 +65,35 @@ if ($Only) {
 }
 if ($Ranks[$From] -gt $Ranks[$Through]) {
     throw "-From $From occurs after -Through $Through"
+}
+
+if ($Overnight -and $DeepFuzz) {
+    throw "-Overnight cannot be combined with -DeepFuzz"
+}
+if ($Overnight) {
+    $FuzzMode = "overnight"
+}
+if ($DeepFuzz) {
+    $FuzzMode = "deep"
+}
+
+switch ($FuzzMode) {
+    "smoke" {
+        if ($FuzzRuns -eq 0) { $FuzzRuns = 256 }
+        if ($StatefulFuzzRuns -eq 0) { $StatefulFuzzRuns = 256 }
+        $FuzzSeconds = 0
+        $StatefulFuzzSeconds = 0
+    }
+    "overnight" {
+        $FuzzSeconds = if ($env:HYDRA_COVERAGE_FUZZ_SECONDS) { [int]$env:HYDRA_COVERAGE_FUZZ_SECONDS } else { 900 }
+        $StatefulFuzzSeconds = if ($env:HYDRA_STATEFUL_FUZZ_SECONDS) { [int]$env:HYDRA_STATEFUL_FUZZ_SECONDS } else { 300 }
+    }
+    "deep" {
+        if ($FuzzRuns -eq 0) { $FuzzRuns = 100000 }
+        if ($StatefulFuzzRuns -eq 0) { $StatefulFuzzRuns = 1000 }
+        $FuzzSeconds = 0
+        $StatefulFuzzSeconds = 0
+    }
 }
 
 function Test-ShouldRun {
@@ -222,14 +256,45 @@ if (Test-ShouldRun "mutation" $SkipMutation.IsPresent) {
 }
 
 if (Test-ShouldRun "fuzz" $SkipFuzz.IsPresent) {
-    Assert-PositiveInteger "FuzzRuns" $FuzzRuns
     $RanAny = $true
     Write-ReleaseHeader
-    Invoke-EnvStep "overnight coverage-guided fuzz evidence" @{
-        HYDRA_RUN_COVERAGE_GUIDED_FUZZ = "1"
-        HYDRA_COVERAGE_FUZZ_RUNS = "$FuzzRuns"
-    } {
-        .\qa\ci\fuzz\check-fuzz.ps1
+    switch ($FuzzMode) {
+        "smoke" {
+            Assert-PositiveInteger "FuzzRuns" $FuzzRuns
+            Assert-PositiveInteger "StatefulFuzzRuns" $StatefulFuzzRuns
+            Invoke-EnvStep "bounded coverage-guided fuzz evidence" @{
+                HYDRA_RUN_COVERAGE_GUIDED_FUZZ = "1"
+                HYDRA_FUZZ_MODE = "smoke"
+                HYDRA_COVERAGE_FUZZ_RUNS = "$FuzzRuns"
+                HYDRA_STATEFUL_FUZZ_RUNS = "$StatefulFuzzRuns"
+            } {
+                .\qa\ci\fuzz\check-fuzz.ps1
+            }
+        }
+        "overnight" {
+            Assert-PositiveInteger "FuzzSeconds" $FuzzSeconds
+            Assert-PositiveInteger "StatefulFuzzSeconds" $StatefulFuzzSeconds
+            Invoke-EnvStep "overnight coverage-guided fuzz evidence" @{
+                HYDRA_RUN_COVERAGE_GUIDED_FUZZ = "1"
+                HYDRA_FUZZ_MODE = "overnight"
+                HYDRA_COVERAGE_FUZZ_SECONDS = "$FuzzSeconds"
+                HYDRA_STATEFUL_FUZZ_SECONDS = "$StatefulFuzzSeconds"
+            } {
+                .\qa\ci\fuzz\check-fuzz.ps1
+            }
+        }
+        "deep" {
+            Assert-PositiveInteger "FuzzRuns" $FuzzRuns
+            Assert-PositiveInteger "StatefulFuzzRuns" $StatefulFuzzRuns
+            Invoke-EnvStep "deep coverage-guided fuzz evidence" @{
+                HYDRA_RUN_COVERAGE_GUIDED_FUZZ = "1"
+                HYDRA_FUZZ_MODE = "deep"
+                HYDRA_COVERAGE_FUZZ_RUNS = "$FuzzRuns"
+                HYDRA_STATEFUL_FUZZ_RUNS = "$StatefulFuzzRuns"
+            } {
+                .\qa\ci\fuzz\check-fuzz.ps1
+            }
+        }
     }
 }
 

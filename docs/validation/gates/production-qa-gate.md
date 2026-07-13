@@ -46,10 +46,10 @@ This proves that:
 - real-browser Playwright lifecycle evidence runs;
 - coverage report evidence runs;
 - mutation testing evidence runs;
-- overnight coverage-guided fuzz evidence runs last; and
+- coverage-guided fuzz evidence runs last; release validation selects deep mode; and
 - no runtime `hydra-msg-data/` or local identity material is staged.
 
-The default coverage-guided fuzz campaign is `HYDRA_COVERAGE_FUZZ_RUNS=100000` per target. Override that environment variable only when intentionally changing release campaign length.
+Local `check-all` defaults to 256 runs per target. Use `--overnight` for time-bounded evidence or `--deep-fuzz` for the release campaign of 100,000 runs per fast target and 1,000 runs for the stateful message-flow target.
 
 Archive the command line, tool versions, logs, generated reports, crash artifacts, minimized fuzz reproducers, and exit status under `release-evidence/<version>/`.
 

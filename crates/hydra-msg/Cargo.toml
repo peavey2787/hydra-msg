@@ -8,6 +8,7 @@ repository.workspace = true
 
 [features]
 default = []
+fuzzing = []
 
 [dependencies]
 getrandom = { version = "=0.4.3", features = ["sys_rng"] }

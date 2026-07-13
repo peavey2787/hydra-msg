@@ -47,8 +47,8 @@ evidence, not source files, and are not committed to the repository.
 
 The manual workflow accepts the fuzz-run count, mutation-job count, and optional
 extra `check-all` arguments for an intentional partial/resumed release-evidence
-run. The normal release default remains 100,000 runs per fuzz target and one
-mutation worker.
+run. The normal release default selects deep fuzz mode: 100,000 runs per fast target,
+1,000 runs for the stateful message-flow target, and one mutation worker.
 
 ## Security and reproducibility rules
 

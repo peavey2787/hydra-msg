@@ -38,7 +38,7 @@ done
 require_text() {
   file=$1
   text=$2
-  if ! grep -Fq "$text" "$file"; then
+  if ! grep -Fq -- "$text" "$file"; then
     echo "required text missing in $file: $text" >&2
     exit 1
   fi
@@ -84,6 +84,17 @@ require_text .github/workflows/ci.yml 'target/ci-logs/fuzz-regression.log'
 require_text qa/ci/core/check-rust.sh 'cargo metadata --locked'
 require_text qa/ci/security/check-supply-chain.sh 'cargo fetch --locked'
 require_text qa/ci/fuzz/check-fuzz.sh 'cargo run --locked -p hydra-fuzz-gate --'
+require_text qa/ci/check-all.sh 'fuzz_mode=${HYDRA_FUZZ_MODE:-smoke}'
+require_text qa/ci/check-all.sh 'fuzz_runs=${fuzz_runs:-256}'
+require_text qa/ci/check-all.sh '--overnight'
+require_text qa/ci/check-all.sh '--deep-fuzz'
+require_text qa/ci/fuzz/check-fuzz.sh 'message_stateful_flow'
+require_text qa/ci/fuzz/check-fuzz.sh 'FAST_BUDGET="${HYDRA_COVERAGE_FUZZ_RUNS:-256}"'
+require_text qa/ci/fuzz/check-fuzz.sh 'FAST_BUDGET="${HYDRA_COVERAGE_FUZZ_RUNS:-100000}"'
+require_text crates/hydra-msg/Cargo.toml 'fuzzing = []'
+require_text qa/fuzz/cargo-fuzz/Cargo.toml 'features = ["fuzzing"]'
+require_text qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs 'fuzzing::decode_message_payload'
+require_text qa/fuzz/cargo-fuzz/fuzz_targets/message_stateful_flow.rs 'common::paired'
 require_text .github/workflows/ci.yml 'tee -a "$log_file"'
 require_text .github/workflows/ci.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/workflows/release-validation.yml 'workflow_dispatch:'
@@ -94,9 +105,15 @@ require_text .github/workflows/release-validation.yml 'cargo install cargo-mutan
 require_text .github/workflows/release-validation.yml 'cargo install cargo-fuzz --locked'
 require_text .github/workflows/release-validation.yml 'tee -a "$log_file"'
 require_text .github/workflows/release-validation.yml 'HYDRA_RELEASE_FUZZ_RUNS'
+require_text .github/workflows/release-validation.yml '--deep-fuzz'
 require_text .github/workflows/release-validation.yml 'HYDRA_RELEASE_MUTATION_JOBS'
 require_text .github/workflows/release-validation.yml 'GITHUB_STEP_SUMMARY'
 require_text .github/dependabot.yml 'package-ecosystem: github-actions'
+
+if grep -Eq 'common::(paired|fresh|temp_case_dir)|import_messages' qa/fuzz/cargo-fuzz/fuzz_targets/message_codec.rs; then
+  echo "fast message_codec fuzz target must remain in-memory and stateless" >&2
+  exit 1
+fi
 
 if grep -RInF '${{ runner.temp }}/hydra-ci-logs' .github/workflows; then
   echo "GitHub artifact logs must stay under github.workspace, not runner.temp" >&2

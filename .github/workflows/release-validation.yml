@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       fuzz_runs:
-        description: Coverage-guided runs per fuzz target
+        description: Deep-campaign runs per fast fuzz target
         required: true
         default: "100000"
         type: string
@@ -83,7 +83,8 @@ jobs:
           printf '%s\n' \
             "HYDRA-MSG full sequential release check-all" \
             "Commit: $GITHUB_SHA" \
-            "Fuzz runs: ${HYDRA_RELEASE_FUZZ_RUNS}" \
+            "Fuzz mode: deep" \
+            "Fast fuzz runs: ${HYDRA_RELEASE_FUZZ_RUNS}" \
             "Mutation jobs: ${HYDRA_RELEASE_MUTATION_JOBS}" \
             "Extra args: ${HYDRA_CHECK_ALL_ARGS:-<none>}" > "$log_file"
           extra_args=()
@@ -93,6 +94,7 @@ jobs:
           set -o pipefail
           ./qa/ci/check-all.sh \
             --skip-permissions \
+            --deep-fuzz \
             --fuzz-runs "$HYDRA_RELEASE_FUZZ_RUNS" \
             --mutation-jobs "$HYDRA_RELEASE_MUTATION_JOBS" \
             "${extra_args[@]}" 2>&1 | tee -a "$log_file"

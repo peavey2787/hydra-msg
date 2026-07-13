@@ -77,7 +77,7 @@ PowerShell:
 
 ## Release evidence
 
-`qa/ci/check-all.*` includes the long-running release-evidence gates. With no flags, it runs every validation section in order and stops on the first failure. It runs Miri, sanitizers, real-browser Playwright E2E, coverage, mutation testing, and the overnight coverage-guided fuzz campaign. The fuzz campaign is intentionally last and defaults to 100,000 libFuzzer runs per target.
+`qa/ci/check-all.*` includes every validation section. With no flags, it runs them in order, stops on the first failure, and finishes with a bounded 256-run-per-target fuzz campaign. Use the explicit overnight or deep flags when collecting longer fuzz evidence.
 
 Use the individual scripts only when debugging one failing gate or intentionally collecting isolated evidence. The Unix runner can resume at a release section and can skip already-collected evidence:
 A skipped cargo-mutants baseline is valid only when the same tree has already passed its Rust tests.
@@ -93,14 +93,17 @@ A skipped cargo-mutants baseline is valid only when the same tree has already pa
 ```
 
 ```bash
-HYDRA_COVERAGE_FUZZ_RUNS=10000 ./qa/ci/check-all.sh
+./qa/ci/check-all.sh --only fuzz
+./qa/ci/check-all.sh --only fuzz --overnight
+./qa/ci/check-all.sh --only fuzz --deep-fuzz
 ```
 
 PowerShell:
 
 ```powershell
-$env:HYDRA_COVERAGE_FUZZ_RUNS = "10000"
-.\qa\ci\check-all.ps1
+.\qa\ci\check-all.ps1 -Only fuzz
+.\qa\ci\check-all.ps1 -Only fuzz -Overnight
+.\qa\ci\check-all.ps1 -Only fuzz -DeepFuzz
 ```
 
 To include the full WASM app probe in browser E2E, set `HYDRA_BROWSER_TEST_URL` to a running `examples/mobile_perf_web` host before running `check-all`.

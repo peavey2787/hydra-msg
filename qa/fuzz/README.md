@@ -1,65 +1,59 @@
 # HYDRA-MSG fuzzing workspace
 
-This directory contains deterministic fuzz-smoke infrastructure plus the release coverage-guided libFuzzer harness for parser, codec, and state-transition inputs. The full `check-all` gate runs fuzzing last and uses the long coverage-guided campaign by default.
+This directory contains the deterministic fuzz-smoke gate and the nightly cargo-fuzz/libFuzzer harness. The top-level `check-all` runner always places fuzzing last.
 
 ## Navigation
 
 - [Main README](../../README.md)
 - [Parent workspace](../README.md)
 
-## Gate
+## Campaign modes
 
-The direct fuzz gate is bounded and reproducible unless `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` is set. The top-level `check-all` sets that variable and runs this script last with an overnight release budget.
+The default local mode is deliberately bounded:
 
-Unix:
+```bash
+./qa/ci/check-all.sh --only fuzz
+```
+
+It runs 256 iterations for every cargo-fuzz target. The full default `check-all` run uses the same smoke budget.
+
+Use a time-bounded overnight campaign explicitly:
+
+```bash
+./qa/ci/check-all.sh --only fuzz --overnight
+```
+
+Overnight mode runs each fast target for 15 minutes and the expensive stateful message-flow target for 5 minutes.
+
+Use the deep campaign explicitly:
+
+```bash
+./qa/ci/check-all.sh --only fuzz --deep-fuzz
+```
+
+Deep mode runs 100,000 iterations for each fast target and 1,000 iterations for `message_stateful_flow`. Custom run counts remain available through `--fuzz-runs` and `--stateful-fuzz-runs`.
+
+PowerShell equivalents are `-Only fuzz`, `-Overnight`, `-DeepFuzz`, `-FuzzRuns`, and `-StatefulFuzzRuns`.
+
+## Fast and stateful message targets
+
+`message_codec` is a fast, in-memory parser/encoder target. It does not create profiles, write temporary state, perform handshakes, or run cryptographic sessions. The hidden `hydra-msg/fuzzing` feature exposes only the internal codec hooks needed by this external harness.
+
+`message_stateful_flow` separately exercises profile creation, identity/contact setup, handshake, message send/receive, attachment packaging, and tampered packet delivery. It intentionally receives a smaller budget in overnight and deep modes because every iteration performs expensive stateful cryptographic work.
+
+## Direct gate
+
+The direct gate always runs the deterministic `hydra-fuzz-gate`. Coverage-guided targets run only when `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` is set; `check-all` sets it automatically for its fuzz section.
 
 ```bash
 ./qa/ci/fuzz/check-fuzz.sh
 ```
 
-PowerShell:
-
-```powershell
-.\qa\ci\fuzz\check-fuzz.ps1
-```
-
-The top-level `check-all` calls this script automatically as the final gate.
-
-## Coverage scope
-
-`hydra-fuzz-gate` exercises:
-
-- HYDRA envelope header and protected-record decoders;
-- encrypted local-state and backup parser entrypoints;
-- contact, identity, handshake, lobby invite, anonymous-auth, message, and lobby receive parser boundaries;
-- direct-message packet fragmentation/reassembly state transitions;
-- lower-level session send/receive/refresh/close state transitions.
-
-The seed corpus includes frozen persistence vectors, parser-stress vectors, magic prefixes, empty/minimal inputs, and deterministic mutations of every seed. Increase the bounded mutation count with:
-
-```bash
-HYDRA_FUZZ_CASES=64 ./qa/ci/fuzz/check-fuzz.sh
-```
-
-## Coverage-guided fuzzing
-
-The `cargo-fuzz/` directory contains the release-candidate libFuzzer harness. Because it intentionally lives outside cargo-fuzz's conventional root `fuzz/` directory, the QA runners pass `--fuzz-dir qa/fuzz/cargo-fuzz` explicitly. Cargo-fuzz's sanitizer coverage requires nightly Rust, so the runners select `nightly` for the complete cargo-fuzz subprocess tree. Override that only with another installed nightly toolchain through `HYDRA_FUZZ_TOOLCHAIN`. Run release fuzz evidence through the full gate:
-
-```bash
-./qa/ci/check-all.sh
-```
-
-`check-all` sets `HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1` and defaults to `HYDRA_COVERAGE_FUZZ_RUNS=100000`. Run `qa/ci/fuzz/check-fuzz.*` directly only when debugging fuzz in isolation.
-
-Install the required toolchain and cargo-fuzz with `scripts/setup-dev-env.*`, or manually:
+Install the required tooling with `scripts/setup-dev-env.*`, or manually:
 
 ```bash
 rustup toolchain install nightly
 cargo install cargo-fuzz --locked
 ```
 
-The harness covers envelope headers, protected records, message codec paths, storage/backup chunks, contact cards, handshakes, lobby invites, anonymous-auth tokens, fragment reassembly, session receive state machines, and group commit/message paths. Evidence is written to `target/hydra-fuzz-evidence/`. See [`docs/validation/gates/coverage-guided-fuzzing.md`](../../docs/validation/gates/coverage-guided-fuzzing.md).
-
-## Not a replacement for release campaigns
-
-The bounded direct gate proves that a fixed corpus and deterministic mutations do not panic the parser/codec/state-transition surface. Release assurance also requires the long coverage-guided campaign, sanitizer runs, and crash minimization evidence produced by the full `check-all` gate.
+Evidence is written under `target/hydra-fuzz-evidence/`. See [Coverage-guided fuzzing](../../docs/validation/gates/coverage-guided-fuzzing.md).
