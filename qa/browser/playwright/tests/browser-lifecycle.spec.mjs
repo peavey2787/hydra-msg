@@ -32,6 +32,16 @@ async function capturedSaveError(page, name, bytes, expectedRevision) {
   });
 }
 
+async function closeLifecyclePage(page) {
+  const closeRequest = page.evaluate(() => window.__hydraLifecycle?.close()).catch(() => {});
+  await Promise.race([
+    closeRequest,
+    new Promise((resolve) => setTimeout(resolve, 1_000))
+  ]);
+  await page.close({ runBeforeUnload: false }).catch(() => {});
+  await closeRequest;
+}
+
 test.describe('HYDRA browser storage lifecycle policy in real browser contexts', () => {
   test('IndexedDB unavailable/private-mode style denial fails closed without localStorage fallback', async ({ page }) => {
     await page.addInitScript(() => {
@@ -58,52 +68,67 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
   test('compare-and-swap rejects stale two-tab writes and delete-while-open writes', async ({ context }, testInfo) => {
     const pageA = await context.newPage();
     const pageB = await context.newPage();
-    await pageA.goto('/');
-    await pageB.goto('/');
-    const databaseName = uniqueDatabaseName(testInfo);
-    await installIndexedDbHarness(pageA, { databaseName });
-    await installIndexedDbHarness(pageB, { databaseName });
 
-    await test.step('establish two-tab revision divergence', async () => {
-      await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
-      const revisionA = await pageA.evaluate(
-        () => window.__hydraLifecycle.save('same-profile', [1, 2, 3], 0)
-      );
-      expect(revisionA).toBe(1);
-      const loadedB = await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'));
-      expect(loadedB.revision).toBe(1);
-      const revisionA2 = await pageA.evaluate(
-        () => window.__hydraLifecycle.save('same-profile', [4, 5, 6], 1)
-      );
-      expect(revisionA2).toBe(2);
-    });
+    try {
+      await pageA.goto('/');
+      await pageB.goto('/');
+      const databaseName = uniqueDatabaseName(testInfo);
+      await installIndexedDbHarness(pageA, { databaseName });
+      await installIndexedDbHarness(pageB, { databaseName });
 
-    await test.step('reject the stale page without acquiring a write transaction', async () => {
-      const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
-      const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
-      const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
-      expect(staleError).not.toBeNull();
-      expect(staleError.message).toMatch(/stale profile revision/);
-      expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
-      expect(await pageA.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
-        bytes: [4, 5, 6],
-        revision: 2
+      await test.step('establish two-tab revision divergence', async () => {
+        await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
+        const revisionA = await pageA.evaluate(
+          () => window.__hydraLifecycle.save('same-profile', [1, 2, 3], 0)
+        );
+        expect(revisionA).toBe(1);
+        const loadedB = await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'));
+        expect(loadedB.revision).toBe(1);
+        const revisionA2 = await pageA.evaluate(
+          () => window.__hydraLifecycle.save('same-profile', [4, 5, 6], 1)
+        );
+        expect(revisionA2).toBe(2);
+        expect(await pageA.evaluate(() => window.__hydraLifecycle.stats())).toEqual({
+          databaseOpens: 1,
+          saveReadwriteTransactions: 2
+        });
+        expect(await pageB.evaluate(() => window.__hydraLifecycle.stats())).toEqual({
+          databaseOpens: 1,
+          saveReadwriteTransactions: 0
+        });
       });
-    });
 
-    await test.step('delete while the second page remains open and reject its stale write', async () => {
-      await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
-      const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
-      const staleAfterDelete = await capturedSaveError(pageB, 'same-profile', [10], 1);
-      const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
-      expect(staleAfterDelete).not.toBeNull();
-      expect(staleAfterDelete.message).toMatch(/stale profile revision/);
-      expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
-      expect(await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
-        bytes: null,
-        revision: 0
+      await test.step('reject the stale page without acquiring a write transaction', async () => {
+        const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
+        const staleError = await capturedSaveError(pageB, 'same-profile', [7, 8, 9], 1);
+        const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
+        expect(staleError).not.toBeNull();
+        expect(staleError.message).toMatch(/stale profile revision/);
+        expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
+        expect(await pageA.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
+          bytes: [4, 5, 6],
+          revision: 2
+        });
       });
-    });
+
+      await test.step('delete while the second page remains open and reject its stale write', async () => {
+        await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
+        const before = await pageB.evaluate(() => window.__hydraLifecycle.stats());
+        const staleAfterDelete = await capturedSaveError(pageB, 'same-profile', [10], 1);
+        const after = await pageB.evaluate(() => window.__hydraLifecycle.stats());
+        expect(staleAfterDelete).not.toBeNull();
+        expect(staleAfterDelete.message).toMatch(/stale profile revision/);
+        expect(after.saveReadwriteTransactions).toBe(before.saveReadwriteTransactions);
+        expect(await pageB.evaluate(() => window.__hydraLifecycle.load('same-profile'))).toEqual({
+          bytes: null,
+          revision: 0
+        });
+        expect((await pageA.evaluate(() => window.__hydraLifecycle.stats())).databaseOpens).toBe(1);
+        expect((await pageB.evaluate(() => window.__hydraLifecycle.stats())).databaseOpens).toBe(1);
+      });
+    } finally {
+      await Promise.all([closeLifecyclePage(pageA), closeLifecyclePage(pageB)]);
+    }
   });
 
   test('QuotaExceededError is surfaced and does not commit partial data', async ({ page }, testInfo) => {
@@ -222,6 +247,8 @@ async function installIndexedDbHarness(page, options = {}) {
     const DB_VERSION = 2;
     const STORE_NAME = 'snapshots';
     let saveReadwriteTransactions = 0;
+    let databaseOpens = 0;
+    let dbPromise = null;
 
     function requestToPromise(request) {
       return new Promise((resolve, reject) => {
@@ -295,42 +322,68 @@ async function installIndexedDbHarness(page, options = {}) {
     }
 
     async function openDb() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
-          const db = request.result;
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
-            db.createObjectStore(STORE_NAME, { keyPath: 'name' });
-          }
-        };
-        request.onsuccess = () => {
-          const db = request.result;
-          db.onversionchange = () => db.close();
-          resolve(db);
-        };
-        request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
-        request.onblocked = () => reject(new Error('IndexedDB open blocked'));
-      });
+      if (!dbPromise) {
+        dbPromise = new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME, { keyPath: 'name' });
+            }
+          };
+          request.onsuccess = () => {
+            const db = request.result;
+            databaseOpens += 1;
+            db.onversionchange = () => {
+              db.close();
+              dbPromise = null;
+            };
+            db.onclose = () => { dbPromise = null; };
+            resolve(db);
+          };
+          request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
+          request.onblocked = () => reject(new Error('IndexedDB open blocked'));
+        });
+      }
+      try {
+        return await dbPromise;
+      } catch (error) {
+        dbPromise = null;
+        throw error;
+      }
+    }
+
+    async function closeDb() {
+      const pending = dbPromise;
+      dbPromise = null;
+      if (!pending) return;
+      try {
+        const db = await pending;
+        db.close();
+      } catch {
+        // Opening may already have failed. Clearing dbPromise is sufficient.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
     window.__hydraLifecycle = {
       stats() {
-        return { saveReadwriteTransactions };
+        return { databaseOpens, saveReadwriteTransactions };
+      },
+
+      close() {
+        return closeDb();
       },
 
       async load(name) {
         const db = await openDb();
-        try {
-          const tx = db.transaction(STORE_NAME, 'readonly');
-          const [record] = await Promise.all([
-            requestToPromise(tx.objectStore(STORE_NAME).get(name)),
-            transactionToPromise(tx, 'load')
-          ]);
-          if (!record) return { bytes: null, revision: 0 };
-          return { bytes: Array.from(record.bytes || []), revision: record.revision };
-        } finally {
-          db.close();
-        }
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const [record] = await Promise.all([
+          requestToPromise(tx.objectStore(STORE_NAME).get(name)),
+          transactionToPromise(tx, 'load')
+        ]);
+        if (!record) return { bytes: null, revision: 0 };
+        return { bytes: Array.from(record.bytes || []), revision: record.revision };
       },
 
       async save(name, bytes, expectedRevision) {
@@ -338,117 +391,103 @@ async function installIndexedDbHarness(page, options = {}) {
           throw new DOMException('HYDRA test quota exceeded', 'QuotaExceededError');
         }
         const db = await openDb();
-        try {
-          // Reject known-stale callers using a readonly transaction. This is the
-          // normal two-tab stale path and never acquires an IndexedDB write lock.
-          const preflightRevision = await readCurrentRevision(db, name);
-          if (preflightRevision !== expectedRevision) {
-            throw new Error(
-              `stale profile revision: expected ${expectedRevision}, got ${preflightRevision}`
-            );
-          }
 
-          // Recheck inside the readwrite transaction before writing. The second
-          // check preserves atomic compare-and-swap if another context commits
-          // between the readonly preflight and this transaction.
-          return await new Promise((resolve, reject) => {
-            saveReadwriteTransactions += 1;
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            let nextRevision = null;
-            let operationError = null;
+        // Reject known-stale callers using a readonly transaction. This is the
+        // normal two-tab stale path and never acquires an IndexedDB write lock.
+        const preflightRevision = await readCurrentRevision(db, name);
+        if (preflightRevision !== expectedRevision) {
+          throw new Error(
+            `stale profile revision: expected ${expectedRevision}, got ${preflightRevision}`
+          );
+        }
 
-            tx.oncomplete = () => {
-              if (operationError) {
-                reject(operationError);
-                return;
-              }
-              if (nextRevision === null) {
-                reject(new Error('IndexedDB transaction completed without a revision'));
-                return;
-              }
-              resolve(nextRevision);
-            };
-            tx.onerror = () => {
-              operationError = transactionFailure(
-                tx,
-                operationError,
-                new Error('IndexedDB transaction failed')
-              );
-            };
-            tx.onabort = () => reject(transactionFailure(
+        // Recheck inside the readwrite transaction before writing. The second
+        // check preserves atomic compare-and-swap if another context commits
+        // between the readonly preflight and this transaction.
+        return await new Promise((resolve, reject) => {
+          saveReadwriteTransactions += 1;
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          const store = tx.objectStore(STORE_NAME);
+          let nextRevision = null;
+          let operationError = null;
+
+          tx.oncomplete = () => {
+            if (operationError) {
+              reject(operationError);
+              return;
+            }
+            if (nextRevision === null) {
+              reject(new Error('IndexedDB transaction completed without a revision'));
+              return;
+            }
+            resolve(nextRevision);
+          };
+          tx.onerror = () => {
+            operationError = transactionFailure(
               tx,
               operationError,
-              new Error('IndexedDB transaction abort')
-            ));
+              new Error('IndexedDB transaction failed')
+            );
+          };
+          tx.onabort = () => reject(transactionFailure(
+            tx,
+            operationError,
+            new Error('IndexedDB transaction abort')
+          ));
 
-            const get = store.get(name);
-            get.onerror = () => {
-              operationError = get.error || new Error('IndexedDB get failed');
-            };
-            get.onsuccess = () => {
-              const current = get.result || null;
-              const currentRevision = current ? current.revision : 0;
-              if (currentRevision !== expectedRevision) {
-                operationError = new Error(
-                  `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
-                );
-                try {
-                  tx.abort();
-                } catch {
-                  reject(operationError);
-                }
-                return;
-              }
+          const get = store.get(name);
+          get.onerror = () => {
+            operationError = get.error || new Error('IndexedDB get failed');
+          };
+          get.onsuccess = () => {
+            const current = get.result || null;
+            const currentRevision = current ? current.revision : 0;
+            if (currentRevision !== expectedRevision) {
+              // Do not abort or queue a semantic no-op. Let the transaction
+              // complete normally, then reject after Firefox releases its lock.
+              operationError = new Error(
+                `stale profile revision: expected ${expectedRevision}, got ${currentRevision}`
+              );
+              return;
+            }
 
-              nextRevision = currentRevision + 1;
-              const put = store.put({
-                name,
-                bytes: Array.from(bytes),
-                revision: nextRevision
-              });
-              put.onerror = () => {
-                operationError = put.error || new Error('IndexedDB put failed');
-              };
+            nextRevision = currentRevision + 1;
+            const put = store.put({
+              name,
+              bytes: Array.from(bytes),
+              revision: nextRevision
+            });
+            put.onerror = () => {
+              operationError = put.error || new Error('IndexedDB put failed');
             };
-          });
-        } finally {
-          db.close();
-        }
+          };
+        });
       },
 
       async deleteProfile(name) {
         const db = await openDb();
-        try {
-          const tx = db.transaction(STORE_NAME, 'readwrite');
-          const deletion = requestToPromise(tx.objectStore(STORE_NAME).delete(name));
-          await Promise.all([
-            deletion,
-            transactionToPromise(tx, 'delete')
-          ]);
-        } finally {
-          db.close();
-        }
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const deletion = requestToPromise(tx.objectStore(STORE_NAME).delete(name));
+        await Promise.all([
+          deletion,
+          transactionToPromise(tx, 'delete')
+        ]);
       },
 
       async abortDuringFlush(name) {
         const db = await openDb();
-        try {
-          await new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            tx.objectStore(STORE_NAME).put({ name, bytes: [1], revision: 1 });
-            tx.oncomplete = resolve;
-            tx.onerror = (event) => event.preventDefault();
-            tx.onabort = () => reject(transactionFailure(
-              tx,
-              null,
-              new DOMException('HYDRA test transaction aborted', 'AbortError')
-            ));
-            tx.abort();
-          });
-        } finally {
-          db.close();
-        }
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite');
+          tx.objectStore(STORE_NAME).put({ name, bytes: [1], revision: 1 });
+          tx.oncomplete = resolve;
+          tx.onerror = (event) => event.preventDefault();
+          tx.onabort = () => reject(transactionFailure(
+            tx,
+            null,
+            new DOMException('HYDRA test transaction aborted', 'AbortError')
+          ));
+          tx.abort();
+        });
       }
     };
   }, options);

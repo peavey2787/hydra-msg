@@ -59,7 +59,10 @@ for required_stale_marker in \
   "Recheck inside the readwrite transaction" \
   "uniqueDatabaseName" \
   "capturedSaveError" \
-  "saveReadwriteTransactions"
+  "saveReadwriteTransactions" \
+  "let dbPromise = null" \
+  "databaseOpens" \
+  "Do not abort or queue a semantic no-op"
 do
   if ! grep -Fq "$required_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
     echo "browser E2E readonly-preflight stale-CAS marker missing: $required_stale_marker" >&2
@@ -71,7 +74,11 @@ for required_adapter_marker in \
   "readHydraCurrentRevision" \
   "readonly transaction" \
   "avoids acquiring a cross-tab write lock" \
-  "Recheck atomically inside the write transaction"
+  "Recheck atomically inside the write transaction" \
+  "let hydraDbPromise = null" \
+  "async function hydraIndexedDb()" \
+  "Reuse one connection per browser realm" \
+  "No write request is queued"
 do
   if ! production_contains "$required_adapter_marker"; then
     echo "production browser adapter readonly-preflight stale-CAS marker missing: $required_adapter_marker" >&2
@@ -92,6 +99,34 @@ do
   if grep -Fq "$forbidden_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs \
     || production_contains "$forbidden_stale_marker"; then
     echo "obsolete stale-CAS settlement strategy remains: $forbidden_stale_marker" >&2
+    exit 1
+  fi
+done
+
+
+# Opening and closing a new connection for every operation caused Firefox to
+# leave close-pending connections that blocked the next tab. The harness has
+# one versionchange close plus one explicit test-teardown close. Production has
+# only the versionchange close because page destruction closes its realm.
+spec_close_count=$(grep -Fc "db.close();" qa/browser/playwright/tests/browser-lifecycle.spec.mjs)
+production_close_count=$(cat "$persistence_facade" "$persistence_js" | grep -Fc "db.close();")
+if [ "$spec_close_count" -ne 2 ]; then
+  echo "browser E2E harness must close its cached IndexedDB connection on versionchange and explicit teardown" >&2
+  exit 1
+fi
+if [ "$production_close_count" -ne 1 ]; then
+  echo "production browser adapter must close its cached IndexedDB connection only on versionchange" >&2
+  exit 1
+fi
+
+for teardown_marker in \
+  "async function closeLifecyclePage" \
+  "window.__hydraLifecycle?.close()" \
+  "page.close({ runBeforeUnload: false })" \
+  "await Promise.all([closeLifecyclePage(pageA), closeLifecyclePage(pageB)])"
+do
+  if ! grep -Fq "$teardown_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
+    echo "Firefox browser E2E deterministic teardown marker missing: $teardown_marker" >&2
     exit 1
   fi
 done
