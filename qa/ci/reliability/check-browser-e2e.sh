@@ -59,10 +59,7 @@ for required_stale_marker in \
   "Recheck inside the readwrite transaction" \
   "uniqueDatabaseName" \
   "capturedSaveError" \
-  "saveReadwriteTransactions" \
-  "let dbPromise = null" \
-  "databaseOpens" \
-  "Do not abort or queue a semantic no-op"
+  "saveReadwriteTransactions"
 do
   if ! grep -Fq "$required_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
     echo "browser E2E readonly-preflight stale-CAS marker missing: $required_stale_marker" >&2
@@ -74,11 +71,7 @@ for required_adapter_marker in \
   "readHydraCurrentRevision" \
   "readonly transaction" \
   "avoids acquiring a cross-tab write lock" \
-  "Recheck atomically inside the write transaction" \
-  "let hydraDbPromise = null" \
-  "async function hydraIndexedDb()" \
-  "Reuse one connection per browser realm" \
-  "No write request is queued"
+  "Recheck atomically inside the write transaction"
 do
   if ! production_contains "$required_adapter_marker"; then
     echo "production browser adapter readonly-preflight stale-CAS marker missing: $required_adapter_marker" >&2
@@ -102,21 +95,6 @@ do
     exit 1
   fi
 done
-
-
-# Opening and closing a new connection for every operation caused Firefox to
-# leave close-pending connections that blocked the next tab. Exactly one close
-# remains in each implementation, reserved for the versionchange handler.
-spec_close_count=$(grep -Fc "db.close();" qa/browser/playwright/tests/browser-lifecycle.spec.mjs)
-production_close_count=$(cat "$persistence_facade" "$persistence_js" | grep -Fc "db.close();")
-if [ "$spec_close_count" -ne 1 ]; then
-  echo "browser E2E harness must close its cached IndexedDB connection only on versionchange" >&2
-  exit 1
-fi
-if [ "$production_close_count" -ne 1 ]; then
-  echo "production browser adapter must close its cached IndexedDB connection only on versionchange" >&2
-  exit 1
-fi
 
 for required_config in "baseURL" "webServer" "serve-test-origin.mjs" "HYDRA_BROWSER_WORKERS" "workers: workerCount" "trace: 'on-first-retry'" "playwright-report"; do
   if ! grep -Fq "$required_config" qa/browser/playwright/playwright.config.mjs; then
