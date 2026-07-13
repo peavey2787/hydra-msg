@@ -1,5 +1,8 @@
 use super::*;
-use super::{signature::verify_group_data_signature, sizing::signed_group_data_class};
+use super::{
+    signature::{verify_group_data_signature, verify_group_data_signature_with_key},
+    sizing::signed_group_data_class,
+};
 use crate::{
     GovernancePolicy, GroupError, GroupMode, GroupRole, GroupState, MemberId, MemberStatus,
     MembershipMechanism, ModePolicy, RosterEntry, StateVersion,
@@ -378,3 +381,4 @@ fn signed_group_data_rejects_a_cryptographically_valid_wrong_class() {
 }
 
 mod signature_edges;
+mod signature_guards;

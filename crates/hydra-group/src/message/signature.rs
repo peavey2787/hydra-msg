@@ -22,6 +22,17 @@ pub(super) fn verify_group_data_signature<F>(
 where
     F: FnOnce(MemberId) -> Option<MlDsaVerificationKey>,
 {
+    let verification_key = verification_key_for(step.sender);
+    verify_group_data_signature_with_key(state, header, step, record, verification_key)
+}
+
+pub(super) fn verify_group_data_signature_with_key(
+    state: &GroupState,
+    header: &OuterHeader,
+    step: &SenderMessageStep,
+    record: &ProtectedRecord,
+    verification_key: Option<MlDsaVerificationKey>,
+) -> GroupResult<Vec<u8>> {
     if record.content.len() < 4 + ML_DSA_65_SIG_SIZE {
         return Err(GroupError::InvalidGroupSignature);
     }
@@ -36,15 +47,15 @@ where
     let expected_len = signature_start
         .checked_add(ML_DSA_65_SIG_SIZE)
         .ok_or(GroupError::InvalidGroupSignature)?;
-    if expected_len != record.content.len()
-        || signed_group_data_class(state.mode, application_len) != Some(header.envelope_class)
-    {
+    if expected_len != record.content.len() {
+        return Err(GroupError::InvalidGroupSignature);
+    }
+    if signed_group_data_class(state.mode, application_len) != Some(header.envelope_class) {
         return Err(GroupError::InvalidGroupSignature);
     }
     let content = &record.content[4..signature_start];
     let signature = &record.content[signature_start..];
-    let verification_key =
-        verification_key_for(step.sender).ok_or(GroupError::InvalidGroupSignature)?;
+    let verification_key = verification_key.ok_or(GroupError::InvalidGroupSignature)?;
     let fingerprint = identity_fingerprint(&verification_key);
     let roster_entry = state
         .roster
