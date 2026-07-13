@@ -376,3 +376,5 @@ fn signed_group_data_rejects_a_cryptographically_valid_wrong_class() {
         Err(GroupError::InvalidGroupSignature)
     );
 }
+
+mod signature_edges;

@@ -317,3 +317,6 @@ fn validate_decoded_filename(filename: &str) -> HydraResult<()> {
         "attachment filename size",
     )
 }
+
+#[cfg(test)]
+mod tests;

@@ -105,3 +105,13 @@ fn validate_group_data_record(
     }
     Ok(())
 }
+
+#[cfg(test)]
+pub(super) fn validate_group_data_record_for_test(
+    state: &GroupState,
+    header: &OuterHeader,
+    step: &SenderMessageStep,
+    record: &ProtectedRecord,
+) -> GroupResult<()> {
+    validate_group_data_record(state, header, step, record)
+}
