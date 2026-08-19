@@ -6,6 +6,13 @@ HYDRA-MSG is a Rust/WASM encrypted messaging SDK for app developers.
 
 It gives apps a small public API for identities, contacts, handshakes, encrypted messages, attachments, small lobbies, anonymous authorization tokens, encrypted local state, and encrypted backups.
 
+<div align="center">
+  <img width="550" alt="hydra-logo" src="https://github.com/user-attachments/assets/04998c19-8550-43e4-b980-a95b0660e1b4" />
+</div>
+
+### **Integrations**
+Could be paired with [Conversation Steganography](https://github.com/nethical6/conversation-steganography) to transport encrypted payloads disguised inside normal chat streams.
+
 ## Navigation
 
 - [How HYDRA messaging works](docs/impl/message-flow/README.md)
@@ -16,6 +23,7 @@ It gives apps a small public API for identities, contacts, handshakes, encrypted
 - [Benchmark notes](docs/validation/benchmarks/benchmark-results.md)
 
 ## Simple mental model
+
 
 ```text
 open encrypted local HYDRA store
@@ -205,4 +213,4 @@ Security reporting and release governance are documented separately so the app-d
 - [Reproducible builds](docs/validation/release/reproducible-builds.md)
 - [Release signing](docs/validation/release/release-signing.md)
 
-The public repository is `https://github.com/peavey2787/hydra-msg`. Security reports use GitHub Private Vulnerability Reporting through [SECURITY.md](SECURITY.md). Production release artifacts are created per signed tag with the release scripts under `scripts/release/`.
+For security reports, use GitHub Private Vulnerability Reporting through [SECURITY.md](SECURITY.md). Production release artifacts are created per signed tag with the release scripts under `scripts/release/`.
