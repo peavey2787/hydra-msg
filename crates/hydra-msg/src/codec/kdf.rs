@@ -9,6 +9,10 @@ pub(crate) const KDF_PROFILE_MOBILE: &str = "mobile";
 pub(crate) const KDF_PROFILE_INTERACTIVE: &str = "interactive";
 pub(crate) const KDF_PROFILE_HIGH_SECURITY: &str = "high-security";
 
+const LEGACY_KDF_PROFILE_MOBILE: (u8, u32, u32) = (13, 8, 1);
+const LEGACY_KDF_PROFILE_INTERACTIVE: (u8, u32, u32) = (14, 8, 1);
+const LEGACY_KDF_PROFILE_HIGH_SECURITY: (u8, u32, u32) = (15, 8, 1);
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct PasswordKdfRecord {
     pub(crate) profile: String,
@@ -35,14 +39,21 @@ impl PasswordKdfRecord {
     }
 
     pub(crate) fn validate(&self) -> HydraResult<()> {
-        let (log_n, r, p) = params_for_profile(&self.profile)?;
-        if self.log_n != log_n || self.r != r || self.p != p {
+        let current = params_for_profile(&self.profile)?;
+        let legacy = legacy_params_for_profile(&self.profile)?;
+        let actual = (self.log_n, self.r, self.p);
+        if actual != current && actual != legacy {
             return Err(HydraMsgError::InvalidEncoding("kdf parameters"));
         }
         if self.salt == [0_u8; 32] {
             return Err(HydraMsgError::InvalidEncoding("kdf salt"));
         }
         Ok(())
+    }
+
+    pub(crate) fn needs_upgrade(&self) -> HydraResult<bool> {
+        self.validate()?;
+        Ok((self.log_n, self.r, self.p) != params_for_profile(&self.profile)?)
     }
 }
 
@@ -179,9 +190,17 @@ fn decode_kdf_salt(value: &str) -> HydraResult<[u8; 32]> {
 
 fn params_for_profile(profile: &str) -> HydraResult<(u8, u32, u32)> {
     match profile {
-        KDF_PROFILE_MOBILE => Ok((13, 8, 1)),
-        KDF_PROFILE_INTERACTIVE => Ok((14, 8, 1)),
-        KDF_PROFILE_HIGH_SECURITY => Ok((15, 8, 1)),
+        KDF_PROFILE_MOBILE | KDF_PROFILE_INTERACTIVE => Ok((17, 8, 1)),
+        KDF_PROFILE_HIGH_SECURITY => Ok((18, 8, 1)),
+        _ => Err(HydraMsgError::Unsupported("kdf profile")),
+    }
+}
+
+fn legacy_params_for_profile(profile: &str) -> HydraResult<(u8, u32, u32)> {
+    match profile {
+        KDF_PROFILE_MOBILE => Ok(LEGACY_KDF_PROFILE_MOBILE),
+        KDF_PROFILE_INTERACTIVE => Ok(LEGACY_KDF_PROFILE_INTERACTIVE),
+        KDF_PROFILE_HIGH_SECURITY => Ok(LEGACY_KDF_PROFILE_HIGH_SECURITY),
         _ => Err(HydraMsgError::Unsupported("kdf profile")),
     }
 }

@@ -97,8 +97,10 @@ Assert-NoSourceText $WasmFile "js_name = sendTextTo" "extra WASM transport callb
 Assert-NoSourceText $WasmFile "js_name = receiveNext" "extra WASM incremental receive API"
 Assert-NoSourceText $WasmFile "js_name = receiveLobbyNext" "extra WASM incremental lobby receive API"
 
+# These are exact public API spellings. Select-String is case-insensitive by
+# default, which makes names such as appSendToPeer() false positives for sendTo.
 $overexposedEnvelopeMatches = Get-SearchFiles @("crates", "docs/spec", "docs/impl", "docs/validation", "README.md") |
-    Select-String -Pattern 'send_envelopes|receive_envelopes|send_lobby_envelopes|receive_lobby_envelopes|sendEnvelopes|sendTextEnvelopes|receiveEnvelopes|sendLobbyEnvelopes|receiveLobbyEnvelopes|send_to\(|receive_next\(|send_lobby_to\(|receive_lobby_next\(|sendTo|sendTextTo|receiveNext|receiveLobbyNext|minSupportedMaxEnvelopeSize|protocolMaxEnvelopeSize|effectiveMaxEnvelopeSize|maxEnvelopeSize|setMinEnvelopeSize|setMaxEnvelopeSize|set_min_envelope_size|set_max_envelope_size|send_batch|sendBatch|send_packets|sendPackets' -ErrorAction SilentlyContinue
+    Select-String -CaseSensitive -Pattern 'send_envelopes|receive_envelopes|send_lobby_envelopes|receive_lobby_envelopes|sendEnvelopes|sendTextEnvelopes|receiveEnvelopes|sendLobbyEnvelopes|receiveLobbyEnvelopes|send_to\(|receive_next\(|send_lobby_to\(|receive_lobby_next\(|sendTo|sendTextTo|receiveNext|receiveLobbyNext|minSupportedMaxEnvelopeSize|protocolMaxEnvelopeSize|effectiveMaxEnvelopeSize|maxEnvelopeSize|setMinEnvelopeSize|setMaxEnvelopeSize|set_min_envelope_size|set_max_envelope_size|send_batch|sendBatch|send_packets|sendPackets' -ErrorAction SilentlyContinue
 if ($overexposedEnvelopeMatches) {
     $overexposedEnvelopeMatches | ForEach-Object { Write-Host $_ }
     throw "overexposed envelope sizing, batching, or packet-fragment API reference found"

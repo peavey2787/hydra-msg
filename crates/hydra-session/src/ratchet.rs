@@ -11,6 +11,7 @@ pub struct DirectionChain {
     next_index: u64,
 }
 
+#[cfg(any(test, feature = "test-support"))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DirectionChainSnapshot {
     pub key: [u8; 32],
@@ -37,6 +38,7 @@ impl DirectionChain {
         self.next_index = next_index;
     }
 
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub fn export_snapshot(&self) -> DirectionChainSnapshot {
         DirectionChainSnapshot {
@@ -45,6 +47,7 @@ impl DirectionChain {
         }
     }
 
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub fn from_snapshot(snapshot: DirectionChainSnapshot) -> Self {
         Self {

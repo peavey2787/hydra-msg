@@ -284,17 +284,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydra-app"
-version = "0.1.0"
-dependencies = [
- "hydra-app-core",
-]
-
-[[package]]
-name = "hydra-app-core"
+name = "hydra-msg-example-gui"
 version = "0.1.0"
 dependencies = [
  "hydra-msg",
+ "hydra-stego",
 ]
 
 [[package]]
@@ -314,7 +308,7 @@ name = "hydra-crypto"
 version = "0.1.0"
 dependencies = [
  "chacha20poly1305",
- "getrandom 0.4.3",
+ "getrandom",
  "hex",
  "hkdf",
  "hmac 0.13.0",
@@ -370,11 +364,12 @@ dependencies = [
 name = "hydra-msg"
 version = "0.1.0"
 dependencies = [
- "getrandom 0.4.3",
+ "getrandom",
  "hydra-core",
  "hydra-crypto",
  "hydra-envelope",
  "hydra-group",
+ "hydra-platform",
  "hydra-session",
  "js-sys",
  "rand_core 0.10.1",
@@ -427,15 +422,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "hydra-msg-example-stego-lan-chat"
+version = "0.1.0"
+dependencies = [
+ "hydra-stego",
+]
+
+[[package]]
 name = "hydra-msg-wasm"
 version = "0.1.0"
 dependencies = [
- "getrandom 0.4.3",
+ "getrandom",
  "hydra-msg",
  "js-sys",
  "wasm-bindgen",
  "wasm-bindgen-futures",
 ]
+
+[[package]]
+name = "hydra-platform"
+version = "0.1.0"
 
 [[package]]
 name = "hydra-session"
@@ -445,6 +451,10 @@ dependencies = [
  "hydra-crypto",
  "hydra-envelope",
 ]
+
+[[package]]
+name = "hydra-stego"
+version = "0.1.0"
 
 [[package]]
 name = "inout"

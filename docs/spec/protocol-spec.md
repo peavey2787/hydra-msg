@@ -213,6 +213,9 @@ the two is an interoperability failure.
 
 ## 5. Session establishment
 
+The public `hydra-msg::Hydra` facade implements this state machine and byte construction directly. There is no separate facade handshake encoding or two-message compatibility path.
+The local identity selected when INIT is created (initiator) or accepted (responder) is part of that handshake instance. Switching the active local identity before the corresponding RESP/FINISH processing completes is rejected rather than silently finishing the exchange under another identity.
+
 ### 5.1 State machine
 
 ```text
@@ -232,7 +235,21 @@ nonce is 32 unpredictable CSPRNG bytes and MUST NOT be reused by the same
 identity.
 Retransmission reuses the identical immutable INIT or RESP bytes; an endpoint
 MUST NOT regenerate a randomized signature, nonce, key, or ciphertext within
-one handshake instance.
+one handshake instance. Repeating the public initiator start operation for the
+same contact, local identity, and handshake purpose while that attempt remains
+pending returns the exact original INIT bytes; it does not create another
+cryptographic attempt or extend the attempt lifetime.
+
+At most one provisional attempt per contact and handshake purpose is eligible
+to install a session on each endpoint. If both peers initiate concurrently, the
+identity with the lexicographically lower canonical identity fingerprint is the
+authoritative initiator. The losing outbound/provisional attempt is retired only
+after the winning incoming/outgoing message has passed the cryptographic checks
+needed to construct the next protocol message. Once either side installs a
+session, every other provisional attempt for that contact is retired. Delayed
+RESP or FINISH records from a retired attempt MUST NOT replace the installed
+session. Exact duplicate INIT/FINISH handling for the winning or already
+completed attempt remains idempotent as specified below.
 
 ### 5.2 INIT
 
@@ -270,11 +287,16 @@ The responder MUST verify the expected responder fingerprint, suite, nonce
 policy, initiator trust policy, and signature before performing KEM
 encapsulation.
 
-Responders maintain a bounded, expiring cache of accepted
-`(initiator_fingerprint, init_nonce, init_hash)` tuples. An exact replay is
-rejected or receives the identical cached immutable RESP; it MUST NOT create a
-second session. Cache expiry is deployment policy, so rate limiting remains
-required and replay resistance across responder state loss is not claimed.
+Responders maintain a bounded, expiring cache keyed by the full
+`(initiator_fingerprint, init_nonce, init_hash)` tuple. The cache retains the
+exact immutable RESP plus only the provisional material required to authenticate
+FINISH. An exact replay receives the identical cached RESP and MUST NOT generate
+new responder entropy, a new KEM ciphertext, or a second candidate/session.
+After successful FINISH, provisional handshake secrets are erased while the
+cache may retain the immutable RESP and accepted-FINISH digest until expiry for
+idempotent retransmission handling. Cache expiry is deployment policy, so rate
+limiting remains required and replay resistance across responder state loss is
+not claimed.
 
 ```text
 init_hash =

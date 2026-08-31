@@ -38,7 +38,12 @@ impl Hydra {
     }
 
     pub(crate) fn max_payload_content_size(&self) -> HydraResult<usize> {
-        Ok(selected_packet_class(self.packet_size)?.max_content_size())
+        selected_packet_class(self.packet_size)?
+            .max_content_size()
+            .checked_sub(crate::STATE_GENERATION_BINDING_OVERHEAD)
+            .ok_or(HydraMsgError::InvalidInput(
+                "packet class cannot hold state generation binding",
+            ))
     }
 
     pub(crate) fn validate_inbound_envelope_size(&self, len: usize) -> HydraResult<()> {

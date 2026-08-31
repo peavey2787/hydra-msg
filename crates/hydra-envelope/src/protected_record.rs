@@ -100,6 +100,77 @@ pub fn decode_protected_record(
     })
 }
 
+/// Encodes a protected record without fixed-class zero padding.
+///
+/// This encoding is reserved for explicit variable-length carrier profiles;
+/// normal HYDRA envelopes continue to use [`encode_protected_record`].
+pub fn encode_compact_protected_record(record: &ProtectedRecord) -> Result<Vec<u8>, WireError> {
+    let content_len =
+        u32::try_from(record.content.len()).map_err(|_| WireError::InvalidProtectedRecord)?;
+    let total_len = INNER_HEADER_SIZE
+        .checked_add(record.content.len())
+        .ok_or(WireError::InvalidProtectedRecord)?;
+    let mut encoded = vec![0_u8; total_len];
+    encoded[0] = record.content_kind as u8;
+    encoded[4..36].copy_from_slice(&record.session_or_group_id);
+    encoded[36..68].copy_from_slice(&record.sender_id);
+    encoded[68..76].copy_from_slice(&record.epoch.to_be_bytes());
+    encoded[76..84].copy_from_slice(&record.state_version.to_be_bytes());
+    encoded[84..92].copy_from_slice(&record.message_index.to_be_bytes());
+    encoded[92..96].copy_from_slice(&content_len.to_be_bytes());
+    encoded[INNER_HEADER_SIZE..].copy_from_slice(&record.content);
+    Ok(encoded)
+}
+
+/// Decodes the exact, unpadded protected-record form.
+pub fn decode_compact_protected_record(encoded: &[u8]) -> Result<ProtectedRecord, WireError> {
+    if encoded.len() < INNER_HEADER_SIZE {
+        return Err(WireError::InvalidProtectedRecord);
+    }
+    let content_kind =
+        ContentKind::try_from(encoded[0]).map_err(|_| WireError::InvalidProtectedRecord)?;
+    if encoded[1..4].iter().any(|byte| *byte != 0) {
+        return Err(WireError::InvalidProtectedRecord);
+    }
+    let content_len = u32::from_be_bytes(
+        encoded[92..96]
+            .try_into()
+            .map_err(|_| WireError::InvalidProtectedRecord)?,
+    ) as usize;
+    let expected_len = INNER_HEADER_SIZE
+        .checked_add(content_len)
+        .ok_or(WireError::InvalidProtectedRecord)?;
+    if encoded.len() != expected_len {
+        return Err(WireError::InvalidProtectedRecord);
+    }
+
+    Ok(ProtectedRecord {
+        content_kind,
+        session_or_group_id: encoded[4..36]
+            .try_into()
+            .map_err(|_| WireError::InvalidProtectedRecord)?,
+        sender_id: encoded[36..68]
+            .try_into()
+            .map_err(|_| WireError::InvalidProtectedRecord)?,
+        epoch: u64::from_be_bytes(
+            encoded[68..76]
+                .try_into()
+                .map_err(|_| WireError::InvalidProtectedRecord)?,
+        ),
+        state_version: u64::from_be_bytes(
+            encoded[76..84]
+                .try_into()
+                .map_err(|_| WireError::InvalidProtectedRecord)?,
+        ),
+        message_index: u64::from_be_bytes(
+            encoded[84..92]
+                .try_into()
+                .map_err(|_| WireError::InvalidProtectedRecord)?,
+        ),
+        content: encoded[INNER_HEADER_SIZE..].to_vec(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -191,5 +262,19 @@ mod tests {
                 Err(WireError::InvalidProtectedRecord)
             );
         }
+    }
+
+    #[test]
+    fn compact_record_round_trips_without_padding() {
+        let encoded = encode_compact_protected_record(&record()).unwrap();
+        assert_eq!(encoded.len(), INNER_HEADER_SIZE + 5);
+        assert_eq!(decode_compact_protected_record(&encoded), Ok(record()));
+
+        let mut trailing = encoded;
+        trailing.push(0);
+        assert_eq!(
+            decode_compact_protected_record(&trailing),
+            Err(WireError::InvalidProtectedRecord)
+        );
     }
 }

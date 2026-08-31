@@ -62,7 +62,9 @@ fn exercise_hydra_state_transitions(index: usize, bytes: &[u8]) {
 
     if let Ok(offer) = alice.begin_session_refresh(bob_contact) {
         if let Ok(answer) = bob.reply_session_refresh(offer) {
-            let _ = alice.finish_session_refresh(answer);
+            if let Ok(finish) = alice.finish_session_refresh(answer) {
+                let _ = bob.accept_session_refresh_finish(finish);
+            }
         }
     }
     let _ = alice.close_session(bob_contact);
@@ -83,7 +85,8 @@ fn paired_hydra(
     let bob_contact = alice.add_contact(bob.create_contact_card().ok()?).ok()?;
     let offer = alice.init_handshake(bob_contact.id()).ok()?;
     let answer = bob.reply_handshake(offer).ok()?;
-    alice.finish_handshake(answer).ok()?;
+    let finish = alice.finish_handshake(answer).ok()?;
+    bob.accept_handshake_finish(finish).ok()?;
     Some((alice, bob, bob_contact.id()))
 }
 

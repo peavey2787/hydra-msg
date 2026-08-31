@@ -24,7 +24,8 @@ fn main() -> HydraResult<()> {
 
     let offer = alice.init_handshake(bob_contact.id())?;
     let answer = bob.reply_handshake(offer)?;
-    alice.finish_handshake(answer)?;
+    let finish = alice.finish_handshake(answer)?;
+    bob.accept_handshake_finish(finish)?;
 
     let packets = alice.send(bob_contact.id(), HydraMessage::text("hello from Alice"))?;
     let mut received = None;

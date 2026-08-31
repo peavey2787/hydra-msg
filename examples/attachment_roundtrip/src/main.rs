@@ -22,7 +22,8 @@ fn main() -> HydraResult<()> {
     let bob_contact = alice.add_contact(bob.create_contact_card()?)?;
 
     let answer = bob.reply_handshake(alice.init_handshake(bob_contact.id())?)?;
-    alice.finish_handshake(answer)?;
+    let finish = alice.finish_handshake(answer)?;
+    bob.accept_handshake_finish(finish)?;
 
     let anonymous_bytes = HydraAttachment::from_bytes(b"anonymous byte attachment".to_vec())?;
     let message = HydraMessage::text("hello with attachments")

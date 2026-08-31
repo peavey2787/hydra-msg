@@ -41,6 +41,7 @@ pub fn paired(prefix: &str, data: &[u8]) -> Option<(Hydra, Hydra, ContactId, Con
     let bob_contact = alice.add_contact(bob.create_contact_card().ok()?).ok()?;
     let offer = alice.init_handshake(bob_contact.id()).ok()?;
     let answer = bob.reply_handshake(offer).ok()?;
-    alice.finish_handshake(answer).ok()?;
+    let finish = alice.finish_handshake(answer).ok()?;
+    bob.accept_handshake_finish(finish).ok()?;
     Some((alice, bob, alice_contact.id(), bob_contact.id()))
 }

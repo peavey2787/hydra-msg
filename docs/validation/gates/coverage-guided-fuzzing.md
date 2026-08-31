@@ -16,7 +16,7 @@ The cargo-fuzz harness lives in `qa/fuzz/cargo-fuzz/` and uses nightly Rust thro
 - `message_codec` — in-memory message binary/state-line decoding and encode/decode round trips.
 - `storage_backup_chunk_parser` — encrypted state and chunked backup parser boundaries.
 - `contact_card_parser` — contact-card preview/add/import boundaries.
-- `handshake_offer_answer_parser` — handshake offer/answer parser and valid-offer mutation paths.
+- `handshake_offer_answer_parser` — canonical INIT/RESP/FINISH parsing plus valid-handshake mutation paths.
 - `lobby_invite_parser` — lobby invite preview/join boundaries.
 - `anonymous_auth_token_parser` — bearer-token, nullifier, accept, and revoke paths.
 - `fragment_reassembly` — direct packet fragmentation/reassembly and malformed fragment delivery.

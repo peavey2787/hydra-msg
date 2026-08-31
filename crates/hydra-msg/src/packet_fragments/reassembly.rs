@@ -64,14 +64,7 @@ pub(super) fn apply_fragment_record(
         return Err(HydraMsgError::InvalidEncoding("fragment kind"));
     }
     expire_stale_fragments(pending_fragments);
-    let scope = match (part.kind, part.lobby_id) {
-        (FragmentKind::Direct, None) => FragmentScopeKey::Direct,
-        (FragmentKind::Lobby, Some(lobby_id)) => FragmentScopeKey::Lobby(lobby_id),
-        (FragmentKind::Lobby, None) => FragmentScopeKey::LegacyLobby,
-        (FragmentKind::Direct, Some(_)) => {
-            return Err(HydraMsgError::InvalidEncoding("direct fragment scope"));
-        }
-    };
+    let scope = fragment_scope(&part)?;
     let completed_lobby_id = part.lobby_id;
     let key = PendingFragmentKey {
         from,
@@ -84,51 +77,72 @@ pub(super) fn apply_fragment_record(
         reject_new_incomplete_message(pending_fragments, from, scope)?;
     }
     reject_global_fragment_budget(pending_fragments, &key, &part)?;
-
-    let mut invalid = None;
-    let complete = {
-        let entry = match pending_fragments.entry(key) {
-            Entry::Occupied(entry) => entry.into_mut(),
-            Entry::Vacant(entry) => entry.insert(PendingInboundFragments {
-                parts: HashMap::new(),
-                total: part.total,
-                received_bytes: 0,
-                created_at: HydraInstant::now(),
-            }),
-        };
-        if entry.total != part.total {
-            invalid = Some(HydraMsgError::InvalidEncoding("fragment part count"));
-            false
-        } else if let Some(existing) = entry.parts.get(&part.index) {
-            if existing != &part.bytes {
-                invalid = Some(HydraMsgError::InvalidEncoding(
-                    "conflicting duplicate fragment",
-                ));
-            }
-            entry.parts.len() == entry.total
-        } else {
-            match entry.received_bytes.checked_add(part.bytes.len()) {
-                Some(total) if total <= MAX_FRAGMENTED_PAYLOAD_BYTES => {
-                    entry.received_bytes = total;
-                    entry.parts.insert(part.index, part.bytes);
-                }
-                _ => {
-                    invalid = Some(HydraMsgError::InvalidEncoding("fragmented payload size"));
-                }
-            }
-            entry.parts.len() == entry.total
+    let complete = match update_pending_entry(pending_fragments, key, part) {
+        Ok(complete) => complete,
+        Err(error) => {
+            pending_fragments.remove(&key);
+            return Err(error);
         }
     };
-    if let Some(error) = invalid {
-        pending_fragments.remove(&key);
-        return Err(error);
-    }
-
     if !complete {
         return Ok(None);
     }
+    assemble_payload(pending_fragments, &key, completed_lobby_id).map(Some)
+}
+
+fn fragment_scope(part: &FragmentRecord) -> HydraResult<FragmentScopeKey> {
+    match (part.kind, part.lobby_id) {
+        (FragmentKind::Direct, None) => Ok(FragmentScopeKey::Direct),
+        (FragmentKind::Lobby, Some(lobby_id)) => Ok(FragmentScopeKey::Lobby(lobby_id)),
+        (FragmentKind::Lobby, None) => Ok(FragmentScopeKey::LegacyLobby),
+        (FragmentKind::Direct, Some(_)) => {
+            Err(HydraMsgError::InvalidEncoding("direct fragment scope"))
+        }
+    }
+}
+
+fn update_pending_entry(
+    pending_fragments: &mut HashMap<PendingFragmentKey, PendingInboundFragments>,
+    key: PendingFragmentKey,
+    part: FragmentRecord,
+) -> HydraResult<bool> {
+    let entry = match pending_fragments.entry(key) {
+        Entry::Occupied(entry) => entry.into_mut(),
+        Entry::Vacant(entry) => entry.insert(PendingInboundFragments {
+            parts: HashMap::new(),
+            total: part.total,
+            received_bytes: 0,
+            created_at: HydraInstant::now(),
+        }),
+    };
+    if entry.total != part.total {
+        return Err(HydraMsgError::InvalidEncoding("fragment part count"));
+    }
+    if let Some(existing) = entry.parts.get(&part.index) {
+        if existing != &part.bytes {
+            return Err(HydraMsgError::InvalidEncoding(
+                "conflicting duplicate fragment",
+            ));
+        }
+        return Ok(entry.parts.len() == entry.total);
+    }
+    let total = entry
+        .received_bytes
+        .checked_add(part.bytes.len())
+        .filter(|total| *total <= MAX_FRAGMENTED_PAYLOAD_BYTES)
+        .ok_or(HydraMsgError::InvalidEncoding("fragmented payload size"))?;
+    entry.received_bytes = total;
+    entry.parts.insert(part.index, part.bytes);
+    Ok(entry.parts.len() == entry.total)
+}
+
+fn assemble_payload(
+    pending_fragments: &mut HashMap<PendingFragmentKey, PendingInboundFragments>,
+    key: &PendingFragmentKey,
+    lobby_id: Option<LobbyId>,
+) -> HydraResult<ReassembledPayload> {
     let mut entry = pending_fragments
-        .remove(&key)
+        .remove(key)
         .ok_or(HydraMsgError::InvalidEncoding("fragment state"))?;
     let mut out = Vec::with_capacity(entry.received_bytes);
     for index in 0..entry.total {
@@ -139,10 +153,10 @@ pub(super) fn apply_fragment_record(
                 .ok_or(HydraMsgError::InvalidEncoding("fragment part"))?,
         );
     }
-    Ok(Some(ReassembledPayload {
+    Ok(ReassembledPayload {
         bytes: out,
-        lobby_id: completed_lobby_id,
-    }))
+        lobby_id,
+    })
 }
 
 fn expire_stale_fragments(

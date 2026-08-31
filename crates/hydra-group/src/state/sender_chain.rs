@@ -200,50 +200,13 @@ impl SenderChainState {
         index: u64,
         skip_bound: u64,
     ) -> GroupResult<SenderChainResolution> {
-        let mut matched = None;
-        let mut too_far_ahead = false;
-        let mut older_than_cursor = false;
-
-        for skipped in &self.skipped {
-            if skipped.index == index && route_tag_eq(&skipped.route_tag, &route_tag) {
-                if matched.is_some() {
-                    return Err(GroupError::InvalidSenderChain);
-                }
-                matched = Some(SenderChainResolution::Skipped {
-                    step: skipped.to_step(),
-                });
-            }
+        let mut matched = matching_skipped_key(&self.skipped, route_tag, index)?;
+        let (current, too_far_ahead, older_than_cursor) =
+            matching_sender_chain(&self.senders, context, route_tag, index, skip_bound)?;
+        if let Some(current) = current {
+            merge_unique_resolution(&mut matched, current)?;
         }
-
-        for cursor in &self.senders {
-            if index < cursor.next_index {
-                older_than_cursor = true;
-                continue;
-            }
-            let gap = index - cursor.next_index;
-            if gap > skip_bound {
-                too_far_ahead = true;
-                continue;
-            }
-            let resolution = derive_resolution_for_cursor(context, cursor, index)?;
-            if route_tag_eq(&resolution.step().route_tag, &route_tag) {
-                if matched.is_some() {
-                    return Err(GroupError::InvalidSenderChain);
-                }
-                matched = Some(resolution);
-            }
-        }
-
-        if let Some(resolution) = matched {
-            return Ok(resolution);
-        }
-        if too_far_ahead {
-            return Err(GroupError::MessageTooFarAhead);
-        }
-        if older_than_cursor {
-            return Err(GroupError::MessageTooOld);
-        }
-        Err(GroupError::AuthenticationFailed)
+        resolve_route_match(matched, too_far_ahead, older_than_cursor)
     }
 
     pub fn commit_resolution(
@@ -303,6 +266,80 @@ impl SenderChainState {
     pub fn skipped_len(&self) -> usize {
         self.skipped.len()
     }
+}
+
+fn matching_skipped_key(
+    skipped_keys: &[SkippedGroupMessageKey],
+    route_tag: [u8; 16],
+    index: u64,
+) -> GroupResult<Option<SenderChainResolution>> {
+    let mut matched = None;
+    for skipped in skipped_keys {
+        if skipped.index == index && route_tag_eq(&skipped.route_tag, &route_tag) {
+            merge_unique_resolution(
+                &mut matched,
+                SenderChainResolution::Skipped {
+                    step: skipped.to_step(),
+                },
+            )?;
+        }
+    }
+    Ok(matched)
+}
+
+fn matching_sender_chain(
+    senders: &[SenderChainCursor],
+    context: &EpochKeyContext,
+    route_tag: [u8; 16],
+    index: u64,
+    skip_bound: u64,
+) -> GroupResult<(Option<SenderChainResolution>, bool, bool)> {
+    let mut matched = None;
+    let mut too_far_ahead = false;
+    let mut older_than_cursor = false;
+    for cursor in senders {
+        if index < cursor.next_index {
+            older_than_cursor = true;
+            continue;
+        }
+        if index - cursor.next_index > skip_bound {
+            too_far_ahead = true;
+            continue;
+        }
+        let resolution = derive_resolution_for_cursor(context, cursor, index)?;
+        if route_tag_eq(&resolution.step().route_tag, &route_tag) {
+            merge_unique_resolution(&mut matched, resolution)?;
+        }
+    }
+    Ok((matched, too_far_ahead, older_than_cursor))
+}
+
+fn merge_unique_resolution(
+    matched: &mut Option<SenderChainResolution>,
+    candidate: SenderChainResolution,
+) -> GroupResult<()> {
+    if matched.is_some() {
+        return Err(GroupError::InvalidSenderChain);
+    }
+    *matched = Some(candidate);
+    Ok(())
+}
+
+fn resolve_route_match(
+    matched: Option<SenderChainResolution>,
+    too_far_ahead: bool,
+    older_than_cursor: bool,
+) -> GroupResult<SenderChainResolution> {
+    if let Some(resolution) = matched {
+        return Ok(resolution);
+    }
+    if too_far_ahead {
+        return Err(GroupError::MessageTooFarAhead);
+    }
+    if older_than_cursor {
+        return Err(GroupError::MessageTooOld);
+    }
+    Err(GroupError::AuthenticationFailed)
 }
 
 fn derive_resolution_for_cursor(

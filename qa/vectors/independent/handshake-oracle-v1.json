@@ -1,0 +1,22 @@
+{
+  "expected": {
+    "confirm_key": "1c2e8de61842d15f00f07527d1969bb4de75e6563cf46749aad684702d2d958c",
+    "finish_key": "c7c5f0119117b1e96452edeb83fc9bbfc24b44f23ff0d9d7ea83daffd016d1b1",
+    "handshake_secret": "dcf5bac42c9275aff7d8e06d15100d5c16a567a47fd2dea1a8c29e8d512f2aeb",
+    "hybrid_ikm": "0000002023050f20dadf99f8e73b40d285b30f2496c83cf6603b244af0984aab74415b6c00000020c7084b672dd8d21d2641787b3c559c841be7c277dbbbe2e1eeb56e16aed2cc6f",
+    "hybrid_prk": "ed019ee9535fefb4df5ef3634a29737bf5ce0695d7ca7c65c95d6ec8ecc066b9",
+    "init_hash": "c6878576bdca530e427b069941ade63f2fbdb99f9e3ad3d5b1a8486b53b390e801dcb0f4b6f2d3d9698237061cf09011bee8a48a99c1ef2ca69c2e07ece1e42c",
+    "init_signature_digest": "93fd739b356e99e3aab53ea9fa2790aef8825bca15668e86972d57a525b2419bf7888a8367391ff2b829404207551bcc1e3ce014101950c4b6a1a1e8d211eab8",
+    "initiator_x25519_public": "fe53a8226a0202b392d51c11a30287a1d3fbdb882bf39b16a0e78c5f29b2e269",
+    "resp_confirm": "88e5f257ed777b06617141616fbde96e1a79df7d09c8ac27c1c48f2df73ed5c4",
+    "resp_signature_digest": "ce57bf3fd63f6d7cc5c98a804a3f29b1e9457b669f59f5bda43869867ee9f08bcd4df236e86a0f3c6bba80d9db9513453da55dab003335f9ad0818017cdea17e",
+    "responder_x25519_public": "57f610145252cf393b1084e12b3f8646dc962bd5c0882ed760c0e3f2bac2930d",
+    "session_id": "d6bb6cbf6c4a79cddc4b695333adedcfe9c255090cb50643a6abe74da8db0cdc",
+    "transcript_hash": "f437b248cb1ec93ae20209a98053bb258a6716db6f5e15343dd6ca6905a8c21b3ad7d3e0006891e9f6cd0b5a9dadd89c977e9678b70670cf925448b447a895a9",
+    "x25519_shared_secret": "23050f20dadf99f8e73b40d285b30f2496c83cf6603b244af0984aab74415b6c"
+  },
+  "oracle": "independent Python stdlib implementation: RFC7748 X25519 + SHA3-512/HMAC-SHA3-256/HKDF-SHA3-256 HYDRA transcript/key schedule",
+  "schema": 1,
+  "scope": "Independent X25519 primitive and protocol transcript/key-schedule corroboration; ML-KEM and ML-DSA primitive outputs are inputs and require separate external implementation evidence.",
+  "source_vectors": "qa/vectors/candidate/handshake/TV-HS-{INIT,RESP,KDF}-000"
+}

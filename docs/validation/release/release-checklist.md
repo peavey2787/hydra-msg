@@ -39,28 +39,30 @@ external review status
 Run from the repository root on a clean checkout:
 
 ```bash
-./qa/ci/check-all.sh
+./qa/ci/check-all.sh --deep-fuzz
 ```
 
 PowerShell:
 
 ```powershell
-.\qa\ci\check-all.ps1
+.\qa\ci\check-all.ps1 -DeepFuzz
 ```
 
-`check-all` includes the full release-evidence set:
+`check-all` runs every release-evidence section; the explicit `--deep-fuzz` / `-DeepFuzz` selector above raises the fuzz section from its normal bounded mode to the release 100,000/1,000-run budget:
 
 | Evidence | Included by `check-all` |
 |---|---|
 | Supply chain | `qa/ci/security/check-supply-chain.*` through `core/check-tests.*` |
-| Miri | `HYDRA_RUN_MIRI=1 qa/ci/reliability/check-memory-safety.*` |
+| Miri | `qa/ci/reliability/check-memory-safety.*` (default-on; `HYDRA_RUN_MIRI=0` is a non-release opt-out) |
 | Sanitizers | `HYDRA_RUN_SANITIZERS=1 qa/ci/reliability/check-memory-safety.*` |
 | Browser lifecycle E2E | `HYDRA_RUN_BROWSER_E2E=1 qa/ci/reliability/check-browser-e2e.*` |
 | Coverage report | `HYDRA_RUN_COVERAGE=1 qa/ci/quality/check-coverage.*` |
 | Mutation testing | `HYDRA_RUN_MUTATION=1 qa/ci/quality/check-mutation.*` |
+| Independent handshake oracle | `qa/independent/verify_handshake_vectors.py` against `qa/vectors/independent/handshake-oracle-v1.json` through `core/check-tests.*` |
+| Windows native atomic replacement | Windows `cargo test --workspace --all-targets` runs `windows_atomic_replace_replaces_existing_destination_without_delete_gap` in `hydra-platform` |
 | Coverage-guided fuzzing | `qa/ci/check-all.* --deep-fuzz`: 100,000 runs per fast target and 1,000 stateful message-flow runs |
 
-Archive the command line, tool versions, logs, generated reports, crash artifacts, minimized fuzz reproducers, and exit status. If a gate is impossible on a target, the release notes must say which target was skipped, why it was skipped, and what alternative evidence was used.
+Archive the command line, tool versions, logs, generated reports, crash artifacts, minimized fuzz reproducers, and exit status. At minimum preserve `target/coverage/hydra.lcov`, `target/coverage/html/`, `target/coverage/function-quality.tsv`, `target/mutants/`, `target/hydra-fuzz-evidence/`, and `target/test-quality/generic-is-err.txt`, plus the complete `check-all` console log. The independent oracle source/frozen values live at `qa/independent/verify_handshake_vectors.py` and `qa/vectors/independent/handshake-oracle-v1.json`; archive its PASS output with the release log. Browser CI additionally retains its Playwright HTML report, failure screenshots, and retry trace. If a gate is impossible on a target, the release notes must say which target was skipped, why it was skipped, and what alternative evidence was used.
 
 ## Required release artifacts
 

@@ -173,18 +173,8 @@ fn temporary_path(path: &Path) -> HydraResult<PathBuf> {
     Ok(path.with_file_name(format!("{file_name}.tmp")))
 }
 
-#[cfg(not(windows))]
 fn replace_file(tmp: &Path, path: &Path) -> HydraResult<()> {
-    fs::rename(tmp, path)?;
-    Ok(())
-}
-
-#[cfg(windows)]
-fn replace_file(tmp: &Path, path: &Path) -> HydraResult<()> {
-    if path.exists() {
-        fs::remove_file(path)?;
-    }
-    fs::rename(tmp, path)?;
+    hydra_platform::atomic_replace_file(tmp, path)?;
     Ok(())
 }
 

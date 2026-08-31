@@ -89,3 +89,45 @@ fn build_mode_change_public_tree(
     }
     Ok(tree)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{GovernancePolicy, MemberId, MembershipMechanism, ModePolicy, PrivatePath};
+    use hydra_core::types::{Epoch, GroupId, LeafIndex};
+
+    #[test]
+    fn unchanged_tree_self_update_accepts_matching_candidate_hash() {
+        let mut state = GroupState::new_empty(
+            GroupId([0x42; 32]),
+            GroupMode::Interactive,
+            MembershipMechanism::TreeKem,
+            GovernancePolicy::single_signer(MemberId([0x11; 32])),
+            ModePolicy::default(),
+        )
+        .unwrap();
+        state.epoch = Epoch(1);
+        let tree = PublicTree::new(GroupMode::Interactive, Some(state.epoch)).unwrap();
+        let expected_hash = tree.tree_hash().unwrap();
+        state.membership = MembershipPrivateState::TreeKem {
+            public_tree: tree.clone(),
+            private_path: PrivatePath::default(),
+        };
+        let update_path = UpdatePath {
+            committer_leaf_index: LeafIndex(0),
+            leaf_capacity: tree.leaf_capacity,
+            updated_nodes: Vec::new(),
+            path_ciphertexts: Vec::new(),
+            candidate_tree_hash: expected_hash,
+        };
+        let change = CommitChange::TreeSelfUpdate {
+            committer_member_id: MemberId([0x11; 32]),
+        };
+
+        let updated = apply_update_path_to_public_tree(&state, &update_path, &change)
+            .unwrap()
+            .unwrap();
+        assert_eq!(updated, tree);
+        assert_eq!(updated.tree_hash().unwrap(), expected_hash);
+    }
+}

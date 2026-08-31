@@ -54,9 +54,20 @@ hydra.verifyContact(contactId, safetyCode);
 await hydra.flush();
 
 const offer = hydra.initHandshake(contactId);
-const answer = hydra.replyHandshake(offer);
-hydra.finishHandshake(answer);
+appSendToPeer(offer);
+
+// On the responder:
+const answer = peer.replyHandshake(offerFromCarrier);
+appSendToInitiator(answer);
+
+// Back on the initiator:
+const finish = hydra.finishHandshake(answerFromCarrier);
 await hydra.flush();
+appSendToPeer(finish);
+
+// On the responder, after receiving FINISH:
+peer.acceptHandshakeFinish(finishFromCarrier);
+await peer.flush();
 
 // Optional: permit one outbound logical message, then require a fresh hybrid
 // handshake before another send. Use 0 for ratchet-only behavior.
@@ -106,13 +117,17 @@ appSendToPeer(refreshOffer);
 const refreshAnswer = peer.replySessionRefresh(refreshOffer);
 appSendToInitiator(refreshAnswer);
 
-hydra.finishSessionRefresh(refreshAnswer);
+const refreshFinish = hydra.finishSessionRefresh(refreshAnswer);
 await hydra.flush();
+appSendToPeer(refreshFinish);
+
+peer.acceptSessionRefreshFinish(refreshFinishFromCarrier);
+await peer.flush();
 ```
 
 A setting of `1` does not turn a local send into an automatic peer refresh. It
 allows one outbound logical message per fresh session and then fails closed
-until the explicit offer/answer exchange completes. Recovery does not protect
+until the explicit INIT/RESP/FINISH exchange completes. Recovery does not protect
 an endpoint while an attacker still controls it.
 
 ## Ephemeral open

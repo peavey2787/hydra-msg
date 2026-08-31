@@ -1,12 +1,15 @@
 use hydra_core::types::{ContentKind, EnvelopeClass, OuterMode};
 use hydra_crypto::{CryptoBackend, RustCryptoBackend};
-use hydra_envelope::{encode_outer_header, encode_protected_record, OuterHeader, ProtectedRecord};
+use hydra_envelope::{
+    encode_compact_protected_record, encode_outer_header, encode_protected_record, OuterHeader,
+    ProtectedRecord,
+};
 
 use crate::{ratchet::derive_step, SessionError, SessionResult};
 
 use super::{
     envelope_bounds::{bounded_data_class, smallest_class, smallest_standard_or_full},
-    OutboundMessage, SessionPhase, SessionState,
+    OutboundMessage, SessionPhase, SessionState, MAX_COMPACT_CONTENT_SIZE,
 };
 
 impl SessionState {
@@ -16,6 +19,49 @@ impl SessionState {
         }
         let class = smallest_class(content.len()).ok_or(SessionError::InvalidPayload)?;
         self.send_record(ContentKind::Data, class, content)
+    }
+
+    /// Seals data in the opt-in variable-length carrier profile.
+    ///
+    /// This uses the same authenticated session ratchet as fixed envelopes but
+    /// intentionally exposes ciphertext length. It exists for transformations
+    /// such as model-generated text where fixed 4 KiB padding is impractical.
+    pub fn send_compact_data(&mut self, content: &[u8]) -> SessionResult<OutboundMessage> {
+        if self.phase != SessionPhase::Established {
+            return Err(SessionError::InvalidState);
+        }
+        if content.len() > MAX_COMPACT_CONTENT_SIZE {
+            return Err(SessionError::InvalidPayload);
+        }
+        let index = self.sending_chain.next_index();
+        if index == u64::MAX {
+            return Err(SessionError::CounterExhausted);
+        }
+        let plaintext = encode_compact_protected_record(&ProtectedRecord {
+            content_kind: ContentKind::Data,
+            session_or_group_id: self.session_id,
+            sender_id: [0; 32],
+            epoch: 0,
+            state_version: 0,
+            message_index: index,
+            content: content.to_vec(),
+        })
+        .map_err(|_| SessionError::InvalidPayload)?;
+        let step = derive_step(self.sending_chain.key(), &self.session_id, index)?;
+        let header = encode_outer_header(&OuterHeader::new(
+            OuterMode::Protected,
+            EnvelopeClass::Lite,
+            step.route_tag,
+            index,
+        ))
+        .map_err(|_| SessionError::InvalidEnvelope)?;
+        let body = RustCryptoBackend::aead_seal(&step.aead_key, &[0_u8; 12], &header, &plaintext)
+            .map_err(|_| SessionError::AuthenticationFailed)?;
+        let mut envelope = Vec::with_capacity(header.len() + body.len());
+        envelope.extend_from_slice(&header);
+        envelope.extend_from_slice(&body);
+        self.sending_chain.install(step.next_chain_key, index + 1);
+        Ok(OutboundMessage { index, envelope })
     }
 
     #[doc(hidden)]

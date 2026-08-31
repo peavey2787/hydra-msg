@@ -5,7 +5,10 @@ set -eu
 hydra_enter_repo_root
 
 handshake_file="crates/hydra-msg/src/codec/handshake.rs"
-handshake_api_file="crates/hydra-msg/src/handshake/mod.rs"
+handshake_wire_file="crates/hydra-msg/src/codec/handshake/wire.rs"
+handshake_api_file="crates/hydra-msg/src/handshake/initiate.rs"
+handshake_finish_file="crates/hydra-msg/src/handshake/finish.rs"
+handshake_standard_file="crates/hydra-msg/src/handshake/standard.rs"
 session_security_file="crates/hydra-msg/src/handshake/security.rs"
 session_security_tests_file="crates/hydra-msg/src/tests/session_security.rs"
 storage_file="crates/hydra-msg/src/api/storage.rs"
@@ -25,7 +28,7 @@ auth_file="crates/hydra-msg/src/api/anonymous_auth.rs"
 auth_codec_file="crates/hydra-msg/src/codec/auth.rs"
 auth_tests_file="crates/hydra-msg/src/tests/anonymous_auth.rs"
 
-if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_api_file" ] || [ ! -f "$session_security_file" ] || [ ! -f "$session_security_tests_file" ]; then
+if [ ! -f "$handshake_file" ] || [ ! -f "$handshake_wire_file" ] || [ ! -f "$handshake_api_file" ] || [ ! -f "$handshake_finish_file" ] || [ ! -f "$handshake_standard_file" ] || [ ! -f "$session_security_file" ] || [ ! -f "$session_security_tests_file" ]; then
   echo "hydra-msg handshake files missing" >&2
   exit 1
 fi
@@ -66,20 +69,23 @@ forbidden_source_text() {
   fi
 }
 
-require_source_text "$handshake_file" "RustCryptoBackend::mldsa65_sign" "facade handshake offer/answer transcript signing"
-require_source_text "$handshake_file" "RustCryptoBackend::mldsa65_verify" "facade handshake transcript signature verification"
-require_source_text "$handshake_file" "x25519_secret.expose_secret()" "ephemeral X25519 shared secret included in facade handshake secret"
-require_source_text "$handshake_file" "kem_secret.expose_secret()" "ephemeral ML-KEM shared secret included in facade handshake secret"
-require_source_text "$handshake_file" "answer_confirmation_tag" "answer confirmation tag before initiator session installation"
-require_source_text "$handshake_file" "verify_answer_confirmation" "initiator/responder confirmation verification helper"
-require_source_text "$handshake_file" "HYDRA-MSG/facade-handshake/hybrid-secret" "domain-separated hybrid facade secret derivation"
-require_source_text "$handshake_api_file" "verify_answer_signature(&parsed_answer, &pending.offer)?" "initiator verifies answer signature against pending offer"
-require_source_text "$handshake_api_file" "verify_answer_confirmation(" "initiator/responder verify derived hybrid material before session install"
-require_source_text "$handshake_api_file" "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects answers from swapped identities"
+require_source_text "$handshake_file" "RustCryptoBackend::mldsa65_sign" "canonical INIT/RESP transcript signing"
+require_source_text "$handshake_file" "RustCryptoBackend::mldsa65_verify" "canonical INIT/RESP transcript signature verification"
+require_source_text "$handshake_wire_file" "x25519_secret.expose_secret()" "ephemeral X25519 shared secret included in canonical hybrid secret"
+require_source_text "$handshake_wire_file" "kem_secret.expose_secret()" "ephemeral ML-KEM shared secret included in canonical hybrid secret"
+require_source_text "$handshake_file" "HYDRA-MSG/v1/confirm-key" "domain-separated responder confirmation derivation"
+require_source_text "$handshake_wire_file" "HYDRA-MSG/v1/finish-key" "domain-separated one-use FINISH key derivation"
+require_source_text "$handshake_file" "verify_handshake_finish" "authenticated FINISH verification helper"
+require_source_text "$handshake_finish_file" "verify_answer_and_derive(" "initiator verifies RESP signature, binding, and confirmation before session install"
+require_source_text "$handshake_api_file" "parsed_offer.expected_responder_fingerprint != identity_fingerprint(&active.public_key)" "responder rejects INIT intended for another identity"
+require_source_text "$handshake_finish_file" "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects RESP from swapped identities"
+require_source_text "$handshake_api_file" "accepted_inits.get(&cache_key)" "accepted INIT retransmissions use the idempotent responder cache"
+require_source_text "$handshake_standard_file" "pub fn accept_handshake_finish" "responder requires authenticated FINISH before session installation"
 require_source_text "$session_security_file" "pub fn set_session_refresh_interval" "direct per-contact fresh-session cadence setter"
 require_source_text "$session_security_file" "HydraMsgError::SessionRefreshRequired" "fresh-session cadence fails closed before another send"
 require_source_text "$session_security_file" "self.init_handshake_for(contact_id, HandshakePurpose::SessionRefresh)" "fresh-session cadence uses a purpose-bound authenticated hybrid handshake"
-require_source_text "$session_security_file" "self.reply_handshake(offer)" "fresh-session responder uses the authenticated public handshake path"
+require_source_text "$session_security_file" "self.reply_handshake_for(offer, HandshakePurpose::SessionRefresh)" "fresh-session responder uses the purpose-bound canonical handshake path"
+require_source_text "$session_security_file" "self.accept_handshake_finish_for(finish, HandshakePurpose::SessionRefresh)" "fresh-session responder requires authenticated FINISH"
 require_source_text "$session_security_tests_file" "fn every_message_policy_blocks_the_next_send_until_refresh_completes" "one-message cadence regression coverage"
 require_source_text "$session_security_tests_file" "fn lobby_send_counts_one_logical_message_per_recipient_session" "lobby cadence regression coverage"
 require_source_text "$session_security_tests_file" "fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose" "initial and refresh finish APIs are purpose-bound"
@@ -87,7 +93,7 @@ require_source_text "$session_security_tests_file" "fn session_security_policy_s
 forbidden_source_text "$handshake_api_file" "pub fn rekey_session" "incomplete local-only session rekey API must not return"
 forbidden_source_text "$lobby_file" "pub fn rekey_lobby" "misleading one-call lobby rekey API must not return"
 if grep -RInE 'rekey_session|rekeySession|rekey_lobby|rekeyLobby' \
-  crates/hydra-msg/src crates/hydra-msg-wasm/src examples/hydra-gui/hydra-app/src examples/hydra-gui/hydra-app-core/src; then
+  crates/hydra-msg/src crates/hydra-msg-wasm/src examples/hydra-gui/src examples/hydra-gui/web; then
   echo "incomplete or misleading legacy rekey API was reintroduced" >&2
   exit 1
 fi
@@ -165,8 +171,14 @@ forbidden_source_text "$auth_codec_file" "contact_id" "anonymous auth token code
 forbidden_source_text "$auth_codec_file" "identity_id" "anonymous auth token codec must not encode identity ids"
 forbidden_source_text "$auth_codec_file" "session_id" "anonymous auth token codec must not encode session ids"
 
-if grep -RInE "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" \
-  crates/hydra-msg examples/hydra-gui/hydra-app examples/hydra-gui/hydra-app-core README.md crates/hydra-msg/README.md \
+if grep -RInE \
+  --include='*.rs' --include='*.toml' --include='*.md' --include='*.html' --include='*.css' \
+  --include='*.js' --include='*.mjs' --include='*.cjs' --include='*.ts' --include='*.tsx' \
+  --include='*.jsx' --include='*.json' --include='*.yaml' --include='*.yml' --include='*.ps1' \
+  --include='*.sh' --include='*.cmd' --include='*.bat' --include='*.py' --include='*.txt' \
+  --exclude=handshake.rs --exclude-dir=handshake --exclude-dir=tests --exclude-dir=pkg \
+  "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" \
+  crates/hydra-msg examples/hydra-gui README.md crates/hydra-msg/README.md \
   docs/spec/public-developer-api.md docs/impl/message-flow docs/validation/benchmarks/benchmark-results.md; then
   echo "privacy invariant forbidden pattern found: facade/app format labels must not carry version tags" >&2
   exit 1

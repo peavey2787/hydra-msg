@@ -40,6 +40,12 @@ const BAD_MAGIC_STATE: &[u8] = include_bytes!(
 const EMPTY_CIPHERTEXT_STATE: &[u8] = include_bytes!(
     "../../../vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/encrypted_state.bin"
 );
+const HANDSHAKE_INIT: &[u8] =
+    include_bytes!("../../../vectors/candidate/handshake/TV-HS-INIT-000/envelope.bin");
+const HANDSHAKE_RESP: &[u8] =
+    include_bytes!("../../../vectors/candidate/handshake/TV-HS-RESP-000/envelope.bin");
+const HANDSHAKE_FINISH: &[u8] =
+    include_bytes!("../../../vectors/candidate/handshake/TV-HS-CONF-000/finish_envelope.bin");
 
 const SEEDS: &[Seed] = &[
     Seed {
@@ -55,12 +61,16 @@ const SEEDS: &[Seed] = &[
         bytes: b"HYDRA-MSG-CONTACT\n",
     },
     Seed {
-        name: "ascii-offer-magic",
-        bytes: b"HYDRA-MSG-OFFER\n",
+        name: "canonical-handshake-init",
+        bytes: HANDSHAKE_INIT,
     },
     Seed {
-        name: "ascii-answer-magic",
-        bytes: b"HYDRA-MSG-ANSWER\n",
+        name: "canonical-handshake-resp",
+        bytes: HANDSHAKE_RESP,
+    },
+    Seed {
+        name: "canonical-handshake-finish",
+        bytes: HANDSHAKE_FINISH,
     },
     Seed {
         name: "ascii-fragment-magic",

@@ -8,6 +8,8 @@ The format is intentionally simple and follows `docs/validation/release/changelo
 
 ### Added
 
+- `hydra-stego` now has one production facade (`Stego`, `StegoProfile`, `StegoError`), bounded hostile-cover parsing, bounded model-process I/O/deadlines, immutable model revision/fingerprint pinning, and stego decoder fuzz/API-contract gates.
+- Deterministic stego cover text now uses a technical-only CI/build/deploy lexicon, runner/worker framing, 16 substantially varied single-line/multi-line machine-record layouts, terse-to-long status controls, zero conversational purpose-tail slots, and bounded non-data-bearing randomized identifiers/progress values.
 - Public Rust SDK facade for identities, contacts, handshakes, encrypted messages, attachments, lobbies, anonymous authorization tokens, encrypted local state, and encrypted backups.
 - WASM/JavaScript binding with explicit persistent browser state through IndexedDB and `flush()`.
 - Native encrypted state persistence with crash-consistency guards and same-profile open locking.

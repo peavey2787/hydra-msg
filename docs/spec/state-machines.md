@@ -46,8 +46,9 @@ application delivery.
 | responder `RespSent` | receive FINISH | finish AEAD and transcript/session match | `Established` |
 | any provisional state | definitive failure/timeout | none | `Closed` |
 
-Exact retransmission preserves state. A different record for the same
-handshake instance is rejected.
+Exact INIT retransmission is keyed by `(initiator_fingerprint, init_nonce, init_hash)` and returns the identical cached RESP without regenerating cryptographic material or creating another candidate session. Repeating `init_handshake` for the same contact/local identity/purpose while an initiator attempt is pending returns the exact original INIT bytes. Exact FINISH retransmission after acceptance is idempotent. A different record for the same handshake instance is rejected.
+
+Only one provisional attempt per contact/purpose may remain authoritative. For simultaneous cross-INIT, the endpoint with the lexicographically lower canonical identity fingerprint is the initiator winner. The losing direction is retired after the winner has passed the cryptographic work needed to produce the next handshake message. Installing any session retires every other provisional attempt for that contact, so delayed RESP/FINISH from a losing or superseded attempt cannot roll the contact back to an older session.
 
 ## 3. Ordered and out-of-order receive
 

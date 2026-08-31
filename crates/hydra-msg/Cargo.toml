@@ -15,6 +15,7 @@ hydra-core = { version = "0.1.0", path = "../hydra-core" }
 hydra-crypto = { version = "0.1.0", path = "../hydra-crypto" }
 hydra-envelope = { version = "0.1.0", path = "../hydra-envelope" }
 hydra-group = { version = "0.1.0", path = "../hydra-group" }
+hydra-platform = { version = "0.1.0", path = "../hydra-platform" }
 hydra-session = { version = "0.1.0", path = "../hydra-session" }
 rand_core = "=0.10.1"
 scrypt = { version = "=0.11.0", default-features = false }

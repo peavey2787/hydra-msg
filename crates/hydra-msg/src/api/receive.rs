@@ -28,4 +28,21 @@ impl Hydra {
         self.persist()?;
         Ok(Some(message))
     }
+
+    /// Opens one envelope produced by [`Hydra::send_compact`].
+    pub fn receive_compact(
+        &mut self,
+        envelope: impl AsRef<[u8]>,
+    ) -> HydraResult<ReceivedHydraMessage> {
+        let (from, payload) = self.open_compact_payload_from_contact(envelope.as_ref())?;
+        let message = unpack_message(&payload, from, MessageId(self.next_message_id), None)?;
+        self.store_message(
+            from,
+            true,
+            message.plaintext.clone(),
+            message.attachments.clone(),
+        )?;
+        self.persist()?;
+        Ok(message)
+    }
 }

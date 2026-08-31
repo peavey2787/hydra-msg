@@ -24,7 +24,8 @@ fn established_pair(prefix: &str) -> (Hydra, Hydra, ContactId, ContactId) {
     let answer = bob
         .reply_handshake(alice.init_handshake(bob_contact.id()).unwrap())
         .unwrap();
-    alice.finish_handshake(answer).unwrap();
+    let finish = alice.finish_handshake(answer).unwrap();
+    bob.accept_handshake_finish(finish).unwrap();
     (alice, bob, alice_contact.id(), bob_contact.id())
 }
 
@@ -54,10 +55,27 @@ fn declared_oversized_attachment_is_rejected_before_payload_read() {
 fn oversized_handshake_and_auth_token_are_rejected_at_parser_entry() {
     let oversized_offer = vec![0; MAX_HANDSHAKE_OFFER_BYTES + 1];
     let oversized_answer = vec![0; MAX_HANDSHAKE_ANSWER_BYTES + 1];
+    let oversized_finish = vec![0; MAX_HANDSHAKE_FINISH_BYTES + 1];
     let oversized_token = vec![0; MAX_ANONYMOUS_AUTH_TOKEN_BYTES + 1];
-    assert!(decode_handshake_offer(&oversized_offer).is_err());
-    assert!(decode_handshake_answer(&oversized_answer).is_err());
-    assert!(decode_anonymous_auth_token(&oversized_token).is_err());
+
+    assert!(matches!(
+        decode_handshake_offer(&oversized_offer),
+        Err(HydraMsgError::InvalidEncoding("handshake INIT size"))
+    ));
+    assert!(matches!(
+        decode_handshake_answer(&oversized_answer),
+        Err(HydraMsgError::InvalidEncoding("handshake RESP size"))
+    ));
+
+    let mut hydra = fresh("target/hydra-msg-resource-limit-finish");
+    assert_eq!(
+        hydra.accept_handshake_finish(&oversized_finish),
+        Err(HydraMsgError::InvalidEncoding("handshake FINISH size"))
+    );
+    assert!(matches!(
+        decode_anonymous_auth_token(&oversized_token),
+        Err(HydraMsgError::InvalidEncoding("anonymous auth token size"))
+    ));
 }
 
 #[test]

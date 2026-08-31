@@ -23,7 +23,8 @@ fn connected_pair(suffix: &str) -> (Hydra, Hydra, ContactId, ContactId) {
     let answer = bob
         .reply_handshake(alice.init_handshake(bob_contact.id()).unwrap())
         .unwrap();
-    alice.finish_handshake(answer).unwrap();
+    let finish = alice.finish_handshake(answer).unwrap();
+    bob.accept_handshake_finish(finish).unwrap();
     (alice, bob, alice_contact.id(), bob_contact.id())
 }
 

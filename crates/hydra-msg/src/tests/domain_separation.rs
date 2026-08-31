@@ -22,7 +22,8 @@ fn connect(alice: &mut Hydra, bob: &mut Hydra) -> (ContactId, ContactId) {
         .unwrap();
     let offer = alice.init_handshake(bob_contact.id()).unwrap();
     let answer = bob.reply_handshake(offer).unwrap();
-    alice.finish_handshake(answer).unwrap();
+    let finish = alice.finish_handshake(answer).unwrap();
+    bob.accept_handshake_finish(finish).unwrap();
     (alice_contact.id(), bob_contact.id())
 }
 
@@ -46,17 +47,10 @@ fn lobby_ciphertext_is_not_accepted_as_direct_message() {
         .unwrap()
         .into_envelope();
 
-    assert!(bob.receive(lobby_packet).is_err());
+    assert!(bob.receive(lobby_packet.clone()).is_err());
     assert!(bob.list_messages(alice_contact).is_empty());
 
-    let fresh_lobby_packet = alice
-        .send_lobby(lobby.id(), HydraMessage::text("lobby only"))
-        .unwrap()
-        .into_iter()
-        .find(|copy| copy.recipient() == bob_contact)
-        .unwrap()
-        .into_envelope();
-    let received = bob.receive_lobby(fresh_lobby_packet).unwrap().unwrap();
+    let received = bob.receive_lobby(lobby_packet).unwrap().unwrap();
     assert_eq!(received.lobby_id(), Some(lobby.id()));
     assert_eq!(received.text().unwrap(), "lobby only");
 }
@@ -91,17 +85,15 @@ fn handshake_offer_and_answer_are_bound_to_identity_pair() {
         .unwrap();
 
     let offer_for_bob = alice.init_handshake(bob_contact.id()).unwrap();
-    let carol_answer_to_bob_offer = carol.reply_handshake(offer_for_bob).unwrap();
-
     assert_eq!(
-        alice.finish_handshake(carol_answer_to_bob_offer),
+        carol.reply_handshake(offer_for_bob),
         Err(HydraMsgError::InvalidInput(
-            "handshake answer does not match pending contact"
+            "INIT expected responder fingerprint mismatch"
         ))
     );
     assert_eq!(
         alice.session_status(bob_contact.id()).unwrap(),
-        HydraSessionStatus::Missing
+        HydraSessionStatus::Pending
     );
 }
 
@@ -143,4 +135,29 @@ fn anonymous_auth_tokens_are_bound_to_scope_and_action() {
     hydra
         .accept_anonymous_auth_token(&token, "scope-a", "join", 0)
         .unwrap();
+}
+
+#[test]
+fn exported_messages_import_and_preserve_message_contents() {
+    let mut source = unlocked("target/hydra-msg-test-message-import-source");
+    let contact = source
+        .add_contact(source.create_contact_card().unwrap())
+        .unwrap();
+    source
+        .store_message(contact.id(), true, b"import one".to_vec(), Vec::new())
+        .unwrap();
+    source
+        .store_message(contact.id(), false, b"import two".to_vec(), Vec::new())
+        .unwrap();
+
+    let contacts = source.export_contacts().unwrap();
+    let messages = source.export_messages().unwrap();
+    let mut target = fresh("target/hydra-msg-test-message-import-target");
+    target.import_contacts(contacts).unwrap();
+    target.import_messages(messages).unwrap();
+
+    let message_ids = target.list_messages(contact.id());
+    assert_eq!(message_ids.len(), 2);
+    assert_eq!(target.get_message(message_ids[0]).unwrap().text().unwrap(), "import one");
+    assert_eq!(target.get_message(message_ids[1]).unwrap().text().unwrap(), "import two");
 }

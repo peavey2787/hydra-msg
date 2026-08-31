@@ -12,7 +12,7 @@ Status: implemented internal production hardening; maintainer validation and ext
 ## Scope
 
 This audit covers attacker-controlled bytes and state growth in `hydra-msg`,
-`hydra-session`, and `hydra-group`. The objective is not to guarantee
+`hydra-session`, `hydra-group`, and the optional `hydra-stego` carrier. The objective is not to guarantee
 availability against an attacker who can saturate the carrier or repeatedly
 invoke the API. The objective is to ensure each individual parser/state-machine
 operation has a hard input ceiling, bounded retained state, and bounded work.
@@ -39,8 +39,9 @@ owning crate.
 | Attachments | 16/message | Before packing/allocation and during decode |
 | Attachment bytes | 16 MiB/attachment | File metadata before read, bounded read, constructors, decode |
 | Encoded message | 32 MiB | Before parsing, fragmentation, storage accounting |
-| Handshake offer/answer | 16 KiB each | Before field parsing, signature verification, KEM work |
-| Pending initiator handshakes | 64; 10-minute age | Before creating additional handshake state; stale entries expired |
+| Handshake INIT/RESP | 32 KiB fixed Standard envelopes | Exact fixed-size check before field parsing, signature verification, or KEM work |
+| Handshake FINISH | 4 KiB fixed Lite envelope | Exact fixed-size check before protected-record parsing or AEAD work |
+| Pending/cached handshake instances | 64 per side/cache; 10-minute age | Before creating additional handshake state; stale entries expired |
 | Anonymous-auth token | 4 KiB | Before text/field parsing |
 | Spent anonymous-auth nullifiers | 100,000 | Mutation and snapshot encode/decode; hash index for bounded lookup |
 | Fragment count | 16,384/logical message | Decode and outbound split checks |
@@ -53,6 +54,13 @@ owning crate.
 | Group skipped sender keys | Mode-specific sender skip bound | Snapshot restore and normal sender-chain logic |
 | Group replay evidence | Replay-window width/sender | Runtime pruning and snapshot restore validation |
 | Lobby outbound fanout | 4,096 packets; 64 MiB envelopes | Preflight before packet allocation/encryption |
+| Stego public payload | 64 KiB compact-envelope ceiling across all four profiles | Before framing/allocation |
+| Stego raw carrier | Configured hard byte ceiling; deterministic worst-case additionally capped at 128 MiB | Before word/token parsing |
+| Stego deterministic/hybrid words | Derived maximum + one sentinel | Bounded iterator before collection |
+| Stego Fast Unicode selectors | Maximum framed bytes + one sentinel | Before selector collection/frame decode |
+| Stego generated carrier output | Profile-specific checked upper bound | Before Fast Unicode selector expansion or Fast Hybrid prose allocation |
+| AI model process request/response | 16 MiB each | Before write and while reading stdout |
+| AI model process time | 30-minute startup / 2-minute request defaults; bounded configurable maxima | Absolute receive deadline; child terminated on timeout/protocol failure |
 
 ## Parser and allocation findings closed
 
@@ -74,6 +82,12 @@ owning crate.
    linear scan over the retained history.
 9. Group snapshot restore rejects oversized, duplicate, or unauthorized sender,
    skipped-key, replay, membership-tree, and private-path state.
+10. Stego decoders reject oversized raw carriers before potentially large
+    tokenization/word collection, then enforce profile-specific token, word, or
+    framed-selector ceilings.
+11. The native stego model adapter bounds request/response records and applies
+    absolute startup/inference deadlines covering both request writes and response reads. Timeout or broken protocol state
+    terminates and reaps the subprocess before returning.
 
 ## Work bounds and remaining application responsibilities
 
@@ -95,8 +109,9 @@ remain outside the SDK.
 The implementation includes adversarial tests for oversized handshake/auth
 records, declared attachment lengths, sparse oversized files, state-file
 ceilings, fragment sparsity/conflicts/age/scope quotas, skipped-key snapshot
-limits, route-index refresh, no-persist partial fragments, and group
-sender/replay snapshot bounds.
+limits, route-index refresh, no-persist partial fragments, group sender/replay
+snapshot bounds, stego raw-cover ceilings, and public stego transport
+interoperability contracts.
 
 `qa/ci/security/check-resource-limits.sh` and
 `qa/ci/security/check-resource-limits.ps1` statically guard the required constants,

@@ -50,33 +50,46 @@ pub fn validate_roster_for_mode(
     validate_roster_for_canonical_encoding(mode, roster)?;
 
     for entry in roster {
-        if entry.joined_epoch.0 > epoch.0 {
-            return Err(GroupError::InvalidRoster);
-        }
-        match entry.status {
-            MemberStatus::Active => {
-                if entry.removed_epoch.0 != 0 {
-                    return Err(GroupError::InvalidRoster);
-                }
-                if !entry.role.is_active_in_mode(mode) {
-                    return Err(GroupError::InvalidRoleForMode {
-                        mode,
-                        role: entry.role,
-                    });
-                }
-            }
-            MemberStatus::Removed => {
-                if entry.removed_epoch.0 == 0
-                    || entry.removed_epoch.0 <= entry.joined_epoch.0
-                    || entry.removed_epoch.0 > epoch.0
-                {
-                    return Err(GroupError::InvalidRoster);
-                }
-            }
-        }
+        validate_roster_entry(mode, epoch, entry)?;
     }
 
     let stats = roster_stats(mode, roster);
+    validate_roster_stats(mode, stats)?;
+    Ok(stats)
+}
+
+fn validate_roster_entry(mode: GroupMode, epoch: Epoch, entry: &RosterEntry) -> GroupResult<()> {
+    if entry.joined_epoch.0 > epoch.0 {
+        return Err(GroupError::InvalidRoster);
+    }
+    match entry.status {
+        MemberStatus::Active => {
+            if entry.removed_epoch.0 != 0 {
+                return Err(GroupError::InvalidRoster);
+            }
+            if !entry.role.is_active_in_mode(mode) {
+                return Err(GroupError::InvalidRoleForMode {
+                    mode,
+                    role: entry.role,
+                });
+            }
+        }
+        MemberStatus::Removed => validate_removed_member(epoch, entry)?,
+    }
+    Ok(())
+}
+
+fn validate_removed_member(epoch: Epoch, entry: &RosterEntry) -> GroupResult<()> {
+    if entry.removed_epoch.0 == 0
+        || entry.removed_epoch.0 <= entry.joined_epoch.0
+        || entry.removed_epoch.0 > epoch.0
+    {
+        return Err(GroupError::InvalidRoster);
+    }
+    Ok(())
+}
+
+fn validate_roster_stats(mode: GroupMode, stats: RosterStats) -> GroupResult<()> {
     if stats.active == 0 || stats.send_capable == 0 {
         return Err(GroupError::InvalidRoster);
     }
@@ -85,7 +98,7 @@ pub fn validate_roster_for_mode(
     {
         return Err(GroupError::InvalidRoster);
     }
-    Ok(stats)
+    Ok(())
 }
 
 pub fn validate_governance_for_roster(

@@ -23,19 +23,19 @@ Protocol authority remains in `crates/` and `docs/spec/`. Example applications m
 | [attachment_roundtrip](attachment_roundtrip/README.md) | Text plus file and byte attachments. |
 | [lobby_roundtrip](lobby_roundtrip/README.md) | Lobby invite and recipient-tagged lobby send/receive. |
 | [manual_file_carrier](manual_file_carrier/README.md) | Files on disk as a manual opaque-byte carrier. |
-| [hydra-gui](hydra-gui/README.md) | Current production reference app over the public SDK. |
+| [hydra-gui](hydra-gui/README.md) | Full browser chat showcase with automatic LAN peers and advanced HYDRA capability panels. |
 | [mobile_perf_web](mobile_perf_web/README.md) | LAN browser/device WASM benchmark host. |
 | [webrtc_manual_carrier](webrtc_manual_carrier/README.md) | WebRTC DataChannel carrier after manual contact-card exchange. |
+| [stego_lan_chat](stego_lan_chat/README.md) | Browser WebRTC chat with instant zero-model prose plus three AI-backed covers selected per message. |
 
 ## Run the reference app
 
 ```bash
-cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
+./examples/hydra-gui/scripts/build-wasm.sh
+cargo run --manifest-path examples/hydra-gui/Cargo.toml -- 127.0.0.1:8787
 ```
 
-The reference app also demonstrates optional per-contact fresh-session cadence.
-An interval of `1` blocks a second logical send until the app transports a new
-authenticated hybrid handshake; the app never derives or imports session keys.
+The GUI keeps ordinary chat simple while exposing optional per-contact fresh-session cadence, packet sizing, groups, backup/restore, identities, contact cards, anonymous one-time authorization, diagnostics, and steganography behind advanced controls.
 
 The full example gate runs the reference-app integration tests, three public-SDK app examples, all other native examples, browser-host smoke tests, and WASM builds unless WASM is explicitly skipped.
 

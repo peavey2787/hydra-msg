@@ -11,14 +11,18 @@ mod skipped_keys;
 
 pub use error::{SessionError, SessionResult};
 pub use key_derivation::{derive_initial_secrets, InitialSessionSecrets};
+#[cfg(any(test, feature = "test-support"))]
 pub use ratchet::DirectionChainSnapshot;
 pub use refresh::{
     derive_refresh_candidate, ConfirmedRefresh, RefreshCandidate, RefreshRole, VerifiedRefresh,
 };
+#[cfg(any(test, feature = "test-support"))]
+pub use session::SessionStateSnapshot;
 pub use session::{
     Direction, OutboundMessage, ReceivedMessage, RefreshIdDecision, SessionPhase, SessionRole,
-    SessionState, SessionStateSnapshot,
+    SessionState, MAX_COMPACT_CONTENT_SIZE,
 };
+#[cfg(any(test, feature = "test-support"))]
 pub use skipped_keys::SkippedMessageKeySnapshot;
 
 #[cfg(test)]

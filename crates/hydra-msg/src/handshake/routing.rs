@@ -3,13 +3,26 @@ use crate::{
     limits::{MAX_SESSION_ROUTE_TAGS, MAX_SESSION_ROUTE_TAGS_PER_SESSION},
     ContactId, Hydra, HydraMsgError, HydraResult,
 };
-use hydra_envelope::decode_outer_header;
+use hydra_envelope::{decode_outer_header, decode_outer_header_prefix};
 use hydra_session::{SessionError, SessionState};
 use std::collections::HashSet;
 
 impl Hydra {
     pub(super) fn receive_route_candidates(&self, envelope: &[u8]) -> HydraResult<Vec<ContactId>> {
         let header = decode_outer_header(envelope)
+            .map_err(|_| HydraMsgError::Session(SessionError::InvalidEnvelope.to_string()))?;
+        Ok(self
+            .receive_routes
+            .get(&header.route_tag)
+            .cloned()
+            .unwrap_or_default())
+    }
+
+    pub(super) fn receive_compact_route_candidates(
+        &self,
+        envelope: &[u8],
+    ) -> HydraResult<Vec<ContactId>> {
+        let header = decode_outer_header_prefix(envelope)
             .map_err(|_| HydraMsgError::Session(SessionError::InvalidEnvelope.to_string()))?;
         Ok(self
             .receive_routes
@@ -25,12 +38,18 @@ impl Hydra {
     ) -> HydraResult<()> {
         let route_tags = state.candidate_receive_route_tags()?;
         self.install_session_route_tags(contact_id, route_tags)?;
+        let rollback_generation_floor = self
+            .peer_generation_floors
+            .get(&contact_id)
+            .copied()
+            .unwrap_or(0);
         self.sessions.insert(
             contact_id,
             SessionRecord {
                 state,
                 closed: false,
                 outbound_messages: 0,
+                rollback_generation_floor,
             },
         );
         Ok(())

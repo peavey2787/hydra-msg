@@ -180,4 +180,4 @@ else
   npm run install:browsers
 fi
 
-npx playwright test
+npm test

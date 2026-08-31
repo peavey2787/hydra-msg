@@ -164,13 +164,29 @@ impl Hydra {
     }
 
     pub fn unlock_id(&mut self, id: IdentityId, password: impl AsRef<str>) -> HydraResult<()> {
+        let password = password.as_ref();
+        let previous = self
+            .identities
+            .get(&id)
+            .ok_or(HydraMsgError::IdentityNotFound)?
+            .clone();
+        verify_password(&previous, password)?;
+        let upgrade_kdf = previous.password_kdf.needs_upgrade()?;
         let record = self
             .identities
             .get_mut(&id)
             .ok_or(HydraMsgError::IdentityNotFound)?;
-        verify_password(record, password.as_ref())?;
-        record.seed = Some(decrypt_seed(record, password.as_ref())?);
+        if upgrade_kdf {
+            rewrap_identity_record(record, password, password)?;
+        }
+        record.seed = Some(decrypt_seed(record, password)?);
         record.unlocked = true;
+        if upgrade_kdf {
+            if let Err(error) = self.persist() {
+                self.identities.insert(id, previous);
+                return Err(error);
+            }
+        }
         Ok(())
     }
 

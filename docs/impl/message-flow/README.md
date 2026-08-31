@@ -34,7 +34,7 @@ flowchart LR
     B --> C[Create contact card]
     C --> D[App carrier exchanges contact cards]
     D --> E[Add peer contact]
-    E --> F[Handshake offer and answer]
+    E --> F[INIT -> RESP -> FINISH]
     F --> G[Active session]
     G --> H[Send and receive encrypted packets]
 ```
@@ -64,6 +64,11 @@ sequenceDiagram
     AliceApp->>Carrier: send answer bytes
     Carrier->>BobApp: deliver answer bytes
     BobApp->>BobHydra: finish_handshake(answer)
+    BobHydra-->>BobApp: authenticated FINISH bytes; initiator Established
+    BobApp->>Carrier: send FINISH bytes
+    Carrier->>AliceApp: deliver FINISH bytes
+    AliceApp->>AliceHydra: accept_handshake_finish(FINISH)
+    AliceHydra-->>AliceApp: responder Established
 
     BobApp->>BobHydra: send(Alice, message)
     BobHydra-->>BobApp: one or more encrypted packet bytes
@@ -75,7 +80,7 @@ sequenceDiagram
 
 ## Do users need contacts first?
 
-For normal encrypted send/receive, yes: HYDRA needs peer key material and an active session so the receiver can decrypt. The facade session is established by a signed hybrid handshake: ML-DSA authenticates the peer identity, ephemeral X25519 contributes classical forward secrecy, ephemeral ML-KEM-768 contributes post-quantum store-now-decrypt-later resistance, and the answer confirmation tag proves transcript/key agreement before session installation on the initiator side.
+For normal encrypted send/receive, yes: HYDRA needs peer key material and an active session so the receiver can decrypt. The facade session is established by a signed hybrid handshake: ML-DSA authenticates the peer identity, ephemeral X25519 contributes classical forward secrecy, ephemeral ML-KEM-768 contributes post-quantum store-now-decrypt-later resistance, and the RESP confirmation proves transcript/key agreement before initiator installation, while the responder remains provisional until it authenticates the one-use FINISH record.
 
 That does not mean your app has to expose a traditional contact list. The app can hide the contact model behind an invite, QR code, temporary chat link, support-ticket inbox, lobby join flow, relay pickup flow, or one-time identity.
 
@@ -133,7 +138,7 @@ Current facade boundaries:
 
 ```text
 state.hydra local file: authenticated-encrypted state opened with a required state password
-identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters
+identity, state, and backup passwords: AEAD wrapping after per-record scrypt KDF with random salt and explicit parameters; new interactive records use N=2^17/r=8/p=1 and exact legacy profile tuples are accepted only for authenticated migration
 contact cards: default cards expose the public verification key only; labeled cards intentionally expose a label; contact id/fingerprint and safety code are derived locally from the key
 lobby invites: default invites expose lobby id and max-member policy only; labeled/member invites intentionally expose label and member list
 lobby recipient(): direct per-member app-local routing hint, not anonymous routing or authentication
@@ -192,7 +197,7 @@ For a normal 1:1 app:
 2. Generate or import the user's identity.
 3. Let the user share a contact card.
 4. Let the user add another contact card.
-5. Carry handshake offer/answer bytes through the app.
+5. Carry canonical INIT, RESP, and FINISH bytes through the app.
 6. Carry encrypted packet bytes through the app.
 7. Display received plaintext and attachments.
 ```

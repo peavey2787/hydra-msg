@@ -6,9 +6,13 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
-cargo test -p hydra-cross-version-compat
-if ($LASTEXITCODE -ne 0) {
-    throw "cross-version compatibility checks failed with exit code $LASTEXITCODE"
+if ($env:HYDRA_WORKSPACE_TESTS_ALREADY_RAN -eq "1") {
+    Write-Host "hydra-cross-version-compat already executed by cargo test --workspace --all-targets; not repeating."
+} else {
+    cargo test -p hydra-cross-version-compat
+    if ($LASTEXITCODE -ne 0) {
+        throw "cross-version compatibility checks failed with exit code $LASTEXITCODE"
+    }
 }
 
 Write-Host "cross-version compatibility checks passed." -ForegroundColor Green

@@ -13,6 +13,8 @@ Persistence vectors for the canonical encrypted local snapshot contract live und
 
 These vectors record KDF profile/parameters, deterministic test-only salts/nonces, ciphertext lengths through metadata artifacts, decrypted snapshot hashes when authentication is expected to succeed, expected result, and purpose. They use fixture-only passwords and deterministic test-only entropy. They must not be regenerated with production randomness.
 
+The committed persistence envelope fixtures carrying `interactive/log_n=14/r=8/p=1` are intentionally retained as legacy-read/migration evidence after the KDF hardening. They no longer describe the parameters emitted for a new record. Runtime storage tests assert that newly created state and backup envelopes use `interactive/log_n=17/r=8/p=1`, and migration tests prove authenticated legacy state is rewritten under the current profile.
+
 ## Cross-version compatibility vector requirements
 
 Cross-version compatibility fixtures live under `qa/vectors/cross-version/` and are exercised by the separate QA crate `qa/tests/cross-version-compat/`. These tests are intentionally outside production crates. Because HYDRA has not shipped v1 yet, old unpadded local-state/backup fixtures fail closed; current tests generate the first production-candidate chunked fixtures at runtime until those artifacts are frozen.
@@ -146,9 +148,12 @@ are not frozen or independently corroborated.
 The handshake candidates contain complete 32,768-byte INIT and RESP envelopes,
 a complete 4,096-byte authenticated FINISH envelope, transcript/KDF outputs,
 X25519 and ML-KEM agreement, confirmation values, route tags, and opened FINISH
-plaintext. The committed interop harness verifies the INIT/RESP signatures,
-bootstrap modes/classes, responder confirmation, FINISH authentication, and
-isolated tamper rejection against the current crypto/envelope runtimes.
+plaintext. These bytes are the same canonical INIT/RESP/FINISH construction used
+by the public `hydra-msg::Hydra` facade; there is no separate facade vector or
+two-message handshake. The committed interop harness verifies the INIT/RESP
+signatures, bootstrap modes/classes, responder confirmation, FINISH
+authentication, and isolated tamper rejection against the current
+crypto/envelope runtimes.
 
 Refresh, identity rotation/revocation, ratchet/replay, group/TreeKEM, and
 fragmentation artifacts are no longer missing. The interop and crate-level
@@ -156,14 +161,11 @@ vector tests consume representative artifacts through the current runtime,
 including exact-gap/replay behavior, signature rejection, group parent-state
 preservation, direct/lobby fragment scope, and malformed-fragment rejection.
 
-The remaining maturity gap is independent corroboration and freezing, not
-absence of candidate coverage. `TV-HS-TAMPER-000` now commits isolated
-signature, responder-confirmation, and FINISH-authentication corruption. A
-normative v1 bundle still requires an independent primitive oracle, a second
-protocol implementation, archived provenance, and the broader negative
-handshake matrix in Section 10 covering all-zero X25519, wrong-peer identity
-binding, transcript substitution, ML-KEM implicit rejection, downgrade, and
-replay cases.
+Independent corroboration has started and is now committed rather than merely planned. `qa/independent/verify_handshake_vectors.py` is a standalone Python oracle that imports no HYDRA code and independently implements the RFC 7748 X25519 ladder plus SHA3/HMAC/HKDF transcript and handshake key-schedule calculations. Its expected values are frozen in `qa/vectors/independent/handshake-oracle-v1.json`, and the core test gate executes the oracle on every run. `TV-HS-TAMPER-000` continues to commit isolated signature, responder-confirmation, and FINISH-authentication corruption.
+
+The hostile handshake matrix is also executable now: exact and delayed INIT replay, high-volume retransmission without responder rekey, reordered independent responses, stale RESP/FINISH handling, wrong-responder and changed-fingerprint binding, validly signed transcript substitution, all-zero X25519, malformed ML-KEM input, ML-KEM implicit-rejection confirmation failure, downgrade attempts, and simultaneous cross-init are covered by `handshake_lifecycle.rs`, `handshake_competing.rs`, `handshake_hostile.rs`, and `handshake_hostile_crypto.rs`.
+
+A fully frozen normative v1 interoperability bundle still requires independent ML-KEM/ML-DSA primitive corroboration, archived external-tool provenance, and preferably a second complete protocol implementation that agrees on complete envelopes, rejection phase, and state transitions. The committed Python oracle is independent evidence for X25519 and the transcript/key schedule; it is intentionally not represented as an independent PQ implementation.
 
 ## 1. Envelope-class constants
 

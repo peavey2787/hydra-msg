@@ -1,137 +1,60 @@
 #!/usr/bin/env sh
 set -eu
-
 . "$(dirname -- "$0")/../lib/repo-root.sh"
 hydra_enter_repo_root
-
-manifest=qa/coverage/critical-paths.tsv
-coverage_tool=qa/coverage/enforce_lcov_thresholds.rs
-coverage_tool_dir=target/qa-tools/coverage
-coverage_tool_bin=$coverage_tool_dir/enforce-lcov-thresholds
-coverage_tool_tests=$coverage_tool_dir/enforce-lcov-thresholds-tests
+critical=qa/coverage/critical-functions.tsv
+tool=qa/quality/enforce_quality.rs
+tool_dir=target/qa-tools/coverage
+tool_bin=$tool_dir/enforce-quality
+tool_tests=$tool_dir/enforce-quality-tests
 audit=docs/validation/evidence/coverage-mutation-targets.md
+lcov=target/coverage/hydra.lcov
+function_report=target/coverage/function-quality.tsv
 
-require_file() {
-  if [ ! -f "$1" ]; then
-    echo "required coverage file missing: $1" >&2
-    exit 1
-  fi
-}
-
-require_text() {
-  file=$1
-  text=$2
-  if ! grep -Fq -- "$text" "$file"; then
-    echo "coverage invariant missing from $file: $text" >&2
-    exit 1
-  fi
-}
-
-require_file "$manifest"
-require_file "$coverage_tool"
-require_file "$audit"
-
+require_file() { [ -f "$1" ] || { echo "required coverage file missing: $1" >&2; exit 1; }; }
+require_text() { grep -Fq -- "$2" "$1" || { echo "coverage invariant missing from $1: $2" >&2; exit 1; }; }
+for file in "$critical" "$tool" qa/quality/lcov.rs qa/quality/rust_source.rs "$audit"; do require_file "$file"; done
 if find qa/coverage -type f -name '*.py' -print | grep .; then
   echo "Python coverage helper found; coverage enforcement must remain Rust-only" >&2
   exit 1
 fi
-
-if ! command -v rustc >/dev/null 2>&1; then
-  echo "the Rust coverage threshold helper requires rustc on PATH" >&2
-  echo "load the rustup environment or run: ./scripts/setup-dev-env.sh" >&2
-  exit 1
-fi
-mkdir -p "$coverage_tool_dir"
-rustc --edition=2021 -D warnings --test "$coverage_tool" -o "$coverage_tool_tests"
-"$coverage_tool_tests"
-rustc --edition=2021 -D warnings "$coverage_tool" -o "$coverage_tool_bin"
-
-while IFS='|' read -r id coverage_class min_line min_branch source_file test_file required_test; do
-  case "$id" in
-    ''|'#'*) continue ;;
-  esac
-  for value in "$coverage_class" "$min_line" "$min_branch" "$source_file" "$test_file" "$required_test"; do
-    if [ -z "$value" ]; then
-      echo "coverage manifest row has empty field: $id" >&2
-      exit 1
-    fi
-  done
-  require_file "$source_file"
-  require_file "$test_file"
-  require_text "$test_file" "fn $required_test"
-  require_text "$manifest" "$id|"
-done < "$manifest"
-
 for required in \
-  "parser/codec branch and negative-path coverage" \
-  "state-machine replay and skipped-key transition coverage" \
-  "generation rollback and stale-state rejection" \
-  "signature verification negative-path coverage" \
-  "fragment reassembly branch and malformed-input coverage" \
-  "group membership transition and authorization coverage" \
-  "group rekey transition and TreeKEM validation coverage"
-do
-  require_text "$manifest" "$required"
-done
+  "Critical cryptographic functions require 100% line and branch coverage" \
+  "Native production function ranges require at least 85% aggregate line coverage and 65% aggregate branch coverage" \
+  "Cyclomatic complexity is capped at 12" \
+  "CRAP is capped at 25" \
+  "target/coverage/hydra.lcov" \
+  "target/coverage/function-quality.tsv"
+do require_text "$audit" "$required"; done
 
-require_text "$audit" "coverage report"
-require_text "$audit" "critical-path coverage threshold"
-require_text "$audit" "parser/codec branch coverage"
-require_text "$audit" "negative-path coverage"
-require_text "$audit" "state-machine transition coverage"
-require_text "$audit" "HYDRA_RUN_COVERAGE=1"
+command -v rustc >/dev/null 2>&1 || { echo "coverage/CRAP enforcement requires rustc on PATH" >&2; exit 1; }
+mkdir -p "$tool_dir"
+rustc --edition=2021 -D warnings --test "$tool" -o "$tool_tests"
+"$tool_tests"
+rustc --edition=2021 -D warnings "$tool" -o "$tool_bin"
+while IFS='|' read -r id source function reason; do
+  case "$id" in ''|'#'*) continue ;; esac
+  [ -n "$source" ] && [ -n "$function" ] && [ -n "$reason" ] || { echo "critical coverage row has empty field: $id" >&2; exit 1; }
+  require_file "$source"
+done < "$critical"
 
-if [ "${HYDRA_RUN_COVERAGE:-0}" = "1" ]; then
-  coverage_toolchain=${HYDRA_COVERAGE_TOOLCHAIN:-nightly}
-
-  if ! command -v rustup >/dev/null 2>&1; then
-    echo "HYDRA branch coverage requires rustup and a nightly toolchain" >&2
-    echo "install Rust with rustup, then run: ./scripts/setup-dev-env.sh" >&2
-    exit 1
-  fi
-  if ! command -v cargo >/dev/null 2>&1; then
-    echo "HYDRA branch coverage requires cargo on PATH" >&2
-    echo "load the rustup environment or run: ./scripts/setup-dev-env.sh" >&2
-    exit 1
-  fi
-  if ! rustup run "$coverage_toolchain" rustc --version >/dev/null 2>&1; then
-    echo "coverage toolchain is unavailable: $coverage_toolchain" >&2
-    echo "install it with: rustup toolchain install $coverage_toolchain" >&2
-    exit 1
-  fi
-  coverage_rustc_version=$(rustup run "$coverage_toolchain" rustc --version)
-  case "$coverage_rustc_version" in
-    *nightly*) ;;
-    *)
-      echo "HYDRA branch coverage requires a nightly Rust toolchain" >&2
-      echo "HYDRA_COVERAGE_TOOLCHAIN=$coverage_toolchain selected: $coverage_rustc_version" >&2
-      exit 1
-      ;;
-  esac
-
-  if ! rustup component list --toolchain "$coverage_toolchain" --installed \
-    | grep -Eq '^llvm-tools'; then
-    echo "==> installing llvm-tools-preview for coverage toolchain: $coverage_toolchain"
-    rustup component add llvm-tools-preview --toolchain "$coverage_toolchain"
-  fi
-
-  if ! cargo "+$coverage_toolchain" llvm-cov --version >/dev/null 2>&1; then
-    echo "HYDRA_RUN_COVERAGE=1 requires cargo-llvm-cov to be installed" >&2
-    echo "install with: cargo install cargo-llvm-cov --locked" >&2
-    echo "or run: ./scripts/setup-dev-env.sh" >&2
-    exit 1
-  fi
-
-  echo "==> branch coverage toolchain: $coverage_rustc_version"
-  mkdir -p target/coverage
-  cargo "+$coverage_toolchain" llvm-cov clean --workspace
-  cargo "+$coverage_toolchain" llvm-cov \
-    --workspace --all-targets --branch --lcov \
-    --output-path target/coverage/hydra.lcov
-  "$coverage_tool_bin" "$manifest" target/coverage/hydra.lcov
-  cargo "+$coverage_toolchain" llvm-cov \
-    --workspace --all-targets --branch --html \
-    --output-dir target/coverage/html
-else
-  echo "coverage manifest/static gate passed. Set HYDRA_RUN_COVERAGE=1 to generate and enforce LCOV/HTML coverage."
+if [ "${HYDRA_RUN_COVERAGE:-0}" != 1 ]; then
+  echo "coverage/CRAP manifest and helper checks passed. Set HYDRA_RUN_COVERAGE=1 to generate LCOV and enforce thresholds."
+  exit 0
 fi
+coverage_toolchain=${HYDRA_COVERAGE_TOOLCHAIN:-nightly}
+command -v rustup >/dev/null 2>&1 || { echo "HYDRA coverage requires rustup" >&2; exit 1; }
+command -v cargo >/dev/null 2>&1 || { echo "HYDRA coverage requires cargo" >&2; exit 1; }
+coverage_rustc=$(rustup run "$coverage_toolchain" rustc --version)
+case "$coverage_rustc" in *nightly*) ;; *) echo "branch coverage requires nightly Rust: $coverage_rustc" >&2; exit 1 ;; esac
+if ! rustup component list --toolchain "$coverage_toolchain" --installed | grep -Eq '^llvm-tools'; then
+  rustup component add llvm-tools-preview --toolchain "$coverage_toolchain"
+fi
+cargo "+$coverage_toolchain" llvm-cov --version >/dev/null
+mkdir -p target/coverage
+cargo "+$coverage_toolchain" llvm-cov clean --workspace
+cargo "+$coverage_toolchain" llvm-cov --workspace --all-targets --branch --lcov --output-path "$lcov"
+"$tool_bin" "$lcov" "$critical" "$function_report"
+# Reuse the existing profiling data; do not execute the workspace a second time for HTML.
+cargo "+$coverage_toolchain" llvm-cov report --branch --html --output-dir target/coverage/html
+echo "LCOV/coverage/CC/CRAP checks passed."

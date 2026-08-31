@@ -2,7 +2,7 @@
 
 This example demonstrates the simplest possible carrier: files on disk.
 
-HYDRA creates opaque bytes for contact cards, handshake offers/answers, and encrypted envelopes. This example writes those bytes to files and reads them back.
+HYDRA creates opaque bytes for contact cards, handshake INIT/RESP/FINISH records, and encrypted envelopes. This example writes those bytes to files and reads them back.
 
 ## Navigation
 

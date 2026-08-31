@@ -1,2 +1,11 @@
+# Frozen protocol/test-vector artifacts must remain byte-for-byte stable on every platform.
+qa/vectors/** -text
+*.bin -text
+
 # Parser-stress fixtures intentionally encode empty tab-delimited values.
 qa/vectors/persistence/parser-stress/TV-PERSISTENCE-STATE-EMPTY-CIPHERTEXT/encrypted_state.bin -whitespace
+# Shell and desktop launchers must stay directly executable on Unix-like hosts.
+*.sh text eol=lf
+*.desktop text eol=lf
+*.cmd text eol=crlf
+qa/ci/policy/rust-size-allowlist.txt text eol=lf

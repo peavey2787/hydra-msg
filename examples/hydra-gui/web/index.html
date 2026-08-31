@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="/hydra-icon-192.png">
+  <link rel="apple-touch-icon" href="/hydra-icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0d1117">
+  <title>HYDRA Chat</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div id="app-shell" class="app-shell" aria-busy="true">
+    <aside class="sidebar" aria-label="Conversations">
+      <div class="brand-row">
+        <img class="brand-mark" src="/hydra-icon-192.png" alt="" aria-hidden="true">
+        <div>
+          <strong>HYDRA</strong>
+          <span>private local chat demo</span>
+        </div>
+        <button class="icon-button help-button" data-help="hydra" aria-label="What is HYDRA?">?</button>
+      </div>
+
+      <div class="connection-card">
+        <span id="lan-dot" class="status-dot pending" aria-hidden="true"></span>
+        <div>
+          <strong id="lan-status">Starting…</strong>
+          <span id="lan-detail">Preparing encrypted local state</span>
+        </div>
+      </div>
+
+      <label class="search-box">
+        <span aria-hidden="true">⌕</span>
+        <input id="conversation-search" type="search" placeholder="Search chats" autocomplete="off">
+      </label>
+
+      <div class="sidebar-heading">
+        <span>Chats</span>
+        <button id="new-group-button" class="icon-button" aria-label="Create group" title="Create group">＋</button>
+      </div>
+      <nav id="conversation-list" class="conversation-list" aria-label="Chat list"></nav>
+      <div id="empty-conversations" class="sidebar-empty">
+        Open this page on another browser or device on the same LAN. Peers appear automatically.
+      </div>
+
+      <div class="sidebar-footer">
+        <button id="settings-button" class="footer-button"><span aria-hidden="true">⚙</span> Settings</button>
+        <button id="advanced-button" class="footer-button"><span aria-hidden="true">◫</span> Advanced</button>
+      </div>
+    </aside>
+
+    <main class="chat-pane">
+      <header class="chat-header">
+        <div class="avatar large" id="chat-avatar">H</div>
+        <div class="chat-title-block">
+          <div class="title-line">
+            <h1 id="chat-title">HYDRA Chat</h1>
+            <button class="icon-button help-button" data-help="conversation" aria-label="About this conversation">?</button>
+          </div>
+          <p id="chat-subtitle">Waiting for another local peer…</p>
+        </div>
+        <div class="chat-header-actions">
+          <span id="session-pill" class="pill neutral">No session</span>
+          <button id="header-advanced-button" class="icon-button wide" aria-label="Open conversation details">Details</button>
+        </div>
+      </header>
+
+      <section id="welcome-state" class="welcome-state">
+        <img class="welcome-logo" src="/hydra-icon-192.png" alt="HYDRA">
+        <h2>Ready when your peer is</h2>
+        <p>HYDRA automatically creates a local identity, discovers browsers on this LAN, exchanges contact cards, and establishes encrypted sessions for this demonstration.</p>
+        <div class="welcome-steps">
+          <span class="step done">1 <b>Local identity</b></span>
+          <span id="welcome-peer-step" class="step">2 <b>Find peer</b></span>
+          <span id="welcome-session-step" class="step">3 <b>Secure session</b></span>
+        </div>
+        <button class="text-button help-button" data-help="autoconnect">How automatic connection works <span aria-hidden="true">?</span></button>
+      </section>
+
+      <section id="message-view" class="message-view" hidden>
+        <div id="message-list" class="message-list" role="log" aria-live="polite"></div>
+      </section>
+
+      <form id="message-composer" class="composer" hidden>
+        <div id="attachment-strip" class="attachment-strip" hidden></div>
+        <div class="composer-row">
+          <label class="attach-button" title="Attach files">
+            <span aria-hidden="true">＋</span>
+            <span class="sr-only">Attach files</span>
+            <input id="attachment-input" type="file" multiple hidden>
+          </label>
+          <button id="privacy-toggle" class="privacy-toggle" type="button" aria-pressed="false" aria-label="Toggle privacy mask" title="Mask typed text and message contents">***</button>
+          <button id="carrier-view-toggle" class="carrier-view-toggle" type="button" aria-pressed="false" aria-label="Toggle all carrier messages" title="Show decoded text for all stego messages">S</button>
+          <div class="message-input-wrap">
+            <textarea id="message-input" rows="1" maxlength="65536" placeholder="Message" aria-label="Message"></textarea>
+            <div id="message-input-mask" class="message-input-mask" aria-hidden="true" hidden></div>
+          </div>
+          <button id="send-button" class="send-button" type="submit" disabled aria-label="Send message">➤</button>
+        </div>
+        <div class="composer-meta">
+          <label class="carrier-inline">
+            <span class="sr-only">Text carrier</span>
+            <select id="stego-profile" aria-label="Text carrier">
+              <option value="off" selected>encrypted</option>
+              <option value="deterministic">stego-instant</option>
+              <option value="fast">stego-unicode</option>
+              <option value="fast-hybrid">stego hybrid</option>
+              <option value="arithmetic">stego-ai</option>
+            </select>
+          </label>
+          <button type="button" class="inline-help help-button" data-help="delivery" aria-label="About carrier selection">?</button>
+          <button type="button" class="inline-help help-button" data-help="privacy" aria-label="About privacy mask">?</button>
+          <button type="button" class="inline-help help-button" data-help="carrier-view" aria-label="About carrier view toggle">?</button>
+          <span id="send-progress" class="send-progress" hidden></span>
+        </div>
+        <div id="ai-model-control" class="composer-model-control" hidden>
+          <label>AI cover model
+            <select id="ai-model-select"><option value="">Choose local model…</option></select>
+          </label>
+          <progress id="ai-model-progress" max="100" value="0" hidden></progress>
+          <p id="ai-model-status" class="field-note">Select a model to download and load it locally.</p>
+        </div>
+      </form>
+    </main>
+
+    <aside id="advanced-drawer" class="advanced-drawer" aria-label="Advanced conversation settings" hidden>
+      <div class="drawer-header">
+        <div>
+          <span class="eyebrow">Power user controls</span>
+          <h2>Conversation details</h2>
+        </div>
+        <button id="close-advanced" class="icon-button" aria-label="Close advanced controls">×</button>
+      </div>
+
+      <section class="drawer-section">
+        <div class="section-title"><h3>Session security</h3><button class="help-button mini" data-help="session-security">?</button></div>
+        <dl class="facts">
+          <div><dt>Status</dt><dd id="advanced-session-status">Not connected</dd></div>
+          <div><dt>Safety code</dt><dd id="advanced-safety-code">—</dd></div>
+        </dl>
+        <label>Fresh hybrid session cadence
+          <select id="session-cadence">
+            <option value="0">Ratchet only</option>
+            <option value="50" selected>Every 50 outbound messages</option>
+            <option value="1">Every message</option>
+            <option value="10">Every 10 messages</option>
+          </select>
+        </label>
+        <div class="button-row">
+          <button id="refresh-session-button" class="secondary-button">Refresh now</button>
+          <button id="close-session-button" class="ghost-button">Close session</button>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-title"><h3>Delivery & steganography</h3><button class="help-button mini" data-help="stego">?</button></div>
+        <label>Packet ceiling
+          <select id="packet-size-select">
+            <option value="4096">Lite · 4 KiB</option>
+            <option value="32768">Standard · 32 KiB</option>
+            <option value="147456" selected>Full · 144 KiB</option>
+          </select>
+        </label>
+        <p id="stego-description" class="field-note">Encrypted mode sends HYDRA's normal padded encrypted packets. The carrier selector lives beside the message box so it is always easy to change.</p>
+      </section>
+
+      <section id="contact-controls" class="drawer-section">
+        <div class="section-title"><h3>Contact</h3><button class="help-button mini" data-help="contact-trust">?</button></div>
+        <label>Display name<input id="contact-name-input" type="text" maxlength="80"></label>
+        <div class="button-row">
+          <button id="save-contact-name" class="secondary-button">Rename</button>
+          <button id="verify-contact-button" class="secondary-button">Verify safety code</button>
+        </div>
+        <div class="button-row">
+          <button id="block-contact-button" class="ghost-button">Block</button>
+          <button id="remove-contact-button" class="danger-button">Remove</button>
+        </div>
+      </section>
+
+      <section id="lobby-controls" class="drawer-section" hidden>
+        <div class="section-title"><h3>Group</h3><button class="help-button mini" data-help="lobbies">?</button></div>
+        <div id="lobby-member-list" class="compact-list"></div>
+        <label>Add member<select id="lobby-add-member"></select></label>
+        <button id="lobby-add-member-button" class="secondary-button">Add selected peer</button>
+        <label>Invite style<select id="lobby-invite-style">
+          <option value="minimal">Minimal metadata</option>
+          <option value="labeled">Include label</option>
+          <option value="members">Include member list</option>
+        </select></label>
+        <button id="copy-lobby-invite" class="secondary-button">Copy invite</button>
+        <div class="button-row">
+          <button id="leave-lobby-button" class="ghost-button">Leave</button>
+          <button id="close-lobby-button" class="danger-button">Close locally</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <dialog id="settings-dialog" class="settings-dialog">
+    <form method="dialog" class="dialog-shell">
+      <header class="dialog-header">
+        <div><span class="eyebrow">HYDRA capabilities</span><h2>Settings & tools</h2></div>
+        <button type="submit" class="icon-button" value="close" aria-label="Close settings">×</button>
+      </header>
+      <div class="settings-grid">
+        <details open>
+          <summary><span>Identity & profile</span></summary><button type="button" class="help-button mini settings-help" data-help="identity" aria-label="Help: Identity & profile">?</button>
+          <div class="settings-content">
+            <div id="identity-list" class="compact-list"></div>
+            <label>Manage identity<select id="identity-select"></select></label>
+            <div class="two-column">
+              <label>Identity name<input id="identity-manage-label" placeholder="Display name"></label>
+              <label>Identity password<input id="identity-manage-password" type="password" placeholder="Password for this identity"></label>
+            </div>
+            <div class="button-row">
+              <button type="button" id="switch-identity-button" class="secondary-button">Make active</button>
+              <button type="button" id="rename-identity-button" class="ghost-button">Rename</button>
+              <button type="button" id="lock-identity-button" class="ghost-button">Lock / unlock</button>
+              <button type="button" id="delete-identity-button" class="danger-button">Delete</button>
+            </div>
+            <div class="two-column">
+              <label>New identity name<input id="new-identity-label" value="Demo identity"></label>
+              <label>New identity password<input id="new-identity-password" type="password" placeholder="Choose password"></label>
+            </div>
+            <button type="button" id="create-identity-button" class="secondary-button">Create another identity</button>
+            <div class="two-column">
+              <label>Old password<input id="identity-old-password" type="password"></label>
+              <label>New password<input id="identity-new-password" type="password"></label>
+            </div>
+            <button type="button" id="change-identity-password-button" class="ghost-button">Change selected identity password</button>
+            <div class="button-row">
+              <button type="button" id="export-identity-button" class="ghost-button">Export selected identity</button>
+              <label class="file-button">Import identity<input id="import-identity-input" type="file" hidden></label>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Contacts & contact cards</span></summary><button type="button" class="help-button mini settings-help" data-help="contact-cards" aria-label="Help: Contacts & contact cards">?</button>
+          <div class="settings-content">
+            <div id="contact-list-settings" class="compact-list"></div>
+            <div class="two-column">
+              <label>Optional public label<input id="contact-card-label" placeholder="Shown in labeled card only"></label>
+              <span class="field-note align-end">Default cards intentionally omit labels.</span>
+            </div>
+            <div class="button-row">
+              <button type="button" id="copy-contact-card-button" class="ghost-button">Copy default card</button>
+              <button type="button" id="copy-labeled-contact-card-button" class="ghost-button">Copy labeled card</button>
+              <button type="button" id="copy-contact-invite-button" class="ghost-button">Copy contact invite</button>
+              <button type="button" id="one-time-contact-button" class="ghost-button">Create one-time card</button>
+            </div>
+            <label>Manual contact card<textarea id="manual-contact-card" rows="3" placeholder="Paste a base64 contact card"></textarea></label>
+            <div class="button-row">
+              <button type="button" id="preview-contact-card-button" class="ghost-button">Preview</button>
+              <button type="button" id="add-contact-card-button" class="secondary-button">Add</button>
+            </div>
+            <div class="button-row">
+              <button type="button" id="export-contacts-button" class="ghost-button">Export contacts</button>
+              <label class="file-button">Import contacts<input id="import-contacts-input" type="file" hidden></label>
+            </div>
+            <pre id="contact-card-preview" class="result-box" hidden></pre>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Groups & invites</span></summary><button type="button" class="help-button mini settings-help" data-help="lobbies" aria-label="Help: Groups & invites">?</button>
+          <div class="settings-content">
+            <div class="two-column">
+              <label>Group name<input id="new-lobby-name" value="Local group"></label>
+              <label>Max members<input id="new-lobby-max" type="number" min="2" max="64" value="8"></label>
+            </div>
+            <button type="button" id="create-lobby-button" class="secondary-button">Create group with discovered peers</button>
+            <button type="button" id="one-time-lobby-button" class="ghost-button">Create one-time group invite</button>
+            <label>Join/preview invite<textarea id="manual-lobby-invite" rows="3" placeholder="Paste a hex lobby invite"></textarea></label>
+            <div class="button-row">
+              <button type="button" id="preview-lobby-invite-button" class="ghost-button">Preview</button>
+              <button type="button" id="join-lobby-button" class="secondary-button">Join</button>
+            </div>
+            <pre id="lobby-preview" class="result-box" hidden></pre>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Backup, storage & portability</span></summary><button type="button" class="help-button mini settings-help" data-help="storage" aria-label="Help: Backup, storage & portability">?</button>
+          <div class="settings-content">
+            <label>Backup password<input id="backup-password" type="password" value="demo-backup-password"></label>
+            <div class="button-row">
+              <button type="button" id="export-backup-button" class="secondary-button">Export encrypted backup</button>
+              <label class="file-button">Verify backup<input id="verify-backup-input" type="file" hidden></label>
+              <label class="file-button">Restore backup<input id="import-backup-input" type="file" hidden></label>
+            </div>
+            <div class="two-column">
+              <label>Current state password<input id="old-state-password" type="password"></label>
+              <label>New state password<input id="new-state-password" type="password"></label>
+            </div>
+            <button type="button" id="change-state-password-button" class="ghost-button">Change encrypted-state password</button>
+            <div class="field-row compact">
+              <span>Browser state mode <button type="button" class="help-button mini" data-help="storage-mode">?</button></span>
+              <strong id="storage-mode-label">Persistent IndexedDB</strong>
+            </div>
+            <div class="button-row">
+              <button type="button" id="use-persistent-state-button" class="ghost-button">Use persistent state</button>
+              <button type="button" id="use-ephemeral-state-button" class="ghost-button">Use session-only state</button>
+              <button type="button" id="reset-persistent-state-button" class="danger-button">Reset saved demo profile</button>
+            </div>
+            <div class="button-row">
+              <button type="button" id="persistent-storage-button" class="ghost-button">Request persistent browser storage</button>
+              <button type="button" id="storage-status-button" class="ghost-button">Storage status</button>
+              <button type="button" id="lifecycle-status-button" class="ghost-button">Browser lifecycle status</button>
+            </div>
+            <pre id="storage-result" class="result-box">Encrypted browser state is loaded automatically.</pre>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Anonymous one-time authorization</span></summary><button type="button" class="help-button mini settings-help" data-help="anonymous-auth" aria-label="Help: Anonymous one-time authorization">?</button>
+          <div class="settings-content">
+            <div class="two-column">
+              <label>Scope<input id="auth-scope" value="demo-lobby"></label>
+              <label>Action<input id="auth-action" value="join"></label>
+            </div>
+            <label>Optional expiry (Unix seconds)<input id="auth-expiry" type="number" min="0" placeholder="No expiry"></label>
+            <div class="button-row">
+              <button type="button" id="issue-auth-button" class="secondary-button">Issue token</button>
+              <button type="button" id="auth-nullifier-button" class="ghost-button">Show nullifier</button>
+              <button type="button" id="accept-auth-button" class="ghost-button">Accept once</button>
+              <button type="button" id="revoke-auth-button" class="ghost-button">Revoke</button>
+            </div>
+            <label>Token<textarea id="auth-token" rows="4" placeholder="Token appears here as base64"></textarea></label>
+            <pre id="auth-result" class="result-box">Issue a token to exercise the bearer-token authorization flow.</pre>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Message history</span></summary><button type="button" class="help-button mini settings-help" data-help="history" aria-label="Help: Message history">?</button>
+          <div class="settings-content">
+            <div class="button-row">
+              <button type="button" id="export-messages-button" class="ghost-button">Export message history</button>
+              <label class="file-button">Import history<input id="import-messages-input" type="file" hidden></label>
+              <button type="button" id="clear-messages-button" class="danger-button">Clear selected chat history</button>
+            </div>
+          </div>
+        </details>
+
+        <details>
+          <summary><span>Diagnostics</span></summary><button type="button" class="help-button mini settings-help" data-help="diagnostics" aria-label="Help: Diagnostics">?</button>
+          <div class="settings-content">
+            <div class="button-row">
+              <button type="button" id="benchmark-button" class="secondary-button">Run local benchmark</button>
+              <button type="button" id="debug-status-button" class="ghost-button">Debug state counts</button>
+            </div>
+            <pre id="diagnostics-result" class="result-box">Diagnostics are local to this browser.</pre>
+          </div>
+        </details>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="help-dialog" class="help-dialog">
+    <form method="dialog">
+      <header><div><span class="eyebrow">What is this?</span><h2 id="help-title">Help</h2></div><button type="submit" class="icon-button" value="close" aria-label="Close help">×</button></header>
+      <div id="help-body" class="help-body"></div>
+      <button type="submit" class="primary-button" value="close">Got it</button>
+    </form>
+  </dialog>
+
+  <dialog id="group-dialog" class="small-dialog">
+    <form method="dialog">
+      <header><h2>Create group</h2><button type="submit" class="icon-button" value="cancel" aria-label="Close">×</button></header>
+      <label>Group name<input id="quick-group-name" value="Local group"></label>
+      <div><div class="field-label">Members</div><div id="quick-group-members" class="choice-list"></div></div>
+      <div class="dialog-actions"><button type="submit" value="cancel" class="ghost-button">Cancel</button><button id="quick-create-group" type="button" class="primary-button">Create</button></div>
+    </form>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -46,7 +46,7 @@ Individual lower-level scripts may still be run while debugging a failure, but t
 | Resource limits | Exact-edge tests and static gates tied to `crates/hydra-msg/src/limits.rs`. |
 | Browser lifecycle | Playwright tests for IndexedDB denial, quota, stale tabs, delete while open, reload, pagehide, and persistent storage. |
 | Fuzzing | Deterministic CI fuzz plus coverage-guided cargo-fuzz campaigns with saved run logs. |
-| Memory safety | Fault-injection tests plus optional Miri/sanitizer evidence. |
+| Memory safety | Fault-injection tests plus mandatory Miri release evidence and sanitizer release evidence. |
 | Supply chain | `cargo-audit`, `cargo-deny`, lockfile, license, and duplicate-version review. |
 | Metadata leakage | metadata-leakage gate green; release notes must not claim HYDRA is metadata-free, traffic-flow private, or fully unlinkable through bearer anonymous auth. |
 | Release provenance | Signed Git tag, source archive, SBOM, checksums, signatures, and verification commands. |

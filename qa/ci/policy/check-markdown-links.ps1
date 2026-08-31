@@ -14,7 +14,7 @@ foreach ($root in $roots) {
     $item = Get-Item $root
     if ($item.PSIsContainer) {
         Get-ChildItem $item.FullName -Recurse -File -Filter *.md |
-            Where-Object { $_.FullName -notmatch "[\/]target[\/]" -and $_.FullName -notmatch "[\/]\.git[\/]" -and $_.FullName -notmatch "[\/]node_modules[\/]" -and $_.FullName -notmatch "[\/]test-results[\/]" -and $_.FullName -notmatch "[\/]playwright-report[\/]" -and $_.FullName -notmatch "(^|[\/])examples[\/][^\/]+[\/]web[\/]pkg[\/]" } |
+            Where-Object { $_.FullName -notmatch "[\\/]target[\\/]" -and $_.FullName -notmatch "[\\/]\.git[\\/]" -and $_.FullName -notmatch "[\\/]node_modules[\\/]" -and $_.FullName -notmatch "[\\/]test-results[\\/]" -and $_.FullName -notmatch "[\\/]playwright-report[\\/]" -and $_.FullName -notmatch "(^|[\\/])examples[\\/][^\\/]+[\\/]web[\\/]pkg[\\/]" } |
             ForEach-Object { $markdownFiles.Add($_) }
     } else {
         $markdownFiles.Add($item)

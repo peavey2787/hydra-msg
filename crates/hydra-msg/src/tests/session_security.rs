@@ -19,14 +19,16 @@ fn connected(prefix: &str) -> (Hydra, Hydra, ContactId, ContactId) {
         .unwrap();
     let offer = alice.init_handshake(bob_contact.id()).unwrap();
     let answer = bob.reply_handshake(offer).unwrap();
-    alice.finish_handshake(answer).unwrap();
+    let finish = alice.finish_handshake(answer).unwrap();
+    bob.accept_handshake_finish(finish).unwrap();
     (alice, bob, alice_contact.id(), bob_contact.id())
 }
 
 fn complete_refresh(alice: &mut Hydra, bob: &mut Hydra, bob_contact: ContactId) {
     let offer = alice.begin_session_refresh(bob_contact).unwrap();
     let answer = bob.reply_session_refresh(offer).unwrap();
-    alice.finish_session_refresh(answer).unwrap();
+    let finish = alice.finish_session_refresh(answer).unwrap();
+    bob.accept_session_refresh_finish(finish).unwrap();
 }
 
 #[test]
@@ -208,7 +210,8 @@ fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose() {
             "handshake answer has the wrong local purpose"
         ))
     );
-    alice.finish_session_refresh(refresh_answer).unwrap();
+    let refresh_finish = alice.finish_session_refresh(refresh_answer).unwrap();
+    bob.accept_session_refresh_finish(refresh_finish).unwrap();
 
     let standard_offer = alice.init_handshake(bob_contact).unwrap();
     let standard_answer = bob.reply_handshake(standard_offer).unwrap();
@@ -218,7 +221,8 @@ fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose() {
             "handshake answer has the wrong local purpose"
         ))
     );
-    alice.finish_handshake(standard_answer).unwrap();
+    let standard_finish = alice.finish_handshake(standard_answer).unwrap();
+    bob.accept_handshake_finish(standard_finish).unwrap();
 }
 
 #[test]

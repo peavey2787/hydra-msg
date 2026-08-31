@@ -36,7 +36,8 @@ Availability is not a cryptographic guarantee. HYDRA-MSG nevertheless bounds att
 | attachment bytes | 16 MiB/attachment |
 | attachment filename | 255 bytes |
 | encoded message payload | 32 MiB |
-| handshake offer/answer | 16 KiB each |
+| handshake INIT/RESP | fixed 32 KiB Standard envelopes |
+| handshake FINISH | fixed 4 KiB Lite envelope |
 | pending handshakes | 64; 10-minute age |
 | anonymous-auth token | 4 KiB |
 | spent anonymous-auth nullifiers | 100,000 |

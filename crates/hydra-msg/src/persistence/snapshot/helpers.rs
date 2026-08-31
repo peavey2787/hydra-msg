@@ -1,4 +1,9 @@
-use crate::{limits::MAX_STATE_SNAPSHOT_BYTES, HydraMsgError, HydraResult, STATE_SNAPSHOT_MAGIC};
+use crate::{
+    codec::*,
+    limits::{MAX_CONTACTS, MAX_STATE_SNAPSHOT_BYTES},
+    ContactId, Hydra, HydraMsgError, HydraResult, HydraSessionSecurityPolicy, STATE_SNAPSHOT_MAGIC,
+};
+use std::collections::HashSet;
 
 const MAX_STATE_SNAPSHOT_LINE_BYTES: usize = MAX_STATE_SNAPSHOT_BYTES;
 
@@ -94,6 +99,95 @@ pub(super) fn reject_duplicate_collection_record(
 ) -> HydraResult<()> {
     if !inserted {
         return Err(HydraMsgError::InvalidEncoding(description));
+    }
+    Ok(())
+}
+
+pub(super) fn validate_peer_generation_floor<'a>(
+    parts: &mut impl Iterator<Item = &'a str>,
+    seen: &mut HashSet<ContactId>,
+) -> HydraResult<()> {
+    reject_collection_limit(
+        seen.len(),
+        MAX_CONTACTS,
+        "state peer generation floor count",
+    )?;
+    let contact_hex = required_snapshot_value(parts.next(), "state peer generation floor contact")?;
+    let generation = required_snapshot_value(parts.next(), "state peer generation floor value")?;
+    reject_extra_snapshot_fields(parts.next(), "state peer generation floor")?;
+    let contact_id = ContactId::from_hex(contact_hex)?;
+    let _: u64 = generation
+        .parse()
+        .map_err(|_| HydraMsgError::InvalidEncoding("state peer generation floor value"))?;
+    reject_duplicate_collection_record(
+        seen.insert(contact_id),
+        "state peer generation floor duplicate",
+    )
+}
+
+pub(super) fn apply_state_snapshot_line(hydra: &mut Hydra, line: &str) -> HydraResult<()> {
+    let mut parts = line.split('\t');
+    match parts.next() {
+        Some("state_generation") => {
+            let value = required_snapshot_value(parts.next(), "state generation")?;
+            hydra.state_generation = value
+                .parse()
+                .map_err(|_| HydraMsgError::InvalidEncoding("state generation"))?;
+        }
+        Some("next_message_id") => {
+            let value = required_snapshot_value(parts.next(), "state next_message_id")?;
+            hydra.next_message_id = value
+                .parse()
+                .map_err(|_| HydraMsgError::InvalidEncoding("state next_message_id"))?;
+        }
+        Some("anonymous_auth_secret") => {
+            let value = required_snapshot_value(parts.next(), "state anonymous auth secret")?;
+            hydra.anonymous_auth_secret = decode_anonymous_auth_secret(value)?;
+        }
+        Some("anonymous_auth_spent") => {
+            let value = required_snapshot_value(parts.next(), "state anonymous auth spent")?;
+            let nullifier = decode_anonymous_auth_spent(value)?;
+            hydra.anonymous_auth_spent.push(nullifier);
+            hydra.anonymous_auth_spent_index.insert(nullifier);
+        }
+        Some("identity") => {
+            let record = decode_identity_line(line)?;
+            hydra.identities.insert(record.id, record);
+        }
+        Some("contact") => {
+            let contact = decode_contact_line(line)?;
+            hydra.contacts.insert(contact.id, contact);
+        }
+        Some("session_security_policy") => {
+            let contact_hex =
+                required_snapshot_value(parts.next(), "state session security policy contact")?;
+            let policy_value =
+                required_snapshot_value(parts.next(), "state session security policy value")?;
+            let contact_id = ContactId::from_hex(contact_hex)?;
+            let policy = HydraSessionSecurityPolicy::from_snapshot_value(policy_value)?;
+            hydra.session_security_policies.insert(contact_id, policy);
+        }
+        Some("peer_generation_floor") => {
+            let contact_hex =
+                required_snapshot_value(parts.next(), "state peer generation floor contact")?;
+            let generation =
+                required_snapshot_value(parts.next(), "state peer generation floor value")?;
+            let contact_id = ContactId::from_hex(contact_hex)?;
+            let generation = generation
+                .parse()
+                .map_err(|_| HydraMsgError::InvalidEncoding("state peer generation floor value"))?;
+            hydra.peer_generation_floors.insert(contact_id, generation);
+        }
+        Some("message") => {
+            let message = decode_message_line(line)?;
+            hydra.next_message_id = hydra.next_message_id.max(message.id.0.saturating_add(1));
+            hydra.messages.push(message);
+        }
+        Some("lobby") => {
+            let lobby = decode_lobby_line(line)?;
+            hydra.lobbies.insert(lobby.id, lobby);
+        }
+        _ => return Err(HydraMsgError::InvalidEncoding("state record kind")),
     }
     Ok(())
 }

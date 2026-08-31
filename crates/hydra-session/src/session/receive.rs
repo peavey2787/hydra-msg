@@ -1,10 +1,14 @@
 use hydra_core::{
+    constants::{AEAD_TAG_SIZE, INNER_HEADER_SIZE},
     protocol::replay::ReplayError,
     types::{ContentKind, EnvelopeClass, OuterMode},
     MAX_SKIP, OUTER_HEADER_SIZE,
 };
 use hydra_crypto::{CryptoBackend, RustCryptoBackend, SecretBytes};
-use hydra_envelope::{decode_outer_header, decode_protected_record, OuterHeader, ProtectedRecord};
+use hydra_envelope::{
+    decode_compact_protected_record, decode_outer_header, decode_outer_header_prefix,
+    decode_protected_record, OuterHeader, ProtectedRecord,
+};
 
 use crate::{
     ratchet::{constant_time_tag_eq, derive_aead_key, derive_route_tag, derive_step},
@@ -13,12 +17,18 @@ use crate::{
 
 use super::{
     envelope_bounds::smallest_standard_or_full, Direction, ReceivedMessage, SessionPhase,
-    SessionState,
+    SessionState, MAX_COMPACT_CONTENT_SIZE,
 };
+
+#[derive(Clone, Copy)]
+enum EnvelopeEncoding {
+    Fixed,
+    Compact,
+}
 
 impl SessionState {
     pub fn receive(&mut self, envelope: &[u8]) -> SessionResult<ReceivedMessage> {
-        self.receive_validated(envelope, |record| {
+        self.receive_with_encoding(envelope, EnvelopeEncoding::Fixed, |record| {
             if matches!(record.content_kind, ContentKind::Data | ContentKind::Close) {
                 Ok(())
             } else {
@@ -35,14 +45,46 @@ impl SessionState {
     where
         F: FnOnce(&ProtectedRecord) -> SessionResult<()>,
     {
+        self.receive_with_encoding(envelope, EnvelopeEncoding::Fixed, validator)
+    }
+
+    /// Opens data from the opt-in variable-length carrier profile.
+    pub fn receive_compact(&mut self, envelope: &[u8]) -> SessionResult<ReceivedMessage> {
+        let minimum = OUTER_HEADER_SIZE + AEAD_TAG_SIZE + INNER_HEADER_SIZE;
+        let maximum = minimum + MAX_COMPACT_CONTENT_SIZE;
+        if !(minimum..=maximum).contains(&envelope.len()) {
+            return Err(SessionError::InvalidEnvelope);
+        }
+        // Compact domain separation is enforced by `valid_encoding_and_content`
+        // after authenticated record decoding; do not duplicate that predicate here.
+        self.receive_with_encoding(envelope, EnvelopeEncoding::Compact, |_| Ok(()))
+    }
+
+    fn receive_with_encoding<F>(
+        &mut self,
+        envelope: &[u8],
+        encoding: EnvelopeEncoding,
+        validator: F,
+    ) -> SessionResult<ReceivedMessage>
+    where
+        F: FnOnce(&ProtectedRecord) -> SessionResult<()>,
+    {
         if !matches!(
             self.phase,
             SessionPhase::Established | SessionPhase::Refreshing | SessionPhase::Closing
         ) {
             return Err(SessionError::InvalidState);
         }
-        let header = decode_outer_header(envelope).map_err(|_| SessionError::InvalidEnvelope)?;
-        if header.mode != OuterMode::Protected || header.counter == u64::MAX {
+        let header = match encoding {
+            EnvelopeEncoding::Fixed => decode_outer_header(envelope),
+            EnvelopeEncoding::Compact => decode_outer_header_prefix(envelope),
+        }
+        .map_err(|_| SessionError::InvalidEnvelope)?;
+        if header.mode != OuterMode::Protected
+            || header.counter == u64::MAX
+            || (matches!(encoding, EnvelopeEncoding::Compact)
+                && header.envelope_class != EnvelopeClass::Lite)
+        {
             return Err(SessionError::InvalidEnvelope);
         }
         self.replay
@@ -50,9 +92,9 @@ impl SessionState {
             .map_err(map_replay_error)?;
 
         let record = if header.counter < self.receiving_chain.next_index() {
-            self.receive_skipped(&header, envelope, validator)?
+            self.receive_skipped(&header, envelope, encoding, validator)?
         } else {
-            self.receive_current_or_future(&header, envelope, validator)?
+            self.receive_current_or_future(&header, envelope, encoding, validator)?
         };
         let received = ReceivedMessage {
             index: record.message_index,
@@ -69,6 +111,7 @@ impl SessionState {
         &mut self,
         header: &OuterHeader,
         envelope: &[u8],
+        encoding: EnvelopeEncoding,
         validator: F,
     ) -> SessionResult<ProtectedRecord>
     where
@@ -84,7 +127,14 @@ impl SessionState {
             return Err(SessionError::AuthenticationFailed);
         }
         let aead_key = derive_aead_key(message_key, &self.session_id, header.counter)?;
-        let record = open_and_validate(&aead_key, header, envelope, &self.session_id, self.phase)?;
+        let record = open_and_validate(
+            &aead_key,
+            header,
+            envelope,
+            &self.session_id,
+            self.phase,
+            encoding,
+        )?;
         validator(&record)?;
 
         let mut replay = self.replay.clone();
@@ -99,6 +149,7 @@ impl SessionState {
         &mut self,
         header: &OuterHeader,
         envelope: &[u8],
+        encoding: EnvelopeEncoding,
         validator: F,
     ) -> SessionResult<ProtectedRecord>
     where
@@ -142,6 +193,7 @@ impl SessionState {
             envelope,
             &self.session_id,
             self.phase,
+            encoding,
         )?;
         validator(&record)?;
 
@@ -171,6 +223,7 @@ fn open_and_validate(
     envelope: &[u8],
     session_id: &[u8; 32],
     phase: SessionPhase,
+    encoding: EnvelopeEncoding,
 ) -> SessionResult<ProtectedRecord> {
     let plaintext = RustCryptoBackend::aead_open(
         aead_key,
@@ -179,19 +232,37 @@ fn open_and_validate(
         &envelope[OUTER_HEADER_SIZE..],
     )
     .map_err(|_| SessionError::AuthenticationFailed)?;
-    let record = decode_protected_record(header.envelope_class, &plaintext)
-        .map_err(|_| SessionError::AuthenticationFailed)?;
+    let record = match encoding {
+        EnvelopeEncoding::Fixed => decode_protected_record(header.envelope_class, &plaintext),
+        EnvelopeEncoding::Compact => decode_compact_protected_record(&plaintext),
+    }
+    .map_err(|_| SessionError::AuthenticationFailed)?;
     if &record.session_or_group_id != session_id
         || record.sender_id != [0; 32]
         || record.epoch != 0
         || record.state_version != 0
         || record.message_index != header.counter
-        || !valid_class_and_content(&record, header.envelope_class)
+        || !valid_encoding_and_content(&record, header.envelope_class, encoding)
         || (phase == SessionPhase::Closing && record.content_kind != ContentKind::Close)
     {
         return Err(SessionError::AuthenticationFailed);
     }
     Ok(record)
+}
+
+fn valid_encoding_and_content(
+    record: &ProtectedRecord,
+    class: EnvelopeClass,
+    encoding: EnvelopeEncoding,
+) -> bool {
+    match encoding {
+        EnvelopeEncoding::Fixed => valid_class_and_content(record, class),
+        EnvelopeEncoding::Compact => {
+            class == EnvelopeClass::Lite
+                && record.content_kind == ContentKind::Data
+                && record.content.len() <= MAX_COMPACT_CONTENT_SIZE
+        }
+    }
 }
 
 fn valid_class_and_content(record: &ProtectedRecord, class: EnvelopeClass) -> bool {

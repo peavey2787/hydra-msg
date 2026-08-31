@@ -119,7 +119,8 @@ $FastTargets = @(
     "anonymous_auth_token_parser",
     "fragment_reassembly",
     "session_receive_state_machine",
-    "group_commit_message_parser"
+    "group_commit_message_parser",
+    "stego_cover_decoding"
 )
 $StatefulTargets = @(
     "message_stateful_flow"

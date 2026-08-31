@@ -331,6 +331,10 @@ impl Hydra {
             .ok_or(HydraMsgError::ContactNotFound)?;
         self.remove_session_routes(contact_id);
         self.sessions.remove(&contact_id);
+        self.pending_offers
+            .retain(|_, pending| pending.contact_id != contact_id);
+        self.accepted_inits
+            .retain(|_, accepted| accepted.contact_id != contact_id);
         self.session_security_policies.remove(&contact_id);
         self.pending_fragments
             .retain(|key, _| key.from() != contact_id);
@@ -350,6 +354,10 @@ impl Hydra {
             contact.blocked = true;
         }
         self.remove_session_routes(contact_id);
+        self.pending_offers
+            .retain(|_, pending| pending.contact_id != contact_id);
+        self.accepted_inits
+            .retain(|_, accepted| accepted.contact_id != contact_id);
         self.pending_fragments
             .retain(|key, _| key.from() != contact_id);
         self.persist()?;

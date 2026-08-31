@@ -109,6 +109,17 @@ pub fn encode_outer_header(header: &OuterHeader) -> Result<[u8; OUTER_HEADER_SIZ
 /// No body byte is interpreted. The complete input length must exactly match
 /// the authenticated class selected by byte 6.
 pub fn decode_outer_header(envelope: &[u8]) -> Result<OuterHeader, WireError> {
+    let header = decode_outer_header_prefix(envelope)?;
+    validate_envelope_length(header.envelope_class, envelope.len())?;
+    Ok(header)
+}
+
+/// Decodes only the canonical 64-byte outer-header prefix.
+///
+/// This is used by explicitly variable-length carrier profiles. It validates
+/// every header field but deliberately leaves total-length policy to the
+/// profile-specific caller.
+pub fn decode_outer_header_prefix(envelope: &[u8]) -> Result<OuterHeader, WireError> {
     if envelope.len() < OUTER_HEADER_SIZE {
         return Err(WireError::InvalidEnvelopeSize {
             expected: OUTER_HEADER_SIZE,
@@ -146,8 +157,6 @@ pub fn decode_outer_header(envelope: &[u8]) -> Result<OuterHeader, WireError> {
     if envelope[RESERVED_RANGE].iter().any(|&byte| byte != 0) {
         return Err(WireError::NonZeroReserved);
     }
-
-    validate_envelope_length(envelope_class, envelope.len())?;
 
     let mut route_tag = [0_u8; ROUTE_TAG_SIZE];
     route_tag.copy_from_slice(&envelope[ROUTE_TAG_RANGE]);
@@ -277,6 +286,20 @@ mod tests {
                 actual: OUTER_HEADER_SIZE - 1,
             })
         );
+    }
+
+    #[test]
+    fn prefix_decoder_accepts_variable_body_lengths() {
+        let header = full_test_header();
+        let encoded = encode_outer_header(&header).unwrap();
+        let mut compact = encoded.to_vec();
+        compact.extend_from_slice(b"variable body");
+
+        assert_eq!(decode_outer_header_prefix(&compact), Ok(header));
+        assert!(matches!(
+            decode_outer_header(&compact),
+            Err(WireError::InvalidEnvelopeSize { .. })
+        ));
     }
 
     #[test]

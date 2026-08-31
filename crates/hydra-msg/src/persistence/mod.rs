@@ -7,6 +7,7 @@
 
 pub(crate) mod backup;
 pub(crate) mod encrypted_snapshot;
+pub(crate) mod freshness;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) mod native_store;
 #[cfg(not(target_arch = "wasm32"))]
@@ -14,4 +15,7 @@ pub(crate) mod rollback;
 pub(crate) mod snapshot;
 pub(crate) mod status;
 
-pub use self::status::{HydraStorageDebugStatus, HydraStorageStatus};
+pub use self::{
+    freshness::HydraStateFreshnessAnchor,
+    status::{HydraStorageDebugStatus, HydraStorageStatus},
+};

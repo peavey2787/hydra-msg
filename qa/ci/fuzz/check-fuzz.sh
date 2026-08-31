@@ -110,6 +110,7 @@ anonymous_auth_token_parser
 fragment_reassembly
 session_receive_state_machine
 group_commit_message_parser
+stego_cover_decoding
 "
 
 STATEFUL_TARGETS="

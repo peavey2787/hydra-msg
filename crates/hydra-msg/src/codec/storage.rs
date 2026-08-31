@@ -65,11 +65,7 @@ pub(crate) fn encode_encrypted_state(
     kdf: &PasswordKdfRecord,
     nonce: [u8; 12],
 ) -> HydraResult<Vec<u8>> {
-    reject_input_size(
-        snapshot.len(),
-        MAX_STATE_SNAPSHOT_BYTES,
-        "state snapshot size",
-    )?;
+    reject_input_size(snapshot.len(), MAX_STATE_SNAPSHOT_BYTES, "state snapshot size")?;
     encode_chunked_storage(
         snapshot,
         STATE_MAGIC,

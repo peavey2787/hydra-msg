@@ -325,15 +325,20 @@
         requireHydraReady();
         if (message.type === 'hydra-offer') {
           const answer = hydra.replyHandshake(base64ToBytes(message.bytes));
-          sessionReady = true;
-          setStatus(sessionStatus, 'established on responder side', 'ok');
+          setStatus(sessionStatus, 'RESP sent — waiting for FINISH', 'pending');
           dc.send(JSON.stringify({ type: 'hydra-answer', bytes: bytesToBase64(answer) }));
-          log('Received HYDRA offer, created session, sent HYDRA answer over WebRTC.');
+          log('Received HYDRA INIT and sent the cached/idempotent RESP over WebRTC.');
         } else if (message.type === 'hydra-answer') {
-          hydra.finishHandshake(base64ToBytes(message.bytes));
+          const finish = hydra.finishHandshake(base64ToBytes(message.bytes));
+          dc.send(JSON.stringify({ type: 'hydra-finish', bytes: bytesToBase64(finish) }));
           sessionReady = true;
           setStatus(sessionStatus, 'established on initiator side', 'ok');
-          log('Received HYDRA answer and finished handshake.');
+          log('Verified RESP, emitted FINISH, and established the initiator session.');
+        } else if (message.type === 'hydra-finish') {
+          hydra.acceptHandshakeFinish(base64ToBytes(message.bytes));
+          sessionReady = true;
+          setStatus(sessionStatus, 'established on responder side', 'ok');
+          log('Authenticated FINISH and established the responder session.');
         } else if (message.type === 'hydra-envelope') {
           const data = hydra.receive(base64ToBytes(message.bytes));
           if (data) {

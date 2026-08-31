@@ -46,7 +46,7 @@ Do not describe the normal message path as inherently anonymous. A normal HYDRA 
 | Packet sizing | HYDRA uses strict metadata minimization by default. Outbound packets are fixed-size HYDRA envelope classes, and larger valid messages automatically become more fixed-size packets. Apps never see chunk records or padding classes. Packet count and timing still leak. |
 | Backup export | `export_backup` encrypts a validated state snapshot into a chunked encrypted backup container under the supplied backup password. The final storage chunk is padded, and larger backups add more fixed-size chunks internally. Chunk count, file existence, KDF metadata, and backup timing still leak. |
 | Normal local state | `state.hydra` is an opaque authenticated-encrypted chunked storage container. `Hydra::open(data_dir, state_password)` and `Hydra::open_default(state_password)` require the state password up front. |
-| Identity passwords | Identity seeds, state files, and backups are wrapped with AEAD using per-record scrypt parameters and random salts before key derivation. Weak user passwords can still be brute-forced offline, so applications should enforce strong password policy where appropriate. |
+| Identity passwords | Identity seeds, state files, and backups are wrapped with AEAD using per-record scrypt parameters and random salts before key derivation. New interactive records use `N=2^17, r=8, p=1`; high-security uses `N=2^18`. Exact legacy profile tuples remain readable only for migration. Successful native legacy-state open and legacy-identity unlock rewrap under a fresh current KDF; browser persistent state upgrades through IndexedDB compare-and-swap before `openPersistent()` returns. Weak user passwords can still be brute-forced offline, so applications should enforce strong password policy where appropriate. |
 | Contact cards | Default contact cards expose the active identity public verification key only. The contact id/fingerprint and safety code are derived locally from that key. `create_labeled_contact_card` intentionally adds a label. Reusing the same identity/card can link chats. |
 | Lobby invites | Default lobby invites expose only the lobby id and max-member policy. `create_labeled_lobby_invite` intentionally adds the label, and `create_lobby_member_invite` intentionally adds the member list. Reusing the same lobby/invite can link activity. |
 | Lobby recipient tags | `HydraLobbyEnvelope::recipient()` is a direct app-local routing hint for a per-member encrypted copy. `HydraLobbyEnvelope::routing_hint()` is a randomized opaque hint for carriers that can route through mailbox aliases. Neither is anonymous routing by itself, and neither must be treated as authentication. |
@@ -205,7 +205,8 @@ Do not add separate `trust_contact` / `untrust_contact` methods unless they beco
 ```rust
 let offer = hydra.init_handshake(contact_id)?;
 let answer = peer.reply_handshake(offer)?;
-hydra.finish_handshake(answer)?;
+let finish = hydra.finish_handshake(answer)?;
+peer.accept_handshake_finish(finish)?;
 
 hydra.session_status(contact_id)?;
 ```
@@ -213,12 +214,15 @@ hydra.session_status(contact_id)?;
 Public rule:
 
 ```text
-init_handshake(contact_id) creates the initiator's outbound handshake offer.
-reply_handshake(offer) verifies the signed offer, creates the signed responder answer, and creates/activates the responder-side session.
-finish_handshake(answer) verifies the signed answer and creates/activates the initiator-side session.
+init_handshake(contact_id) creates canonical INIT bound to the expected responder fingerprint and retains bounded provisional initiator state. Repeating it for the same pending contact/local identity/purpose returns the exact same INIT bytes rather than creating another attempt.
+reply_handshake(offer) verifies canonical INIT and returns canonical RESP. The responder remains provisional. Exact duplicate accepted INIT returns the identical cached RESP and cannot create a second session. Distinct competing attempts for the same contact/purpose are serialized; simultaneous cross-INIT uses canonical identity-fingerprint ordering, with the lower fingerprint as the authoritative initiator.
+The active identity selected when INIT is created or accepted is bound to that in-flight exchange; changing identities before completion causes the completion step to fail closed.
+finish_handshake(answer) verifies RESP and responder confirmation, emits authenticated FINISH, and installs the initiator session after immutable FINISH emission.
+accept_handshake_finish(finish) authenticates FINISH and only then installs the responder session. Exact duplicate accepted FINISH is idempotent. Successful session installation retires every other provisional attempt for that contact, so a delayed RESP or FINISH from a superseded attempt cannot replace the installed session.
+session_status(contact_id) reports Missing, Pending, Active, or Closed. Pending means that INIT/RESP state exists for the contact but no established session has been installed on that side yet.
 ```
 
-The facade handshake is an authenticated hybrid exchange. The offer carries the initiator identity verification key, an ML-DSA signature, an ephemeral X25519 public key, and an ephemeral ML-KEM-768 encapsulation key. The answer carries the responder identity verification key, an ML-DSA signature bound to the offer, an ephemeral X25519 public key, an ML-KEM-768 ciphertext, and a confirmation tag. The session secret is derived from the X25519 shared secret, the ML-KEM shared secret, and the signed transcript; the confirmation tag proves both sides derived the same answer transcript secret before the initiator installs the session.
+The public facade uses the normative v1 INIT → RESP → FINISH state machine from `protocol-spec.md` and `state-machines.md`; there is no separate facade handshake. INIT contains the expected responder fingerprint, identity verification key, ephemeral X25519 key, ephemeral ML-KEM-768 encapsulation key, nonce, suite/version binding, and ML-DSA signature. RESP echoes the canonical INIT hash and initiator fingerprint and carries the responder identity key, fresh X25519 key, ML-KEM ciphertext, nonce, ML-DSA signature, and responder confirmation. Both sides derive the normative hybrid secret, session id, confirmation key, finish key, direction chains, and refresh root. FINISH is the one-use authenticated Lite protected record containing `transcript_hash || session_id`; the responder cannot become Established before authenticating it.
 
 After the handshake completes, each encrypted envelope advances a one-way symmetric chain and erases old message material. This protects erased past message keys; it does not by itself recover future secrecy after a current endpoint/session-state compromise.
 
@@ -265,10 +269,12 @@ carrier.send_to_peer(offer.as_bytes())?;
 let answer = peer.reply_session_refresh(offer)?;
 carrier.send_to_initiator(answer.as_bytes())?;
 
-hydra.finish_session_refresh(answer)?;
+let finish = hydra.finish_session_refresh(answer)?;
+carrier.send_to_peer(finish.as_bytes())?;
+peer.accept_session_refresh_finish(finish)?;
 ```
 
-The app should pause application sends during this offer/answer exchange. The SDK cannot transparently complete an interactive peer round trip inside a local `send()` call. Locally pending standard-handshake and session-refresh offers are purpose-bound, so `finish_handshake()` and `finish_session_refresh()` reject answers created for the other local flow.
+The app should pause application sends during this INIT/RESP/FINISH exchange. The SDK cannot transparently complete an interactive peer round trip inside a local `send()` call. Locally pending standard-handshake and session-refresh offers are purpose-bound, so `finish_handshake()` and `finish_session_refresh()` reject answers created for the other local flow.
 
 Setting the interval to `1` means the SDK permits one outbound logical message and then requires a successfully completed fresh authenticated hybrid handshake before the next send. It does **not** mean zero exposure during a live endpoint compromise, automatic healing while an attacker remains present, or an instantaneous refresh without carrier traffic. Recovery is conditional on attacker access having ended, honest erasure, authenticated peer identity, and at least one fresh hybrid component remaining unknown to the attacker. The policy is directional: each endpoint counts only its own outbound logical messages, so both peers must configure the desired cadence when the app wants the same bound in both directions.
 
@@ -303,6 +309,8 @@ hydra.set_packet_size(bytes)
 hydra.packet_size()
 hydra.send(contact_id, message)
 hydra.receive(packet)
+hydra.send_compact(contact_id, message)
+hydra.receive_compact(envelope)
 ```
 
 `set_packet_size(bytes)` is the hard app-visible transport packet ceiling. HYDRA v1 has fixed padded packet classes: Lite is 4 KiB, Standard is 32 KiB, and Full is 144 KiB. A 56 KiB transport cap maps to Standard packets internally because Standard is the largest class that fits under that ceiling. If a message is too large for one selected packet class, HYDRA internally splits it and `send()` returns multiple opaque packets.
@@ -310,6 +318,52 @@ hydra.receive(packet)
 `packet_size()` returns the current app-visible packet ceiling.
 
 The public facade intentionally does not expose chunk records or fragment ids. Apps loop over the packets returned by `send()` and feed each incoming packet to `receive()`. `receive()` returns `None` while HYDRA is waiting for more packets and `Some(message)` when reassembly completes.
+
+`send_compact()` / `receive_compact()` are an explicit opt-in for
+high-expansion carriers. They use the same session ratchet, AEAD, replay window,
+and message store, but return one unpadded envelope, reject packed messages
+above 64 KiB, and expose ciphertext length.
+
+### Optional steganographic text carrier
+
+`hydra-stego` is an independent carrier adapter. It runs after
+`send_compact()` and before `receive_compact()`; it never replaces or
+reimplements HYDRA protocol work. The application-facing crate root is kept
+small: `Stego`, `StegoProfile`, and `StegoError`.
+
+```rust
+use hydra_stego::{Stego, StegoProfile};
+
+let stego = Stego::new();
+let envelope = hydra.send_compact(contact_id, HydraMessage::text("hello"))?;
+let cover = stego.encode(envelope.as_bytes(), StegoProfile::Deterministic)?;
+app_send_cover(cover)?;
+
+let cover = app_receive_cover()?;
+let bytes = stego.decode(&cover, StegoProfile::Deterministic)?;
+let received = hydra.receive_compact(bytes)?;
+println!("{}", received.text()?);
+```
+
+The four profiles are `Deterministic`, `FastUnicode`, `FastHybrid`, and
+`Arithmetic`. `Stego::new()` enables deterministic-only operation with the compact-envelope
+64 KiB payload ceiling. AI-backed applications construct `Stego::with_model(model, config)`
+using `hydra_stego::model::{LanguageModel, ModelConfig, ...}`. `ModelConfig`
+requires the exact loaded model fingerprint; the native process adapter also
+requires an immutable model revision and applies startup/request deadlines.
+`StegoProfile::requires_model()` lets applications keep model UI hidden for the
+deterministic profile.
+
+There is intentionally no `Direct` stego profile: normal HYDRA packets already
+provide the direct/binary carrier path. Low-level deterministic/generative
+codecs and mode-specific `hide_*`/`reveal_*` functions are not public API.
+
+Cover encoding is not encryption, authentication, anonymity, or a promise of
+undetectability. Fast Unicode requires exact preservation of its Unicode
+selectors; Arithmetic requires exact model/token behavior; Deterministic and
+Fast Hybrid tolerate ASCII case, punctuation, and whitespace normalization but
+not word replacement/reordering/paraphrase. Every recovered byte string must
+still pass `receive_compact()` authentication.
 
 ### Text message
 
@@ -546,7 +600,8 @@ hydra.unblock_contact(contact_id)
 // Handshake / sessions
 hydra.init_handshake(contact_id)
 hydra.reply_handshake(offer)
-hydra.finish_handshake(answer)
+hydra.finish_handshake(answer) -> HandshakeFinish
+hydra.accept_handshake_finish(finish)
 hydra.session_status(contact_id)
 hydra.set_session_refresh_interval(contact_id, messages)
 hydra.set_session_security_policy(contact_id, policy)
@@ -555,7 +610,8 @@ hydra.session_security_policy(contact_id)
 hydra.session_security_status(contact_id)
 hydra.begin_session_refresh(contact_id)
 hydra.reply_session_refresh(offer)
-hydra.finish_session_refresh(answer)
+hydra.finish_session_refresh(answer) -> HandshakeFinish
+hydra.accept_session_refresh_finish(finish)
 hydra.close_session(contact_id)
 
 // Messaging
@@ -563,6 +619,8 @@ hydra.set_packet_size(bytes)
 hydra.packet_size()
 hydra.send(contact_id, message)
 hydra.receive(packet)
+hydra.send_compact(contact_id, message)
+hydra.receive_compact(envelope)
 hydra.list_messages(contact_id)
 hydra.get_message(message_id)
 hydra.delete_message(message_id)
@@ -670,6 +728,10 @@ HandshakeOffer::from_bytes(bytes)
 HandshakeAnswer::as_bytes()
 HandshakeAnswer::into_bytes()
 HandshakeAnswer::from_bytes(bytes)
+
+HandshakeFinish::as_bytes()
+HandshakeFinish::into_bytes()
+HandshakeFinish::from_bytes(bytes)
 
 MessageId::from_u64(value)
 message_id.value()
@@ -876,7 +938,7 @@ The app developer should never need to see chunks, padding classes, suite select
 
 ## JavaScript / WASM facade
 
-The WASM binding mirrors the same simple API shape from `crates/hydra-msg-wasm` and adds an explicit async browser persistence boundary for IndexedDB.
+The WASM binding mirrors the same simple API shape from `crates/hydra-msg-wasm` and adds an explicit async browser persistence boundary for IndexedDB. Local-model cover generation stays in a native host; WASM exposes `sendCompactText()` and `receiveCompact()` for the authenticated envelope boundary.
 
 ```javascript
 import init, { WasmHydra, WasmHydraMessage } from './pkg/hydra_msg_wasm.js';
@@ -896,9 +958,11 @@ hydra.verifyContact(contactId, safetyCode);
 await hydra.flush();
 
 const offer = hydra.initHandshake(contactId);
-const answer = hydra.replyHandshake(offer);
-hydra.finishHandshake(answer);
+const answer = peer.replyHandshake(offer);
+const finish = hydra.finishHandshake(answer);
+peer.acceptHandshakeFinish(finish);
 await hydra.flush();
+await peer.flush();
 
 const packets = hydra.send(
   contactId,
@@ -934,6 +998,8 @@ hydra.storageDebugStatus()
 
 hydra.setPacketSize(bytes)
 hydra.packetSize()
+hydra.sendCompactText(contactIdHex, text)
+hydra.receiveCompact(envelope)
 
 hydra.changeIdPassword(idHex, oldPassword, newPassword)
 hydra.createLabeledContactCard(label)

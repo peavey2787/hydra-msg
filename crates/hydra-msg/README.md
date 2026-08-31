@@ -27,7 +27,9 @@ let peer = hydra.add_contact(peer_contact_card)?;
 let offer = hydra.init_handshake(peer.id())?;
 app_send_to_peer(offer.as_bytes())?;
 let answer = app_wait_for_peer_answer()?;
-hydra.finish_handshake(answer)?;
+let finish = hydra.finish_handshake(answer)?;
+app_send_to_peer(finish.as_bytes())?;
+// The peer calls accept_handshake_finish(finish) before its responder session is active.
 
 let packets = hydra.send(peer.id(), HydraMessage::text("hello"))?;
 for packet in packets {
@@ -35,7 +37,7 @@ for packet in packets {
 }
 ```
 
-For the full two-device explanation, see [How HYDRA messaging works](../../docs/impl/message-flow/README.md).
+For the full two-device INIT → RESP → FINISH explanation, see [How HYDRA messaging works](../../docs/impl/message-flow/README.md).
 
 ## Session security cadence
 
@@ -44,7 +46,7 @@ material. Apps that also want periodic fresh hybrid session material can set a
 per-contact interval or `HydraSessionSecurityPolicy`. For example,
 `set_session_refresh_interval(contact_id, 1)` permits one outbound logical
 message and then makes the next send return `SessionRefreshRequired` until the app completes
-`begin_session_refresh` / `reply_session_refresh` / `finish_session_refresh`
+`begin_session_refresh` / `reply_session_refresh` / `finish_session_refresh` / `accept_session_refresh_finish`
 over its carrier. This is an explicit peer round trip and conditional
 post-compromise recovery, not automatic healing during an ongoing endpoint
 compromise. Each peer configures and counts its own outbound direction

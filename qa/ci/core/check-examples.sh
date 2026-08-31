@@ -20,91 +20,7 @@ run_step() {
 # so check-examples.sh works when run directly, not only through check-all.sh.
 run_step "Linux executable permissions" sh qa/ci/core/linux-permissions.sh
 
-checked_manifests="
-examples/attachment_roundtrip/Cargo.toml
-examples/contact_card/Cargo.toml
-examples/handshake_roundtrip/Cargo.toml
-examples/hydra-gui/hydra-app-core/Cargo.toml
-examples/hydra-gui/hydra-app/Cargo.toml
-examples/lobby_roundtrip/Cargo.toml
-examples/manual_file_carrier/Cargo.toml
-examples/mobile_perf_web/Cargo.toml
-examples/webrtc_manual_carrier/Cargo.toml
-"
-
-manifest_is_checked() {
-  manifest=$1
-  for checked in $checked_manifests; do
-    if [ "$checked" = "$manifest" ]; then
-      return 0
-    fi
-  done
-  return 1
-}
-
-assert_all_example_manifests_covered() {
-  while IFS= read -r manifest; do
-    if ! manifest_is_checked "$manifest"; then
-      echo "Example manifest is not covered by check-examples.sh: $manifest" >&2
-      exit 1
-    fi
-  done <<EOF_FIND
-$(find examples -mindepth 2 -name Cargo.toml -print | sort)
-EOF_FIND
-}
-
-assert_all_example_manifests_covered
-
-assert_reference_app_sdk_boundary() {
-  if [ -e examples/hydra-app ] || [ -e examples/hydra-app-core ]; then
-    echo "Old hydra-app example paths must not exist outside examples/hydra-gui." >&2
-    exit 1
-  fi
-  if grep -RInE 'hydra-(core|crypto|group|session)|hydra_(core|crypto|group|session)' \
-    examples/hydra-gui/hydra-app-core examples/hydra-gui/hydra-app; then
-    echo "Reference app must depend only on the public hydra-msg SDK boundary." >&2
-    exit 1
-  fi
-  if grep -RInE 'ContactTrustStore|IdentityVault|IdentityStore|IdentityUnlockSession|MessageStore|LiveStateStore|ChatShell|AppSession|AppGroup|RecoveryManifest|SignedBackup|TransportApi|DeviceRegistry' \
-    examples/hydra-gui; then
-    echo "Removed app-owned protocol/storage implementations must not return." >&2
-    exit 1
-  fi
-  if grep -RInE '#\[allow\((dead_code|deprecated|unused|unused_imports|unused_must_use)' \
-    examples/hydra-gui; then
-    echo "Reference app must not suppress dead, deprecated, or unused-code diagnostics." >&2
-    exit 1
-  fi
-}
-
-assert_reference_app_sdk_boundary
-
-assert_wasm_package_metadata() {
-  wasm_manifest=crates/hydra-msg-wasm/Cargo.toml
-  wasm_license=crates/hydra-msg-wasm/LICENSE
-  wasm_readme=crates/hydra-msg-wasm/README.md
-
-  for file in "$wasm_manifest" "$wasm_license" "$wasm_readme"; do
-    if [ ! -f "$file" ]; then
-      echo "WASM package metadata file missing: $file" >&2
-      exit 1
-    fi
-  done
-  if ! grep -Fq 'description = "WebAssembly and JavaScript bindings' "$wasm_manifest"; then
-    echo "hydra-msg-wasm package description is missing" >&2
-    exit 1
-  fi
-  if ! grep -Fq 'readme = "README.md"' "$wasm_manifest"; then
-    echo "hydra-msg-wasm package README declaration is missing" >&2
-    exit 1
-  fi
-  if ! cmp -s LICENSE "$wasm_license"; then
-    echo "hydra-msg-wasm package-local LICENSE must match the repository LICENSE" >&2
-    exit 1
-  fi
-}
-
-assert_wasm_package_metadata
+run_step "shared example static policy" python3 qa/ci/core/check_examples_policy.py
 
 run_web_host_step() {
   name=$1
@@ -158,32 +74,29 @@ run_step "lobby_roundtrip example package" \
 run_step "manual_file_carrier example package" \
   cargo run --manifest-path examples/manual_file_carrier/Cargo.toml
 
-run_step "hydra-app-core package check" \
-  cargo check --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-targets --all-features
-run_step "hydra-app-core reference tests" \
-  cargo test --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --all-features
-run_step "hydra-app-core identity and contacts example" \
-  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example identity_contacts
-run_step "hydra-app-core direct message example" \
-  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example direct_message
-run_step "hydra-app-core lobby and backup example" \
-  cargo run --manifest-path examples/hydra-gui/hydra-app-core/Cargo.toml --example lobby_backup
+if [ "${HYDRA_WORKSPACE_TESTS_ALREADY_RAN:-0}" = 1 ]; then
+  echo "Workspace --all-targets tests already compiled/tested example targets; skipping duplicate compile/test-only example invocations."
+else
+  run_step "HYDRA GUI host compile" \
+    cargo check --manifest-path examples/hydra-gui/Cargo.toml --all-targets
+  run_step "HYDRA GUI tests" \
+    cargo test --manifest-path examples/hydra-gui/Cargo.toml
 
-run_step "hydra-app package check" \
-  cargo check --manifest-path examples/hydra-gui/hydra-app/Cargo.toml --all-targets
-run_step "hydra-app tests" \
-  cargo test --manifest-path examples/hydra-gui/hydra-app/Cargo.toml
-run_step "hydra-app command model" \
-  cargo run --manifest-path examples/hydra-gui/hydra-app/Cargo.toml -- help
-
-run_step "mobile_perf_web host compile" \
-  cargo check --manifest-path examples/mobile_perf_web/Cargo.toml
-run_step "webrtc_manual_carrier host compile" \
-  cargo check --manifest-path examples/webrtc_manual_carrier/Cargo.toml
+  run_step "mobile_perf_web host compile" \
+    cargo check --manifest-path examples/mobile_perf_web/Cargo.toml
+  run_step "webrtc_manual_carrier host compile" \
+    cargo check --manifest-path examples/webrtc_manual_carrier/Cargo.toml
+  run_step "stego_lan_chat host compile" \
+    cargo check --manifest-path examples/stego_lan_chat/Cargo.toml
+fi
 run_web_host_step "mobile_perf_web example package smoke run" \
   examples/mobile_perf_web/Cargo.toml 127.0.0.1:18788 http://127.0.0.1:18788/
 run_web_host_step "webrtc_manual_carrier example package smoke run" \
   examples/webrtc_manual_carrier/Cargo.toml 127.0.0.1:18789 http://127.0.0.1:18789/
+run_web_host_step "stego_lan_chat example package smoke run" \
+  examples/stego_lan_chat/Cargo.toml 127.0.0.1:18790 http://127.0.0.1:18790/
+run_web_host_step "HYDRA GUI example package smoke run" \
+  examples/hydra-gui/Cargo.toml 127.0.0.1:18791 http://127.0.0.1:18791/
 
 if [ "$skip_wasm" -eq 0 ]; then
   if ! command -v wasm-pack >/dev/null 2>&1; then
@@ -197,6 +110,10 @@ if [ "$skip_wasm" -eq 0 ]; then
     examples/mobile_perf_web/scripts/build-wasm.sh
   run_step "webrtc_manual_carrier WASM package" \
     examples/webrtc_manual_carrier/scripts/build-wasm.sh
+  run_step "stego_lan_chat WASM package" \
+    examples/stego_lan_chat/scripts/build-wasm.sh
+  run_step "HYDRA GUI WASM package" \
+    examples/hydra-gui/scripts/build-wasm.sh
 else
   echo "WASM browser package checks skipped by --skip-wasm."
 fi

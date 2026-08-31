@@ -1,16 +1,16 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host @"
+$Banner = @'
 
-██╗  ██╗██╗   ██╗██████╗ ██████╗  █████╗
-██║  ██║╚██╗ ██╔╝██╔══██╗██╔══██╗██╔══██╗
-███████║ ╚████╔╝ ██║  ██║██████╔╝███████║
-██╔══██║  ╚██╔╝  ██║  ██║██╔══██╗██╔══██║
-██║  ██║   ██║   ██████╔╝██║  ██║██║  ██║
-╚═╝  ╚═╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
+ _   _ __   ______  ____      _
+| | | |\ \ / /  _ \|  _ \    / \
+| |_| | \ V /| | | | |_) |  / _ \
+|  _  |  | | | |_| |  _ <  / ___ \
+|_| |_|  |_| |____/|_| \_\/_/   \_\
 
         ASIC-grade dev environment bootstrap
-"@
+'@
+Write-Host $Banner
 
 function Assert-Command($Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
@@ -21,7 +21,7 @@ function Assert-Command($Name) {
 function Install-CargoCrate($Crate) {
     $installed = cargo install --list | Select-String -Pattern "^$Crate v" -Quiet
     if ($installed) {
-        Write-Host "✓ $Crate already installed"
+        Write-Host "[OK] $Crate already installed"
     } else {
         Write-Host "==> installing $Crate"
         cargo install $Crate --locked
@@ -53,12 +53,12 @@ Install-CargoCrate cargo-fuzz
 
 Write-Host "`n==> Host tool reminders"
 if (Get-Command node -ErrorAction SilentlyContinue) {
-    Write-Host "✓ node found: $(node --version)"
+    Write-Host "[OK] node found: $(node --version)"
 } else {
-    Write-Host "! node is not installed. Browser/example checks use node --check. Install Node.js 20+ or newer."
+    Write-Host "[WARN] node is not installed. Browser/example checks use node --check. Install Node.js 20+ or newer."
 }
 if (Get-Command npm -ErrorAction SilentlyContinue) {
-    Write-Host "✓ npm found: $(npm --version)"
+    Write-Host "[OK] npm found: $(npm --version)"
     if ($env:HYDRA_SKIP_PLAYWRIGHT -eq "1") {
         Write-Host "Skipping Playwright install because HYDRA_SKIP_PLAYWRIGHT=1"
     } else {
@@ -69,20 +69,21 @@ if (Get-Command npm -ErrorAction SilentlyContinue) {
         Pop-Location
     }
 } else {
-    Write-Host "! npm is not installed. Real-browser Playwright evidence requires npm."
+    Write-Host "[WARN] npm is not installed. Real-browser Playwright evidence requires npm."
 }
 if (Get-Command python3 -ErrorAction SilentlyContinue) {
-    Write-Host "✓ python3 found: $(python3 --version)"
+    Write-Host "[OK] python3 found: $(python3 --version)"
 } else {
-    Write-Host "! python3 is not installed. Release SBOM generation, interop fixture checks, and web-host smoke tests require python3."
+    Write-Host "[WARN] python3 is not installed. Release SBOM generation, interop fixture checks, and web-host smoke tests require python3."
 }
 if (Get-Command gpg -ErrorAction SilentlyContinue) {
-    Write-Host "✓ gpg found: $((gpg --version)[0])"
+    $GpgVersion = (& gpg --version | Select-Object -First 1)
+    Write-Host "[OK] gpg found: $GpgVersion"
 } else {
-    Write-Host "! gpg is not installed. Release signing requires gpg for signed tags and checksum signatures."
+    Write-Host "[WARN] gpg is not installed. Release signing requires gpg for signed tags and checksum signatures."
 }
 
-Write-Host @"
+$CompletionMessage = @'
 
 HYDRA dev environment setup complete.
 
@@ -90,15 +91,16 @@ Suggested first validation run:
   .\qa\ci\check-all.ps1
 
 Optional release-candidate evidence:
-  `$env:HYDRA_RUN_COVERAGE=1; .\qa\ci\quality\check-coverage.ps1
-  `$env:HYDRA_RUN_MUTATION=1; .\qa\ci\quality\check-mutation.ps1
-  `$env:HYDRA_RUN_MIRI=1; .\qa\ci\reliability\check-memory-safety.ps1
-  `$env:HYDRA_RUN_SANITIZERS=1; .\qa\ci\reliability\check-memory-safety.ps1
-  `$env:HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1; .\qa\ci\fuzz\check-fuzz.ps1
+  $env:HYDRA_RUN_COVERAGE=1; .\qa\ci\quality\check-coverage.ps1
+  $env:HYDRA_RUN_MUTATION=1; .\qa\ci\quality\check-mutation.ps1
+  $env:HYDRA_RUN_MIRI=1; .\qa\ci\reliability\check-memory-safety.ps1
+  $env:HYDRA_RUN_SANITIZERS=1; .\qa\ci\reliability\check-memory-safety.ps1
+  $env:HYDRA_RUN_COVERAGE_GUIDED_FUZZ=1; .\qa\ci\fuzz\check-fuzz.ps1
 
 Release package/signing helpers:
   .\scripts\release\create-signed-tag.ps1 v0.1.0
   .\scripts\release\create-release-package.ps1 v0.1.0
   .\scripts\release\sign-release-artifacts.ps1 v0.1.0
   .\scripts\release\verify-release-artifacts.ps1 v0.1.0
-"@
+'@
+Write-Host $CompletionMessage

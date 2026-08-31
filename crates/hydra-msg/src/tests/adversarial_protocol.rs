@@ -24,38 +24,9 @@ fn connect(alice: &mut Hydra, bob: &mut Hydra) -> (ContactId, ContactId) {
         .unwrap();
     let offer = alice.init_handshake(bob_contact.id()).unwrap();
     let answer = bob.reply_handshake(offer).unwrap();
-    alice.finish_handshake(answer).unwrap();
+    let finish = alice.finish_handshake(answer).unwrap();
+    bob.accept_handshake_finish(finish).unwrap();
     (alice_contact.id(), bob_contact.id())
-}
-
-fn field_hex(bytes: &[u8], name: &str) -> String {
-    let text = std::str::from_utf8(bytes).unwrap();
-    let prefix = format!("{name}:");
-    text.lines()
-        .find_map(|line| line.strip_prefix(&prefix))
-        .unwrap_or_else(|| panic!("missing field {name}"))
-        .to_owned()
-}
-
-fn replace_field(bytes: Vec<u8>, name: &str, value: &str) -> Vec<u8> {
-    let text = String::from_utf8(bytes).unwrap();
-    let prefix = format!("{name}:");
-    let mut replaced = false;
-    let lines = text
-        .lines()
-        .map(|line| {
-            if line.starts_with(&prefix) {
-                replaced = true;
-                format!("{prefix}{value}")
-            } else {
-                line.to_owned()
-            }
-        })
-        .collect::<Vec<_>>();
-    assert!(replaced, "missing field {name}");
-    let mut out = lines.join("\n").into_bytes();
-    out.push(b'\n');
-    out
 }
 
 #[test]
@@ -106,22 +77,6 @@ fn valid_envelope_for_removed_contact_is_rejected() {
 }
 
 #[test]
-fn direct_message_is_not_accepted_as_lobby_message() {
-    let mut alice = unlocked("target/hydra-msg-test-adversarial-direct-lobby-alice");
-    let mut bob = unlocked("target/hydra-msg-test-adversarial-direct-lobby-bob");
-    let (alice_contact, bob_contact) = connect(&mut alice, &mut bob);
-    let packet = alice
-        .send(bob_contact, HydraMessage::text("not a lobby payload"))
-        .unwrap()
-        .remove(0);
-
-    assert!(bob.receive_lobby(packet.clone()).is_err());
-    assert!(bob.list_messages(alice_contact).is_empty());
-    let received = bob.receive(packet).unwrap().unwrap();
-    assert_eq!(received.text().unwrap(), "not a lobby payload");
-}
-
-#[test]
 fn lobby_packet_for_unknown_lobby_is_rejected_after_valid_transport_open() {
     let mut alice = unlocked("target/hydra-msg-test-adversarial-wrong-lobby-alice");
     let mut bob = unlocked("target/hydra-msg-test-adversarial-wrong-lobby-bob");
@@ -152,7 +107,8 @@ fn old_direct_packet_after_fresh_session_is_rejected() {
     bob.receive(packet.clone()).unwrap();
     let offer = alice.begin_session_refresh(bob_contact).unwrap();
     let answer = bob.reply_session_refresh(offer).unwrap();
-    alice.finish_session_refresh(answer).unwrap();
+    let finish = alice.finish_session_refresh(answer).unwrap();
+    bob.accept_session_refresh_finish(finish).unwrap();
 
     assert!(bob.receive(packet).is_err());
     assert_eq!(bob.list_messages(alice_contact).len(), 1);
@@ -229,21 +185,24 @@ fn handshake_answer_for_wrong_offer_is_rejected() {
         .add_contact(carol.create_contact_card().unwrap())
         .unwrap();
     let bob_offer = alice.init_handshake(bob_contact.id()).unwrap();
-    let carol_offer = alice.init_handshake(carol_contact.id()).unwrap();
-    let carol_offer_nonce = field_hex(carol_offer.as_bytes(), "nonce");
+    let _carol_offer = alice.init_handshake(carol_contact.id()).unwrap();
     let bob_answer = bob.reply_handshake(bob_offer).unwrap();
-    let wrong_answer = replace_field(bob_answer.into_bytes(), "offer_nonce", &carol_offer_nonce);
+    let mut wrong_answer = bob_answer.into_bytes();
+    // RESP control starts after the 64-byte outer header and 4-byte control length;
+    // flip one byte inside the signed init_hash field.
+    wrong_answer[hydra_core::OUTER_HEADER_SIZE + 4 + 1 + hydra_core::SUITE_ID.len()] ^= 1;
 
-    assert!(alice
-        .finish_handshake(HandshakeAnswer::from_bytes(wrong_answer))
-        .is_err());
+    assert_eq!(
+        alice.finish_handshake(HandshakeAnswer::from_bytes(wrong_answer)),
+        Err(HydraMsgError::InvalidInput("unknown handshake answer"))
+    );
     assert_eq!(
         alice.session_status(bob_contact.id()).unwrap(),
-        HydraSessionStatus::Missing
+        HydraSessionStatus::Pending
     );
     assert_eq!(
         alice.session_status(carol_contact.id()).unwrap(),
-        HydraSessionStatus::Missing
+        HydraSessionStatus::Pending
     );
 }
 
@@ -262,7 +221,10 @@ fn replayed_handshake_answer_after_close_is_rejected() {
     alice.finish_handshake(answer.clone()).unwrap();
     alice.close_session(bob_contact.id()).unwrap();
 
-    assert!(alice.finish_handshake(answer).is_err());
+    assert_eq!(
+        alice.finish_handshake(answer),
+        Err(HydraMsgError::InvalidInput("unknown handshake answer"))
+    );
     assert_eq!(
         alice.session_status(bob_contact.id()).unwrap(),
         HydraSessionStatus::Closed

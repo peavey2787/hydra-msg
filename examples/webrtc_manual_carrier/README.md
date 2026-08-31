@@ -51,6 +51,7 @@ Open the printed LAN URL from two browser tabs or two devices.
 3. Paste the peer contact card and import it.
 4. Compare and confirm the safety code.
 5. Use the WebRTC manual SDP offer/answer text boxes to open a DataChannel.
-6. The initiator sends the HYDRA handshake offer over the DataChannel.
-7. The responder replies with the HYDRA handshake answer over the DataChannel.
-8. Both sides send encrypted HYDRA messages over WebRTC.
+6. The initiator sends canonical HYDRA INIT over the DataChannel.
+7. The responder replies with canonical RESP.
+8. The initiator sends authenticated FINISH; the responder becomes established only after accepting it.
+9. Both sides send encrypted HYDRA messages over WebRTC.

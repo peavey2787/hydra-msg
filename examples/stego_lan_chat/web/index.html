@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081a3a">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="192x192" href="/hydra-icon-192.png">
+  <link rel="apple-touch-icon" href="/hydra-icon-192.png">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <title>HYDRA Steganographic LAN Chat</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <p class="eyebrow">HYDRA carrier lab</p>
+    <h1>Steganographic LAN chat</h1>
+    <p class="lede">Open this page in two browsers on the same LAN. The host discovers and connects them automatically. Each message can use instant zero-model machine-status cover text, a super-fast AI-backed profile, or the slow arithmetic AI cover.</p>
+  </header>
+
+  <main>
+    <section class="chat-panel">
+      <div class="chat-heading">
+        <div>
+          <p class="eyebrow">Local encrypted session</p>
+          <h2>Chat</h2>
+        </div>
+      </div>
+      <p id="connection-status" class="connection-status pending" role="status" aria-live="polite">starting the local encrypted session…</p>
+      <div class="composer">
+        <label for="message">Message</label>
+        <input id="message" value="Want to meet for coffee tomorrow?" autocomplete="off" disabled>
+        <label for="stego-profile">Stego profile for this message</label>
+        <select id="stego-profile" disabled>
+          <option value="deterministic" selected>Instant — zero-model machine-status text</option>
+          <option value="fast">Super fast — detectable Unicode layer</option>
+          <option value="fast-hybrid">Super fast — coherent hybrid prose</option>
+          <option value="arithmetic">Slow — better model-distribution fidelity</option>
+        </select>
+        <div id="ai-model-control" class="ai-model-control" hidden>
+          <label for="ai-model-select">AI cover model</label>
+          <select id="ai-model-select" disabled>
+            <option value="">Choose a model to download / load…</option>
+          </select>
+          <progress id="ai-model-progress" max="100" value="0" aria-label="AI model download and load progress" hidden></progress>
+          <p id="ai-model-status" class="hint">Choose a model. Selecting it downloads and loads it locally.</p>
+        </div>
+        <button id="send" disabled>Send message</button>
+      </div>
+      <p id="profile-description" class="profile-description warning"></p>
+      <div id="send-activity" class="send-activity" hidden>
+        <progress id="send-progress" aria-label="Message processing"></progress>
+        <p id="send-status" class="pending" role="status" aria-live="polite"></p>
+      </div>
+      <div class="carrier-explanation">
+        <strong>Two layers are shown below.</strong>
+        The carrier is unrelated-looking text produced by the selected stego profile. The deterministic profile uses only CFG and lexical choices; the Unicode fast profile carries encrypted bytes in invisible selectors; the hybrid profile mixes a short model-written introduction with grammatical prose choices.
+        The decoded secret is what the intended peer recovers after decoding and HYDRA decryption.
+      </div>
+      <div class="columns transcript-grid primary-transcripts">
+        <div>
+          <h3>Steganographic carrier</h3>
+          <p class="hint">This is the exact cover sent between peers. Deterministic and hybrid carriers use ordinary visible prose; Unicode fast carriers include a disclosed invisible-selector layer.</p>
+          <pre id="carrier-log" aria-live="polite"></pre>
+        </div>
+        <div>
+          <h3>Decoded secret messages</h3>
+          <p class="hint">Seeing the original message here means the receiving peer decoded and decrypted it successfully.</p>
+          <pre id="chat-log" aria-live="polite"></pre>
+        </div>
+      </div>
+    </section>
+
+    <details id="developer-details" class="developer-details">
+      <summary>See Details</summary>
+      <div class="details-content">
+        <div class="details-heading">
+          <div>
+            <p class="eyebrow">Developer diagnostics</p>
+            <h2>Automatic connection internals</h2>
+          </div>
+          <div class="actions">
+            <button id="retry-connection" class="secondary">Retry connection</button>
+          </div>
+        </div>
+        <p class="warning">This example automatically trusts the LAN rendezvous host when it verifies the peer safety code. Production apps must authenticate discovery and require an appropriate user-verification ceremony.</p>
+        <dl>
+          <div><dt>Overall</dt><dd id="detail-connection-status">starting</dd></div>
+          <div id="model-fingerprint-row" hidden><dt>Model hash</dt><dd id="model-fingerprint">none</dd></div>
+          <div><dt>Identity</dt><dd id="local-identity">none</dd></div>
+          <div><dt>Identity state</dt><dd id="identity-status">not created</dd></div>
+          <div><dt>Peers</dt><dd id="peer-count">0/1</dd></div>
+          <div><dt>WebRTC role</dt><dd id="peer-role">unassigned</dd></div>
+          <div><dt>Peer ID</dt><dd id="peer-id">none</dd></div>
+          <div><dt>Safety code</dt><dd id="safety-code">none</dd></div>
+          <div><dt>Verification</dt><dd id="contact-status">waiting</dd></div>
+          <div><dt>WebRTC</dt><dd id="rtc-status">not connected</dd></div>
+          <div><dt>HYDRA</dt><dd id="session-status">not established</dd></div>
+        </dl>
+        <label for="local-card">Local contact card</label>
+        <textarea id="local-card" readonly></textarea>
+        <div class="transcript-grid">
+          <h3>Automation events</h3>
+          <pre id="event-log"></pre>
+        </div>
+        <p class="warning">No profile guarantees resistance to steganalysis. Deterministic mode is instant and printable, but its public grammar and length are fingerprintable; word replacement or paraphrasing destroys it. Arithmetic mode is slow and exact-text only. Fast Unicode mode is compact but uses detectable default-ignorable selectors. Fast hybrid mode also has a handcrafted detectable distribution. Compact HYDRA leaks encrypted length, and WebRTC encrypts the carrier in this integration demo.</p>
+      </div>
+    </details>
+  </main>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

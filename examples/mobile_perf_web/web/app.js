@@ -209,7 +209,8 @@ async function runPersistentSuite() {
 
     const offer = wrapStage('persistent profile creates handshake offer', () => hydra.initHandshake(contactId));
     const answer = wrapStage('peer replies to handshake offer', () => peer.replyHandshake(offer));
-    wrapStage('persistent profile finishes handshake answer', () => hydra.finishHandshake(answer));
+    const finish = wrapStage('persistent profile verifies answer and emits FINISH', () => hydra.finishHandshake(answer));
+    wrapStage('peer authenticates FINISH', () => peer.acceptHandshakeFinish(finish));
     await wrapAsyncStage('flush persistent profile after contact/session mutation', () => hydra.flush());
     return { contactId, peerContactId, peerIdentity };
   }));

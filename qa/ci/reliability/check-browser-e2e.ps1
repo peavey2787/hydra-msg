@@ -100,10 +100,10 @@ foreach ($Text in @(
 # A per-operation open/close cycle can leave Firefox connections close-pending
 # and block the next tab. The harness has a versionchange close and an explicit
 # teardown close; production retains only the versionchange safety handler.
-$SpecCloseCount = (Select-String -LiteralPath $Spec -SimpleMatch "db.close();").Count
+$SpecCloseCount = @(Select-String -LiteralPath $Spec -SimpleMatch "db.close();").Count
 $ProductionCloseCount = 0
 foreach ($Path in $PersistenceSources) {
-    $ProductionCloseCount += (Select-String -LiteralPath $Path -SimpleMatch "db.close();").Count
+    $ProductionCloseCount += @(Select-String -LiteralPath $Path -SimpleMatch "db.close();").Count
 }
 if ($SpecCloseCount -ne 2) {
     throw "Browser E2E harness must close its cached IndexedDB connection on versionchange and explicit teardown"
@@ -169,7 +169,7 @@ if ($env:HYDRA_SKIP_PLAYWRIGHT_INSTALL -eq "1") {
     }
 }
 
-& npx playwright test
+& npm test
 if ($LASTEXITCODE -ne 0) {
     throw "Playwright browser lifecycle tests failed"
 }

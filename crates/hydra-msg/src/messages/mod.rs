@@ -38,6 +38,37 @@ impl Hydra {
         Ok(packets)
     }
 
+    /// Seals one message in the variable-length profile intended for a
+    /// high-expansion carrier such as conversational steganography.
+    ///
+    /// Unlike [`Hydra::send`], this returns exactly one envelope and leaks its
+    /// encrypted length. It uses the same session ratchet and AEAD, does not
+    /// fragment, and rejects packed messages above 64 KiB.
+    pub fn send_compact(
+        &mut self,
+        contact_id: ContactId,
+        message: impl Into<HydraMessage>,
+    ) -> HydraResult<HydraEnvelope> {
+        self.active_unlocked_record()?;
+        self.reject_send_when_refresh_required(contact_id)?;
+        let message = message.into();
+        let payload = pack_message(&message)?;
+        if payload.len()
+            > hydra_session::MAX_COMPACT_CONTENT_SIZE
+                .saturating_sub(crate::STATE_GENERATION_BINDING_OVERHEAD)
+        {
+            return Err(HydraMsgError::InvalidInput(
+                "message exceeds compact carrier capacity",
+            ));
+        }
+        self.ensure_message_capacity(contact_id, payload.len())?;
+        let envelope = self.seal_compact_payload_for_contact(contact_id, &payload)?;
+        self.store_message(contact_id, false, message.plaintext, message.attachments)?;
+        self.persist()?;
+        self.record_outbound_application_message(contact_id)?;
+        Ok(envelope)
+    }
+
     #[must_use]
     pub fn list_messages(&self, contact_id: ContactId) -> Vec<MessageId> {
         self.messages

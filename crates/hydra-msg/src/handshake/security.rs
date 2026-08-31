@@ -213,7 +213,7 @@ impl Hydra {
     }
 
     /// Answer a fresh-session offer from a contact with an existing active
-    /// session. This installs the responder side of the replacement session.
+    /// session. The responder stays provisional until authenticated FINISH.
     pub fn reply_session_refresh(
         &mut self,
         offer: impl AsRef<[u8]>,
@@ -227,12 +227,20 @@ impl Hydra {
         if session.closed {
             return Err(HydraMsgError::SessionNotFound);
         }
-        self.reply_handshake(offer)
+        self.reply_handshake_for(offer, HandshakePurpose::SessionRefresh)
     }
 
-    /// Finish and install the initiator side of a replacement session.
-    pub fn finish_session_refresh(&mut self, answer: impl AsRef<[u8]>) -> HydraResult<()> {
+    /// Verify the replacement RESP, emit FINISH, and install the initiator side.
+    pub fn finish_session_refresh(
+        &mut self,
+        answer: impl AsRef<[u8]>,
+    ) -> HydraResult<super::HandshakeFinish> {
         self.finish_handshake_for(answer, HandshakePurpose::SessionRefresh)
+    }
+
+    /// Authenticate replacement FINISH and install the responder side.
+    pub fn accept_session_refresh_finish(&mut self, finish: impl AsRef<[u8]>) -> HydraResult<()> {
+        self.accept_handshake_finish_for(finish, HandshakePurpose::SessionRefresh)
     }
 
     pub(crate) fn reject_send_when_refresh_required(

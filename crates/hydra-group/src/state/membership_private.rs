@@ -128,3 +128,91 @@ impl Drop for MembershipPrivateState {
         self.wipe_in_place();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hydra_core::types::{Epoch, LeafIndex};
+
+    #[test]
+    fn snapshots_restore_all_membership_mechanisms() {
+        let tree = PublicTree::new(GroupMode::Interactive, Some(Epoch(1))).unwrap();
+        let tree_state = MembershipPrivateState::from_snapshot(
+            MembershipPrivateStateSnapshot::TreeKem {
+                public_tree: tree,
+                leaf_index: Some(LeafIndex(0)),
+                path: Vec::new(),
+            },
+            GroupMode::Interactive,
+        )
+        .unwrap();
+        assert_eq!(tree_state.mechanism(), Some(MembershipMechanism::TreeKem));
+
+        let direct = MembershipPrivateState::from_snapshot(
+            MembershipPrivateStateSnapshot::DirectWrap {
+                epoch_secret: [0x44; 32],
+            },
+            GroupMode::Lite,
+        )
+        .unwrap();
+        assert_eq!(direct.mechanism(), Some(MembershipMechanism::DirectWrap));
+
+        let empty = MembershipPrivateState::from_snapshot(
+            MembershipPrivateStateSnapshot::Empty,
+            GroupMode::Interactive,
+        )
+        .unwrap();
+        assert_eq!(empty.mechanism(), None);
+    }
+
+    #[test]
+    fn treekem_snapshot_rejects_invalid_shape_leaf_and_duplicate_path_nodes() {
+        let mut wrong_mode = PublicTree::new(GroupMode::Interactive, Some(Epoch(1))).unwrap();
+        wrong_mode.mode = GroupMode::Broadcast;
+        assert_eq!(
+            MembershipPrivateState::from_snapshot(
+                MembershipPrivateStateSnapshot::TreeKem {
+                    public_tree: wrong_mode,
+                    leaf_index: None,
+                    path: Vec::new(),
+                },
+                GroupMode::Interactive,
+            )
+            .err(),
+            Some(GroupError::InvalidState)
+        );
+
+        let tree = PublicTree::new(GroupMode::Interactive, Some(Epoch(1))).unwrap();
+        assert_eq!(
+            MembershipPrivateState::from_snapshot(
+                MembershipPrivateStateSnapshot::TreeKem {
+                    leaf_index: Some(LeafIndex(tree.leaf_capacity)),
+                    public_tree: tree.clone(),
+                    path: Vec::new(),
+                },
+                GroupMode::Interactive,
+            )
+            .err(),
+            Some(GroupError::InvalidState)
+        );
+
+        let duplicate = PrivatePathNodeSecretSnapshot {
+            node_index: 1,
+            path_secret: [1; 32],
+            node_seed_d: [2; 32],
+            node_seed_z: [3; 32],
+        };
+        assert_eq!(
+            MembershipPrivateState::from_snapshot(
+                MembershipPrivateStateSnapshot::TreeKem {
+                    public_tree: tree,
+                    leaf_index: None,
+                    path: vec![duplicate.clone(), duplicate],
+                },
+                GroupMode::Interactive,
+            )
+            .err(),
+            Some(GroupError::InvalidState)
+        );
+    }
+}

@@ -217,4 +217,69 @@ mod tests {
             32 + ROSTER_ENTRY_SIZE + 64
         );
     }
+
+    #[test]
+    fn change_payload_kind_covers_every_closed_variant() {
+        let governance = sorted_governance(1, 1);
+        let mode_policy = ModePolicy { bytes: [0xa5; 12] };
+        let new_entry = entry(4, 5);
+        let cases = [
+            (
+                ChangePayload::Create {
+                    new_governance_policy: &governance,
+                    new_mode_policy: mode_policy,
+                },
+                CommitKind::Create,
+            ),
+            (ChangePayload::Join { new_entry: &new_entry }, CommitKind::Join),
+            (ChangePayload::Leave { member_id: member(1) }, CommitKind::Leave),
+            (
+                ChangePayload::RemoveOrRevoke {
+                    member_id: member(1),
+                    reason_code: 7,
+                },
+                CommitKind::RemoveOrRevoke,
+            ),
+            (
+                ChangePayload::GovernanceChange {
+                    new_governance_policy: &governance,
+                },
+                CommitKind::GovernanceChange,
+            ),
+            (
+                ChangePayload::IdentityRotate {
+                    old_member_id: member(1),
+                    new_entry: &new_entry,
+                    rotation_digest: [9; 64],
+                },
+                CommitKind::IdentityRotate,
+            ),
+            (
+                ChangePayload::RoleChange {
+                    member_id: member(1),
+                    old_role: GroupRole::Member,
+                    new_role: GroupRole::Moderator,
+                },
+                CommitKind::RoleChange,
+            ),
+            (
+                ChangePayload::ModeChange {
+                    old_mode: GroupMode::Interactive,
+                    new_mode: GroupMode::Lite,
+                    new_mode_policy: mode_policy,
+                },
+                CommitKind::ModeChange,
+            ),
+            (
+                ChangePayload::TreeSelfUpdate {
+                    committer_member_id: member(1),
+                },
+                CommitKind::TreeSelfUpdate,
+            ),
+        ];
+
+        for (payload, expected) in cases {
+            assert_eq!(payload.kind(), expected);
+        }
+    }
 }

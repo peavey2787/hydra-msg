@@ -56,7 +56,10 @@ foreach ($required in @(
     "signature-verification|",
     "fragment-reassembly|",
     "group-membership-rekey|",
-    "group-treekem-rekey|"
+    "group-treekem-rekey|",
+    "handshake-init-idempotency|",
+    "handshake-finish-gate|",
+    "handshake-finish-auth|"
 )) {
     Require-Text $Manifest $required
 }

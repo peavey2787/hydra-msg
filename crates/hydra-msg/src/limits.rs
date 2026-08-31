@@ -65,9 +65,11 @@ pub const MAX_LOBBY_OUTBOUND_PACKETS: usize = 4_096;
 pub const MAX_LOBBY_OUTBOUND_ENVELOPE_BYTES: usize = 64 * 1024 * 1024;
 
 /// Maximum handshake offer byte length.
-pub const MAX_HANDSHAKE_OFFER_BYTES: usize = 16 * 1024;
+pub const MAX_HANDSHAKE_OFFER_BYTES: usize = 32 * 1024;
 /// Maximum handshake answer byte length.
-pub const MAX_HANDSHAKE_ANSWER_BYTES: usize = 16 * 1024;
+pub const MAX_HANDSHAKE_ANSWER_BYTES: usize = 32 * 1024;
+/// Maximum authenticated FINISH envelope byte length.
+pub const MAX_HANDSHAKE_FINISH_BYTES: usize = 4 * 1024;
 /// Maximum locally pending initiator handshakes.
 pub const MAX_PENDING_HANDSHAKES: usize = 64;
 /// Pending handshakes older than this are discarded.

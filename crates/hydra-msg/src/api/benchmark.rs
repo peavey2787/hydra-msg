@@ -71,17 +71,17 @@ fn benchmark_session_pair() -> HydraResult<(SessionState, SessionState)> {
     let left = IdentityId(RustCryptoBackend::sha3_256(&left_public_key));
     let right = IdentityId(RustCryptoBackend::sha3_256(&right_public_key));
 
-    let offer_nonce = random_array::<32>()?;
     let left_x25519 = RustCryptoBackend::x25519_generate()?;
     let left_kem = RustCryptoBackend::mlkem768_generate()?;
     let left_kem_public = left_kem.encapsulation_key.to_bytes();
     let offer = encode_handshake_offer(
-        left,
         &left_public_key,
-        offer_nonce,
+        random_array::<32>()?,
+        identity_fingerprint(&right_public_key),
         left_x25519.public_key(),
         &left_kem_public,
         &left_keypair.signing_key,
+        random_array::<16>()?,
     )?;
     let parsed_offer = decode_handshake_offer(&offer)?;
 
@@ -91,20 +91,20 @@ fn benchmark_session_pair() -> HydraResult<(SessionState, SessionState)> {
     let kem_public_key = MlKemEncapsulationKey::from_bytes(&parsed_offer.kem_public_key)?;
     let (kem_ciphertext, right_kem_secret) =
         RustCryptoBackend::mlkem768_encapsulate(&kem_public_key)?;
-    let answer = encode_handshake_answer(HandshakeAnswerParts {
-        id: right,
-        public_key: &right_public_key,
-        offer_nonce: parsed_offer.nonce,
-        nonce: random_array::<32>()?,
-        x25519_public: right_x25519.public_key(),
-        kem_ciphertext: &kem_ciphertext,
-        offer: &parsed_offer,
-        signing_key: &right_keypair.signing_key,
-        x25519_secret: &right_x25519_secret,
-        kem_secret: &right_kem_secret,
-    })?;
+    let (answer, right_material) = encode_handshake_answer(
+        HandshakeAnswerParts {
+            public_key: &right_public_key,
+            nonce: random_array::<32>()?,
+            x25519_public: right_x25519.public_key(),
+            kem_ciphertext: &kem_ciphertext,
+            offer: &parsed_offer,
+            signing_key: &right_keypair.signing_key,
+            x25519_secret: &right_x25519_secret,
+            kem_secret: &right_kem_secret,
+        },
+        random_array::<16>()?,
+    )?;
     let parsed_answer = decode_handshake_answer(&answer)?;
-    verify_answer_signature(&parsed_answer, &parsed_offer)?;
 
     let left_x25519_secret =
         RustCryptoBackend::x25519_diffie_hellman(&left_x25519, &parsed_answer.x25519_public)?;
@@ -112,32 +112,35 @@ fn benchmark_session_pair() -> HydraResult<(SessionState, SessionState)> {
         &left_kem.decapsulation_key,
         &parsed_answer.kem_ciphertext,
     )?;
-    let (left_secret, transcript_hash) = verify_answer_confirmation(
+    let left_material = verify_answer_and_derive(
         &parsed_answer,
         &parsed_offer,
         &left_x25519_secret,
         &left_kem_secret,
     )?;
-    let (right_secret, _) = verify_answer_confirmation(
-        &parsed_answer,
-        &parsed_offer,
-        &right_x25519_secret,
-        &right_kem_secret,
-    )?;
+    let finish = encode_handshake_finish(&left_material)?;
+    verify_handshake_finish(&finish, &right_material)?;
+
     Ok((
         SessionState::established(
             SessionRole::Initiator,
-            transcript_hash,
+            left_material.transcript_hash,
             left.0,
             right.0,
-            derive_initial_secrets(&left_secret, &transcript_hash)?,
+            derive_initial_secrets(
+                &left_material.handshake_secret,
+                &left_material.transcript_hash,
+            )?,
         ),
         SessionState::established(
             SessionRole::Responder,
-            transcript_hash,
+            right_material.transcript_hash,
             right.0,
             left.0,
-            derive_initial_secrets(&right_secret, &transcript_hash)?,
+            derive_initial_secrets(
+                &right_material.handshake_secret,
+                &right_material.transcript_hash,
+            )?,
         ),
     ))
 }

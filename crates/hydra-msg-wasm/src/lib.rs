@@ -8,8 +8,8 @@
 #![forbid(unsafe_code)]
 
 use hydra_msg::{
-    ContactId, HandshakeAnswer, HandshakeOffer, Hydra, HydraEnvelope, HydraLobbyPolicy,
-    HydraMessage, IdentityId, LobbyId, MessageId,
+    ContactId, HandshakeAnswer, HandshakeFinish, HandshakeOffer, Hydra, HydraEnvelope,
+    HydraLobbyPolicy, HydraMessage, HydraStateFreshnessAnchor, IdentityId, LobbyId, MessageId,
 };
 use js_sys::{Array, Uint8Array};
 use wasm_bindgen::prelude::*;
@@ -136,6 +136,23 @@ impl WasmHydra {
         self.persistent_revision = Some(new_revision);
         self.dirty = false;
         Ok(())
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[wasm_bindgen(js_name = flushAndStateFreshnessAnchor)]
+    pub async fn flush_and_state_freshness_anchor(&mut self) -> Result<Vec<u8>, JsValue> {
+        self.flush().await?;
+        Ok(self.inner.state_freshness_anchor().into_bytes().to_vec())
+    }
+
+    #[wasm_bindgen(js_name = verifyStateFreshnessAnchor)]
+    pub fn verify_state_freshness_anchor(&mut self, bytes: Vec<u8>) -> Result<(), JsValue> {
+        let anchor = HydraStateFreshnessAnchor::from_bytes(bytes).map_err(to_js_error)?;
+        let result = self.inner.verify_state_freshness_anchor(anchor);
+        if matches!(result, Err(hydra_msg::HydraMsgError::StateRollbackDetected)) {
+            self.mark_dirty();
+        }
+        result.map_err(to_js_error)
     }
 
     #[wasm_bindgen(js_name = generateId)]
@@ -428,9 +445,19 @@ impl WasmHydra {
     }
 
     #[wasm_bindgen(js_name = finishHandshake)]
-    pub fn finish_handshake(&mut self, answer: Vec<u8>) -> Result<(), JsValue> {
-        self.inner
+    pub fn finish_handshake(&mut self, answer: Vec<u8>) -> Result<Vec<u8>, JsValue> {
+        let finish = self
+            .inner
             .finish_handshake(HandshakeAnswer::from_bytes(answer))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(finish.into_bytes())
+    }
+
+    #[wasm_bindgen(js_name = acceptHandshakeFinish)]
+    pub fn accept_handshake_finish(&mut self, finish: Vec<u8>) -> Result<(), JsValue> {
+        self.inner
+            .accept_handshake_finish(HandshakeFinish::from_bytes(finish))
             .map_err(to_js_error)?;
         self.mark_dirty();
         Ok(())
@@ -500,9 +527,19 @@ impl WasmHydra {
     }
 
     #[wasm_bindgen(js_name = finishSessionRefresh)]
-    pub fn finish_session_refresh(&mut self, answer: Vec<u8>) -> Result<(), JsValue> {
-        self.inner
+    pub fn finish_session_refresh(&mut self, answer: Vec<u8>) -> Result<Vec<u8>, JsValue> {
+        let finish = self
+            .inner
             .finish_session_refresh(HandshakeAnswer::from_bytes(answer))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(finish.into_bytes())
+    }
+
+    #[wasm_bindgen(js_name = acceptSessionRefreshFinish)]
+    pub fn accept_session_refresh_finish(&mut self, finish: Vec<u8>) -> Result<(), JsValue> {
+        self.inner
+            .accept_session_refresh_finish(HandshakeFinish::from_bytes(finish))
             .map_err(to_js_error)?;
         self.mark_dirty();
         Ok(())
@@ -541,6 +578,22 @@ impl WasmHydra {
         Ok(packet_array(packets))
     }
 
+    /// Sends one text message in HYDRA's opt-in compact profile for a
+    /// high-expansion carrier such as server-side conversational steganography.
+    #[wasm_bindgen(js_name = sendCompactText)]
+    pub fn send_compact_text(
+        &mut self,
+        contact_id_hex: &str,
+        text: &str,
+    ) -> Result<Uint8Array, JsValue> {
+        let envelope = self
+            .inner
+            .send_compact(contact_id(contact_id_hex)?, HydraMessage::text(text))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(Uint8Array::from(envelope.as_bytes()))
+    }
+
     #[wasm_bindgen(js_name = receive)]
     pub fn receive(&mut self, envelope: Vec<u8>) -> Result<JsValue, JsValue> {
         let Some(inner) = self
@@ -553,6 +606,19 @@ impl WasmHydra {
         };
         self.mark_dirty();
         Ok(WasmReceivedHydraMessage { inner }.into())
+    }
+
+    #[wasm_bindgen(js_name = receiveCompact)]
+    pub fn receive_compact(
+        &mut self,
+        envelope: Vec<u8>,
+    ) -> Result<WasmReceivedHydraMessage, JsValue> {
+        let inner = self
+            .inner
+            .receive_compact(HydraEnvelope::from_bytes(envelope))
+            .map_err(to_js_error)?;
+        self.mark_dirty();
+        Ok(WasmReceivedHydraMessage { inner })
     }
 
     #[wasm_bindgen(js_name = listMessages)]

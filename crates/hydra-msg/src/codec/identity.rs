@@ -44,8 +44,17 @@ pub(crate) fn rewrap_identity_record(
     old_password: &str,
     new_password: &str,
 ) -> HydraResult<()> {
-    let seed = decrypt_seed(record, old_password)?;
     let kdf = PasswordKdfRecord::new_interactive()?;
+    rewrap_identity_record_with_kdf(record, old_password, new_password, kdf)
+}
+
+fn rewrap_identity_record_with_kdf(
+    record: &mut IdentityRecord,
+    old_password: &str,
+    new_password: &str,
+    kdf: PasswordKdfRecord,
+) -> HydraResult<()> {
+    let seed = decrypt_seed(record, old_password)?;
     let seed_key = derive_identity_seed_key(new_password, &kdf)?;
     let seed_nonce = random_array::<12>()?;
     let encrypted_seed = encrypt_seed_with_key(&seed_key, &seed, seed_nonce)?;
@@ -55,6 +64,15 @@ pub(crate) fn rewrap_identity_record(
     record.encrypted_seed = encrypted_seed;
     record.seed = record.unlocked.then_some(seed);
     Ok(())
+}
+
+#[cfg(test)]
+pub(crate) fn rewrap_identity_record_with_kdf_for_test(
+    record: &mut IdentityRecord,
+    password: &str,
+    kdf: PasswordKdfRecord,
+) -> HydraResult<()> {
+    rewrap_identity_record_with_kdf(record, password, password, kdf)
 }
 
 pub(crate) fn decrypt_seed(record: &IdentityRecord, password: &str) -> HydraResult<[u8; 32]> {

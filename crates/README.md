@@ -22,6 +22,7 @@
 | `hydra-session` | 1:1 sessions, ratchets, replay handling, refresh, and close logic. |
 | `hydra-group` | Group and lobby internals behind the public SDK. |
 | `hydra-msg` | Simple Rust SDK entry point. |
+| `hydra-stego` | Optional zero-model deterministic telemetry and AI-backed cover carriers for compact HYDRA envelopes. |
 | `hydra-msg-wasm` | Browser/mobile package over `hydra-msg`. |
 | `hydra-msg-cli` | Developer CLI over `hydra-msg`. |
 
@@ -46,5 +47,10 @@ hydra-msg-wasm
 hydra-msg-cli
 examples/*
 ```
+
+`hydra-stego` is an independent carrier-layer crate. Native apps can use its
+small `Stego` facade directly. AI-backed profiles run in the browser LAN
+example's native host so both peers share one deterministic local model;
+`hydra-msg-wasm` only exposes the compact HYDRA send/receive boundary.
 
 The public SDK does not expose configs, profiles, builders, protocol-info APIs, session import/export APIs, chunk APIs, checkpoint APIs, predicate APIs, or lobby-state APIs.

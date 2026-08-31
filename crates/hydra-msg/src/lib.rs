@@ -52,6 +52,8 @@ mod persistence;
 mod receive;
 #[path = "api/storage.rs"]
 mod storage;
+#[path = "api/storage_kdf.rs"]
+mod storage_kdf;
 mod time;
 
 pub use anonymous_auth::{
@@ -61,7 +63,7 @@ pub use anonymous_auth::{
 pub use benchmark::HydraBenchmarkReport;
 pub use contacts::{ContactId, HydraContact, HydraOneTimeContactCard};
 pub use handshake::{
-    HandshakeAnswer, HandshakeOffer, HydraEnvelope, HydraSessionSecurityPolicy,
+    HandshakeAnswer, HandshakeFinish, HandshakeOffer, HydraEnvelope, HydraSessionSecurityPolicy,
     HydraSessionSecurityStatus, HydraSessionStatus,
 };
 pub use identity::{HydraIdentitySummary, IdentityId};
@@ -72,18 +74,16 @@ pub use lobby_routing::{HydraLobbyEnvelope, HydraLobbyRoutingHint};
 pub use messages::{
     HydraAttachment, HydraAttachmentSource, HydraMessage, MessageId, ReceivedHydraMessage,
 };
-pub use persistence::{HydraStorageDebugStatus, HydraStorageStatus};
+pub use persistence::{HydraStateFreshnessAnchor, HydraStorageDebugStatus, HydraStorageStatus};
 
 use codec::PasswordKdfRecord;
-use handshake::{PendingOffer, SessionRecord};
+use handshake::{AcceptedInit, AcceptedInitKey, PendingOffer, SessionRecord};
 use identity::IdentityRecord;
 use messages::{MessageUsage, StoredMessage};
 use packet_fragments::{PendingFragmentKey, PendingInboundFragments};
 
 pub(crate) const CONTACT_CARD_MAGIC: &str = "HYDRA-MSG-CONTACT";
 pub(crate) const ID_EXPORT_MAGIC: &[u8] = b"HYDRA-MSG-ID\n";
-pub(crate) const OFFER_MAGIC: &[u8] = b"HYDRA-MSG-OFFER\n";
-pub(crate) const ANSWER_MAGIC: &[u8] = b"HYDRA-MSG-ANSWER\n";
 pub(crate) const PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-PAYLOAD\n";
 pub(crate) const LOBBY_INVITE_MAGIC: &str = "HYDRA-MSG-LOBBY-INVITE";
 pub(crate) const LOBBY_PAYLOAD_MAGIC: &[u8] = b"HYDRA-MSG-LOBBY-PAYLOAD\n";
@@ -93,6 +93,7 @@ pub(crate) const STATE_SNAPSHOT_MAGIC: &[u8] = b"HYDRA-MSG-STATE-SNAPSHOT\n";
 pub(crate) const STATE_MAGIC: &[u8] = b"HYDRA-MSG-STATE\n";
 pub(crate) const CONTACTS_MAGIC: &[u8] = b"HYDRA-MSG-CONTACTS\n";
 pub(crate) const MESSAGES_MAGIC: &[u8] = b"HYDRA-MSG-MESSAGES\n";
+pub(crate) const STATE_GENERATION_BINDING_OVERHEAD: usize = 22;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) const STATE_FILE_NAME: &str = "state.hydra";
 #[cfg(not(target_arch = "wasm32"))]
@@ -113,6 +114,7 @@ pub enum HydraMsgError {
     ContactNotFound,
     SessionNotFound,
     SessionRefreshRequired,
+    StateRollbackDetected,
     LobbyNotFound,
     MessageNotFound,
     Unsupported(&'static str),
@@ -154,7 +156,8 @@ pub struct Hydra {
     pub(crate) identities: HashMap<IdentityId, IdentityRecord>,
     pub(crate) active_id: Option<IdentityId>,
     pub(crate) contacts: HashMap<ContactId, HydraContact>,
-    pub(crate) pending_offers: HashMap<[u8; 32], PendingOffer>,
+    pub(crate) pending_offers: HashMap<[u8; 64], PendingOffer>,
+    pub(crate) accepted_inits: HashMap<AcceptedInitKey, AcceptedInit>,
     pub(crate) sessions: HashMap<ContactId, SessionRecord>,
     pub(crate) session_security_policies: HashMap<ContactId, HydraSessionSecurityPolicy>,
     pub(crate) receive_routes: HashMap<[u8; 16], Vec<ContactId>>,
@@ -170,6 +173,7 @@ pub struct Hydra {
     pub(crate) state_key: SecretBytes<32>,
     pub(crate) state_kdf: PasswordKdfRecord,
     pub(crate) state_generation: u64,
+    pub(crate) peer_generation_floors: HashMap<ContactId, u64>,
     pub(crate) packet_size: usize,
     pub(crate) pending_fragments: HashMap<PendingFragmentKey, PendingInboundFragments>,
 }
@@ -183,6 +187,9 @@ mod anonymous_auth_tests;
 #[cfg(test)]
 #[path = "tests/api_freeze.rs"]
 mod api_freeze_tests;
+#[cfg(test)]
+#[path = "tests/compact_carrier.rs"]
+mod compact_carrier_tests;
 #[cfg(test)]
 #[path = "tests/crash_consistency.rs"]
 mod crash_consistency_tests;
@@ -225,6 +232,9 @@ mod persistence_tests;
 #[cfg(test)]
 #[path = "tests/resource_limits.rs"]
 mod resource_limits_tests;
+#[cfg(test)]
+#[path = "tests/rollback.rs"]
+mod rollback_tests;
 #[cfg(test)]
 #[path = "tests/storage.rs"]
 mod storage_tests;

@@ -1,0 +1,23 @@
+# id|source_file|function_name|reason
+crypto-aead-seal|crates/hydra-crypto/src/aead.rs|seal|AEAD encryption and associated-data binding
+crypto-aead-open|crates/hydra-crypto/src/aead.rs|open|AEAD authentication and decryption
+crypto-hmac-verify|crates/hydra-crypto/src/mac.rs|verify_hmac_sha3_256|MAC verification
+crypto-x25519-dh|crates/hydra-crypto/src/x25519.rs|diffie_hellman|X25519 shared-secret derivation and all-zero rejection
+crypto-mlkem-encap|crates/hydra-crypto/src/ml_kem.rs|encapsulate|ML-KEM shared-secret encapsulation
+crypto-mlkem-decap|crates/hydra-crypto/src/ml_kem.rs|decapsulate|ML-KEM decapsulation and implicit-rejection path
+crypto-mldsa-sign|crates/hydra-crypto/src/ml_dsa.rs|sign_digest|ML-DSA signing
+crypto-mldsa-verify|crates/hydra-crypto/src/ml_dsa.rs|verify_digest|ML-DSA signature verification
+crypto-hkdf-extract|crates/hydra-crypto/src/kdf.rs|hkdf_extract|HKDF extract key schedule
+crypto-hkdf-expand|crates/hydra-crypto/src/kdf.rs|hkdf_expand|HKDF expand key schedule
+session-initial-secrets|crates/hydra-session/src/key_derivation.rs|derive_initial_secrets|Initial session key schedule and session identifier
+session-ratchet-step|crates/hydra-session/src/ratchet.rs|derive_step|Message ratchet key evolution
+session-tag-compare|crates/hydra-session/src/ratchet.rs|constant_time_tag_eq|Route-tag constant-time comparison
+handshake-hybrid-kdf|crates/hydra-msg/src/codec/handshake/wire.rs|derive_material_from_parts|Hybrid X25519 plus ML-KEM handshake KDF
+handshake-response-confirm|crates/hydra-msg/src/codec/handshake/wire.rs|response_confirmation|Responder key confirmation
+handshake-answer-verify|crates/hydra-msg/src/codec/handshake.rs|verify_answer_and_derive|Authenticated RESP verification and key derivation
+handshake-finish-seal|crates/hydra-msg/src/codec/handshake.rs|encode_handshake_finish|Authenticated FINISH construction
+handshake-finish-open|crates/hydra-msg/src/codec/handshake.rs|verify_handshake_finish|Authenticated FINISH verification
+storage-state-key|crates/hydra-msg/src/codec/storage.rs|state_key|Password-derived state encryption key
+storage-backup-key|crates/hydra-msg/src/codec/storage.rs|backup_key|Password-derived backup encryption key
+storage-state-seal|crates/hydra-msg/src/codec/storage.rs|encode_encrypted_state|Encrypted state construction
+storage-state-open|crates/hydra-msg/src/codec/storage.rs|decode_encrypted_state|Encrypted state authentication and opening

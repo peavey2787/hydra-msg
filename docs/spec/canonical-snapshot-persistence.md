@@ -112,11 +112,13 @@ A valid backup chunk pasted into state, a valid state chunk pasted into backup, 
 
 The current KDF is `scrypt` with validated profiles:
 
-| Profile | log_n | r | p |
-|---|---:|---:|---:|
-| `mobile` | 13 | 8 | 1 |
-| `interactive` | 14 | 8 | 1 |
-| `high-security` | 15 | 8 | 1 |
+| Profile | current log_n | r | p | legacy read-compatible log_n |
+|---|---:|---:|---:|---:|
+| `mobile` | 17 | 8 | 1 | 13 |
+| `interactive` | 17 | 8 | 1 | 14 |
+| `high-security` | 18 | 8 | 1 | 15 |
+
+New state, backup, and identity password records are emitted only with the current tuple. The exact legacy tuple for each named profile is accepted only so an authenticated older record can be opened and migrated; arbitrary lower-cost parameter changes fail closed. Native encrypted state is re-encrypted under a fresh current KDF record immediately after a successful legacy open. Legacy identity records are rewrapped under a fresh current KDF record after successful unlock. Browser persistent state commits the fresh current KDF with the existing IndexedDB compare-and-swap revision before `openPersistent()` returns; a migration write failure makes open fail closed. Legacy backup containers remain importable, while newly exported backups always use the current profile.
 
 The salt is 32 random bytes and must not be all zeroes. Empty passwords are invalid. Password input is capped before KDF work.
 

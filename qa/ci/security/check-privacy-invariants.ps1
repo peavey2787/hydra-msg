@@ -10,7 +10,10 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..")
 Set-Location $RepoRoot
 
 $HandshakeFile = "crates/hydra-msg/src/codec/handshake.rs"
-$HandshakeApiFile = "crates/hydra-msg/src/handshake/mod.rs"
+$HandshakeWireFile = "crates/hydra-msg/src/codec/handshake/wire.rs"
+$HandshakeApiFile = "crates/hydra-msg/src/handshake/initiate.rs"
+$HandshakeFinishFile = "crates/hydra-msg/src/handshake/finish.rs"
+$HandshakeStandardFile = "crates/hydra-msg/src/handshake/standard.rs"
 $SessionSecurityFile = "crates/hydra-msg/src/handshake/security.rs"
 $SessionSecurityTestsFile = "crates/hydra-msg/src/tests/session_security.rs"
 $StorageFile = "crates/hydra-msg/src/api/storage.rs"
@@ -30,7 +33,7 @@ $AuthFile = "crates/hydra-msg/src/api/anonymous_auth.rs"
 $AuthCodecFile = "crates/hydra-msg/src/codec/auth.rs"
 $AuthTestsFile = "crates/hydra-msg/src/tests/anonymous_auth.rs"
 
-if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeApiFile) -or !(Test-Path $SessionSecurityFile) -or !(Test-Path $SessionSecurityTestsFile)) {
+if (!(Test-Path $HandshakeFile) -or !(Test-Path $HandshakeWireFile) -or !(Test-Path $HandshakeApiFile) -or !(Test-Path $HandshakeFinishFile) -or !(Test-Path $HandshakeStandardFile) -or !(Test-Path $SessionSecurityFile) -or !(Test-Path $SessionSecurityTestsFile)) {
     throw "hydra-msg handshake files missing"
 }
 if (!(Test-Path $StorageFile) -or !(Test-Path $StorageCodecFile) -or !(Test-Path $EncryptedSnapshotFile) -or !(Test-Path $SnapshotFile) -or !(Test-Path $IdentityCodecFile) -or !(Test-Path $KdfCodecFile) -or !(Test-Path $LibFile)) {
@@ -67,20 +70,23 @@ function Assert-NoSourceText {
     }
 }
 
-Assert-SourceText $HandshakeFile "RustCryptoBackend::mldsa65_sign" "facade handshake offer/answer transcript signing"
-Assert-SourceText $HandshakeFile "RustCryptoBackend::mldsa65_verify" "facade handshake transcript signature verification"
-Assert-SourceText $HandshakeFile "x25519_secret.expose_secret()" "ephemeral X25519 shared secret included in facade handshake secret"
-Assert-SourceText $HandshakeFile "kem_secret.expose_secret()" "ephemeral ML-KEM shared secret included in facade handshake secret"
-Assert-SourceText $HandshakeFile "answer_confirmation_tag" "answer confirmation tag before initiator session installation"
-Assert-SourceText $HandshakeFile "verify_answer_confirmation" "initiator/responder confirmation verification helper"
-Assert-SourceText $HandshakeFile "HYDRA-MSG/facade-handshake/hybrid-secret" "domain-separated hybrid facade secret derivation"
-Assert-SourceText $HandshakeApiFile "verify_answer_signature(&parsed_answer, &pending.offer)?" "initiator verifies answer signature against pending offer"
-Assert-SourceText $HandshakeApiFile "verify_answer_confirmation(" "initiator/responder verify derived hybrid material before session install"
-Assert-SourceText $HandshakeApiFile "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects answers from swapped identities"
+Assert-SourceText $HandshakeFile "RustCryptoBackend::mldsa65_sign" "canonical INIT/RESP transcript signing"
+Assert-SourceText $HandshakeFile "RustCryptoBackend::mldsa65_verify" "canonical INIT/RESP transcript signature verification"
+Assert-SourceText $HandshakeWireFile "x25519_secret.expose_secret()" "ephemeral X25519 shared secret included in canonical hybrid secret"
+Assert-SourceText $HandshakeWireFile "kem_secret.expose_secret()" "ephemeral ML-KEM shared secret included in canonical hybrid secret"
+Assert-SourceText $HandshakeFile "HYDRA-MSG/v1/confirm-key" "domain-separated responder confirmation derivation"
+Assert-SourceText $HandshakeWireFile "HYDRA-MSG/v1/finish-key" "domain-separated one-use FINISH key derivation"
+Assert-SourceText $HandshakeFile "verify_handshake_finish" "authenticated FINISH verification helper"
+Assert-SourceText $HandshakeFinishFile "verify_answer_and_derive(" "initiator verifies RESP signature, binding, and confirmation before session install"
+Assert-SourceText $HandshakeApiFile "parsed_offer.expected_responder_fingerprint != identity_fingerprint(&active.public_key)" "responder rejects INIT intended for another identity"
+Assert-SourceText $HandshakeFinishFile "pending.contact_id != ContactId(parsed_answer.peer_id.0)" "initiator rejects RESP from swapped identities"
+Assert-SourceText $HandshakeApiFile "accepted_inits.get(&cache_key)" "accepted INIT retransmissions use the idempotent responder cache"
+Assert-SourceText $HandshakeStandardFile "pub fn accept_handshake_finish" "responder requires authenticated FINISH before session installation"
 Assert-SourceText $SessionSecurityFile "pub fn set_session_refresh_interval" "direct per-contact fresh-session cadence setter"
 Assert-SourceText $SessionSecurityFile "HydraMsgError::SessionRefreshRequired" "fresh-session cadence fails closed before another send"
 Assert-SourceText $SessionSecurityFile "self.init_handshake_for(contact_id, HandshakePurpose::SessionRefresh)" "fresh-session cadence uses a purpose-bound authenticated hybrid handshake"
-Assert-SourceText $SessionSecurityFile "self.reply_handshake(offer)" "fresh-session responder uses the authenticated public handshake path"
+Assert-SourceText $SessionSecurityFile "self.reply_handshake_for(offer, HandshakePurpose::SessionRefresh)" "fresh-session responder uses the purpose-bound canonical handshake path"
+Assert-SourceText $SessionSecurityFile "self.accept_handshake_finish_for(finish, HandshakePurpose::SessionRefresh)" "fresh-session responder requires authenticated FINISH"
 Assert-SourceText $SessionSecurityTestsFile "fn every_message_policy_blocks_the_next_send_until_refresh_completes" "one-message cadence regression coverage"
 Assert-SourceText $SessionSecurityTestsFile "fn lobby_send_counts_one_logical_message_per_recipient_session" "lobby cadence regression coverage"
 Assert-SourceText $SessionSecurityTestsFile "fn finish_methods_reject_answers_for_the_wrong_local_handshake_purpose" "initial and refresh finish APIs are purpose-bound"
@@ -88,7 +94,7 @@ Assert-SourceText $SessionSecurityTestsFile "fn session_security_policy_snapshot
 Assert-NoSourceText $HandshakeApiFile "pub fn rekey_session" "incomplete local-only session rekey API must not return"
 Assert-NoSourceText $LobbyFile "pub fn rekey_lobby" "misleading one-call lobby rekey API must not return"
 $legacyRekeyFiles = @(
-    Get-ChildItem "crates/hydra-msg/src", "crates/hydra-msg-wasm/src", "examples/hydra-gui/hydra-app/src", "examples/hydra-gui/hydra-app-core/src" -Recurse -File
+    Get-ChildItem "crates/hydra-msg/src", "crates/hydra-msg-wasm/src", "examples/hydra-gui/src", "examples/hydra-gui/web" -Recurse -File
 )
 $legacyRekeyMatches = Select-String -Path $legacyRekeyFiles.FullName -Pattern "rekey_session|rekeySession|rekey_lobby|rekeyLobby" -ErrorAction SilentlyContinue
 if ($legacyRekeyMatches) {
@@ -172,8 +178,7 @@ Assert-NoSourceText $AuthCodecFile "session_id" "anonymous auth token codec must
 
 $versionTagSearchPaths = @(
     "crates/hydra-msg",
-    "examples/hydra-gui/hydra-app",
-    "examples/hydra-gui/hydra-app-core",
+    "examples/hydra-gui",
     "README.md",
     "crates/hydra-msg/README.md",
     "docs/spec/public-developer-api.md",
@@ -187,6 +192,18 @@ foreach ($searchPath in $versionTagSearchPaths) {
     } elseif (Test-Path $searchPath -PathType Leaf) {
         $versionTagFiles += (Resolve-Path $searchPath).Path
     }
+}
+$versionTagTextExtensions = @(
+    ".rs", ".toml", ".md", ".html", ".css", ".js", ".mjs", ".cjs",
+    ".ts", ".tsx", ".jsx", ".json", ".yaml", ".yml", ".ps1", ".sh",
+    ".cmd", ".bat", ".py", ".txt"
+)
+$versionTagFiles = $versionTagFiles | Where-Object {
+    $extension = [System.IO.Path]::GetExtension($_).ToLowerInvariant()
+    $versionTagTextExtensions -contains $extension -and
+    $_ -notmatch '[\\/]src[\\/]codec[\\/]handshake(?:\.rs|[\\/])' -and
+    $_ -notmatch '[\\/]src[\\/]tests(?:[\\/]|\.rs$)' -and
+    $_ -notmatch '[\\/]web[\\/]pkg[\\/]'
 }
 $versionTagMatches = Select-String -Path $versionTagFiles -Pattern "HYDRA-MSG-[A-Z0-9-]*-V[0-9]|state-v[0-9]|scrypt-v[0-9]|hydra-msg-[a-z0-9-]*-v[0-9]|/v[0-9]" -ErrorAction SilentlyContinue
 if ($versionTagMatches) {

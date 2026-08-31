@@ -77,7 +77,7 @@ PowerShell:
 
 ## Release evidence
 
-`qa/ci/check-all.*` includes every validation section. With no flags, it runs them in order, stops on the first failure, and finishes with a bounded 256-run-per-target fuzz campaign. Use the explicit overnight or deep flags when collecting longer fuzz evidence.
+`qa/ci/run_all.py` is the single shared orchestration source used by both `qa/ci/check-all.sh` and `qa/ci/check-all.ps1`. The native wrappers contain only platform launch plumbing. `check-all` includes every validation section. With no flags, it runs them in order, stops on the first failure, and finishes with a bounded 256-run-per-target fuzz campaign. Use the explicit overnight or deep flags when collecting longer fuzz evidence.
 
 Use the individual scripts only when debugging one failing gate or intentionally collecting isolated evidence. The Unix runner can resume at a release section and can skip already-collected evidence:
 A skipped cargo-mutants baseline is valid only when the same tree has already passed its Rust tests.

@@ -10,6 +10,7 @@ pub struct SkippedMessageKey {
     key: SecretBytes<32>,
 }
 
+#[cfg(any(test, feature = "test-support"))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SkippedMessageKeySnapshot {
     pub session_id: [u8; 32],
@@ -111,6 +112,7 @@ impl SkippedKeyStore {
         );
     }
 
+    #[cfg(any(test, feature = "test-support"))]
     #[must_use]
     pub fn export_snapshot(&self) -> Vec<SkippedMessageKeySnapshot> {
         self.entries
@@ -124,6 +126,7 @@ impl SkippedKeyStore {
             .collect()
     }
 
+    #[cfg(any(test, feature = "test-support"))]
     pub fn from_snapshot(entries: Vec<SkippedMessageKeySnapshot>) -> SessionResult<Self> {
         if entries.len() > MAX_SKIP {
             return Err(SessionError::SkippedKeyLimit);

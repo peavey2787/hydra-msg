@@ -16,7 +16,8 @@ fn main() -> HydraResult<()> {
     let bob_contact = alice.add_contact(bob.create_contact_card()?)?;
 
     let answer = bob.reply_handshake(alice.init_handshake(bob_contact.id())?)?;
-    alice.finish_handshake(answer)?;
+    let finish = alice.finish_handshake(answer)?;
+    bob.accept_handshake_finish(finish)?;
 
     let lobby = alice.create_lobby(HydraLobbyPolicy::new("demo lobby", 4))?;
     alice.add_lobby_member(lobby.id(), bob_contact.id())?;

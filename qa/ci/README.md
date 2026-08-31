@@ -13,8 +13,9 @@ Only the main orchestrators live at the `qa/ci/` top level:
 
 ```text
 qa/ci/
-├── check-all.sh
-├── check-all.ps1
+├── run_all.py      shared cross-platform release-validation orchestration
+├── check-all.sh    thin Unix adapter
+├── check-all.ps1   thin Windows adapter
 ├── README.md
 ├── core/         Rust workspace, examples, WASM package build, and Linux setup helpers
 ├── policy/       docs, links, lock files, vectors, and source-size ownership gates
@@ -43,7 +44,7 @@ PowerShell:
 
 ## Top-level gate
 
-`check-all` is the full release validation runner. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the bounded coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
+`check-all` is the full release validation runner. Shared orchestration lives only in `run_all.py`; `check-all.sh` and `check-all.ps1` are intentionally thin native adapters. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the bounded coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
 
 Unix:
 
@@ -118,9 +119,9 @@ The default fuzz mode runs 256 iterations per target. Longer modes are explicit:
 
 | Script | Purpose |
 |---|---|
-| `policy/check-docs.sh` | Docs/static checks, README/product-doc navigation, stale terminology checks, and local Markdown link resolution. |
+| `policy/check_docs.py` + thin `check-docs.{sh,ps1}` adapters | Shared docs/static, README navigation, and stale-term policy; native adapters run local Markdown-link checks. |
 | `policy/check-markdown-links.ps1` / `policy/check-markdown-links.sh` | Local Markdown link resolver used by docs checks. |
-| `policy/check-rust-file-sizes.ps1` / `policy/check-rust-file-sizes.sh` | Rust source-size ownership checks across `crates/` with documented exceptions in `policy/rust-size-allowlist.txt`. |
+| `policy/check-rust-file-sizes.ps1` / `policy/check-rust-file-sizes.sh` | Thin native adapters to shared `policy/check_rust_file_sizes.py`, enforcing identical 300 non-blank LOC ownership checks on Windows/Linux with documented exceptions in `policy/rust-size-allowlist.txt`. |
 | `policy/check-locks.sh` | Lock-file coverage checks plus shared-version conflict checks between the root lock and the independent vector-tool lock. Vector-tool-only transitives are allowed. |
 | `policy/check-vectors.sh` | Vector generator and candidate manifest verification. |
 
@@ -140,12 +141,12 @@ The default fuzz mode runs 256 iterations per target. Longer modes are explicit:
 | Script | Purpose |
 |---|---|
 | `reliability/check-crash-consistency.ps1` / `reliability/check-crash-consistency.sh` | Crash-consistency matrix gate. |
-| `reliability/check-memory-safety.ps1` / `reliability/check-memory-safety.sh` | Mandatory fault-injection tests plus optional `HYDRA_RUN_MIRI=1` Miri and `HYDRA_RUN_SANITIZERS=1` sanitizer gates. |
+| `reliability/check-memory-safety.ps1` / `reliability/check-memory-safety.sh` | Thin native adapters to shared `reliability/check_memory_safety.py`: mandatory fault-injection checks, default-on Miri evidence, and sanitizer evidence with idempotent nightly/component bootstrap; Windows sanitizer runs use the supported Linux target through Docker or WSL. |
 | `reliability/check-browser-lifecycle.ps1` / `reliability/check-browser-lifecycle.sh` | WASM/browser lifecycle and IndexedDB persistence gate; also invokes the browser E2E static gate. |
 | `reliability/check-browser-e2e.ps1` / `reliability/check-browser-e2e.sh` | Playwright real-browser lifecycle evidence, optional via `HYDRA_RUN_BROWSER_E2E=1`. |
-| `reliability/check-interop.ps1` / `reliability/check-interop.sh` | Cross-runtime interop harness for frozen packet/state/backup fixtures, native/WASM compatibility, CLI fixture opening, and old-fixture contracts. |
+| `reliability/check-interop.ps1` / `reliability/check-interop.sh` | Thin native adapters to shared `reliability/check_interop.py`, covering frozen packet/state/backup fixtures, native/WASM compatibility, CLI fixture opening, and old-fixture contracts. |
 | `reliability/check-cross-version-compat.ps1` / `reliability/check-cross-version-compat.sh` | Cross-version compatibility gate for frozen state/backup fixtures, rollback evidence, unknown future records, and packet-fragment receive semantics. |
-| `reliability/check-mobile-perf-web.ps1` / `reliability/check-mobile-perf-web.sh` | Static guardrails for the mobile browser benchmark and IndexedDB persistence validation harness. |
+| `reliability/check-mobile-perf-web.ps1` / `reliability/check-mobile-perf-web.sh` | Thin native adapters to shared `reliability/check_mobile_perf_web.py`, covering mobile benchmark/IndexedDB persistence policy, full RESP→FINISH browser handshake use, and password-required open APIs while preserving the intentional missing-password rejection probe. |
 
 ## Quality and fuzz scripts
 

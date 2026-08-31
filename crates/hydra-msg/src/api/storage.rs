@@ -24,11 +24,15 @@ impl Hydra {
             } else {
                 encrypted_snapshot::new_state_kdf()?
             };
+            let migrate_kdf = state_kdf.needs_upgrade()?;
             let state_key =
                 encrypted_snapshot::derive_state_key(state_password.as_ref(), &state_kdf)?;
             let mut hydra = Self::empty(data_dir, state_key, state_kdf)?;
             hydra._native_profile_lock = Some(native_profile_lock);
             hydra.load_state(&store)?;
+            if migrate_kdf {
+                hydra.upgrade_state_kdf(state_password.as_ref())?;
+            }
             Ok(hydra)
         }
 
@@ -54,11 +58,15 @@ impl Hydra {
         } else {
             encrypted_snapshot::new_state_kdf()?
         };
+        let migrate_kdf = state_kdf.needs_upgrade()?;
         let state_key = encrypted_snapshot::derive_state_key(state_password.as_ref(), &state_kdf)?;
         let mut hydra = Self::empty(data_dir, state_key, state_kdf)?;
         if let Some(bytes) = encrypted_state_snapshot {
             let snapshot = encrypted_snapshot::open_state_snapshot(bytes, &hydra.state_key)?;
             hydra.apply_state_snapshot(&snapshot)?;
+        }
+        if migrate_kdf {
+            hydra.prepare_state_kdf_upgrade(state_password.as_ref())?;
         }
         Ok(hydra)
     }
@@ -106,12 +114,28 @@ impl Hydra {
     ) -> HydraResult<(Self, u64)> {
         let name = name.as_ref();
         let persistent_snapshot = crate::browser_persistence::load_encrypted_snapshot(name).await?;
-        let hydra = Self::open_with_encrypted_state_snapshot_inner(
+        let migrate_kdf = if let Some(bytes) = persistent_snapshot.bytes.as_deref() {
+            encrypted_snapshot::read_state_kdf(bytes)?.needs_upgrade()?
+        } else {
+            false
+        };
+        let mut hydra = Self::open_with_encrypted_state_snapshot_inner(
             name,
-            state_password,
+            state_password.as_ref(),
             persistent_snapshot.bytes.as_deref(),
         )?;
-        Ok((hydra, persistent_snapshot.revision))
+        let revision = if migrate_kdf {
+            let encrypted_snapshot = hydra.flush_encrypted_state_snapshot_inner()?;
+            crate::browser_persistence::save_encrypted_snapshot(
+                name,
+                &encrypted_snapshot,
+                persistent_snapshot.revision,
+            )
+            .await?
+        } else {
+            persistent_snapshot.revision
+        };
+        Ok((hydra, revision))
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -152,31 +176,6 @@ impl Hydra {
         crate::browser_persistence::request_persistence().await
     }
 
-    pub fn change_state_password(
-        &mut self,
-        old_password: impl AsRef<str>,
-        new_password: impl AsRef<str>,
-    ) -> HydraResult<()> {
-        let old_password = old_password.as_ref();
-        let new_password = new_password.as_ref();
-        let old_key = encrypted_snapshot::derive_state_key(old_password, &self.state_kdf)?;
-        if old_key.expose_secret() != self.state_key.expose_secret() {
-            return Err(crate::HydraMsgError::InvalidPassword);
-        }
-        let previous_kdf = self.state_kdf.clone();
-        let previous_key = encrypted_snapshot::derive_state_key(old_password, &previous_kdf)?;
-        let new_kdf = encrypted_snapshot::new_state_kdf()?;
-        let new_key = encrypted_snapshot::derive_state_key(new_password, &new_kdf)?;
-        self.state_kdf = new_kdf;
-        self.state_key = new_key;
-        if let Err(error) = self.persist() {
-            self.state_kdf = previous_kdf;
-            self.state_key = previous_key;
-            return Err(error);
-        }
-        Ok(())
-    }
-
     pub fn export_backup(&self, password: impl AsRef<str>) -> HydraResult<Vec<u8>> {
         let snapshot = self.encode_state_snapshot()?;
         backup::export_verified_backup_snapshot(&snapshot, password.as_ref())
@@ -202,8 +201,17 @@ impl Hydra {
     fn restore_verified_backup_snapshot(&mut self, snapshot: &[u8]) -> HydraResult<()> {
         let previous_snapshot = self.encode_state_snapshot()?;
         let previous_generation = self.state_generation;
+        let previous_peer_floors = self.peer_generation_floors.clone();
         self.apply_state_snapshot(snapshot)?;
         self.state_generation = self.state_generation.max(previous_generation);
+        for (contact_id, floor) in previous_peer_floors {
+            if self.contacts.contains_key(&contact_id) {
+                self.peer_generation_floors
+                    .entry(contact_id)
+                    .and_modify(|current| *current = (*current).max(floor))
+                    .or_insert(floor);
+            }
+        }
         let persist_result = self.persist();
         if let Err(persist_error) = persist_result {
             self.apply_state_snapshot(&previous_snapshot)?;
@@ -225,6 +233,7 @@ impl Hydra {
             active_id: None,
             contacts: HashMap::new(),
             pending_offers: HashMap::new(),
+            accepted_inits: HashMap::new(),
             sessions: HashMap::new(),
             session_security_policies: HashMap::new(),
             receive_routes: HashMap::new(),
@@ -242,6 +251,7 @@ impl Hydra {
             state_key,
             state_kdf,
             state_generation: 0,
+            peer_generation_floors: HashMap::new(),
             packet_size: crate::envelope_limits::DEFAULT_PACKET_SIZE,
             pending_fragments: HashMap::new(),
         })

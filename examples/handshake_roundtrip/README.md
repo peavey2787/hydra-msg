@@ -17,11 +17,12 @@ Minimal two-device-style flow using the public `hydra-msg` SDK.
 1. Alice and Bob open local HYDRA stores.
 2. Each generates an identity.
 3. They exchange contact cards over an imaginary carrier.
-4. Alice creates a handshake offer.
-5. Bob replies.
-6. Alice finishes the handshake.
-7. Alice sends an encrypted message.
-8. Bob receives plaintext.
+4. Alice creates canonical INIT.
+5. Bob verifies INIT and returns canonical RESP.
+6. Alice verifies RESP and emits authenticated FINISH.
+7. Bob authenticates FINISH and only then installs the responder session.
+8. Alice sends an encrypted message.
+9. Bob receives plaintext.
 
 ## Run
 

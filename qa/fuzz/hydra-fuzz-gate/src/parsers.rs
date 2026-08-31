@@ -54,6 +54,7 @@ fn exercise_hydra_public_parsers(index: usize, bytes: &[u8]) {
     let _ = hydra.import_contacts(bytes);
     let _ = hydra.reply_handshake(bytes);
     let _ = hydra.finish_handshake(bytes);
+    let _ = hydra.accept_handshake_finish(bytes);
     let _ = hydra.join_lobby(bytes);
     let _ = hydra.receive(bytes);
     let _ = hydra.receive_lobby(bytes);

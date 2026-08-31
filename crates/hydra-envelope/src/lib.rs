@@ -6,6 +6,10 @@ mod outer_header;
 mod protected_record;
 
 pub use outer_header::{
-    decode_outer_header, encode_outer_header, validate_envelope_length, OuterHeader, WireError,
+    decode_outer_header, decode_outer_header_prefix, encode_outer_header, validate_envelope_length,
+    OuterHeader, WireError,
 };
-pub use protected_record::{decode_protected_record, encode_protected_record, ProtectedRecord};
+pub use protected_record::{
+    decode_compact_protected_record, decode_protected_record, encode_compact_protected_record,
+    encode_protected_record, ProtectedRecord,
+};

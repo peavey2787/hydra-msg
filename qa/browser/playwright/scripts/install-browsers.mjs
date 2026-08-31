@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const projectToBrowser = new Map([
   ['chromium', 'chromium'],
@@ -28,14 +30,19 @@ if (browsers.length === 0) {
   throw new Error('HYDRA_BROWSER_PROJECTS selected no browser projects');
 }
 
-const args = ['playwright', 'install'];
+const args = ['install'];
 if (process.env.HYDRA_PLAYWRIGHT_INSTALL_DEPS === '1') {
   args.push('--with-deps');
 }
 args.push(...browsers);
 
-const command = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const result = spawnSync(command, args, { stdio: 'inherit' });
+// Invoke the pinned local Playwright CLI through the current Node executable.
+// On Windows, spawning npx.cmd directly can fail with EINVAL under Node 22.
+const playwrightCli = fileURLToPath(new URL('../node_modules/playwright/cli.js', import.meta.url));
+if (!existsSync(playwrightCli)) {
+  throw new Error(`local Playwright CLI is missing after npm ci: ${playwrightCli}`);
+}
+const result = spawnSync(process.execPath, [playwrightCli, ...args], { stdio: 'inherit' });
 if (result.error) {
   throw result.error;
 }

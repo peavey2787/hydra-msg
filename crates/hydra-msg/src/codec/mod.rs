@@ -1,7 +1,6 @@
 mod auth;
 mod contacts;
 mod handshake;
-mod handshake_fields;
 mod identity;
 mod kdf;
 mod lobbies;

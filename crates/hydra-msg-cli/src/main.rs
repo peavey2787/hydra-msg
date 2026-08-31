@@ -199,7 +199,8 @@ fn setup_two_party_demo(base: &Path) -> HydraResult<(Hydra, Hydra, ContactId)> {
 
     let offer = alice.init_handshake(bob_contact.id())?;
     let answer = bob.reply_handshake(offer)?;
-    alice.finish_handshake(answer)?;
+    let finish = alice.finish_handshake(answer)?;
+    bob.accept_handshake_finish(finish)?;
 
     Ok((alice, bob, bob_contact.id()))
 }

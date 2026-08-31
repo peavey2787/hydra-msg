@@ -17,6 +17,7 @@ hydra-envelope = { version = "0.1.0", path = "../../../crates/hydra-envelope" }
 hydra-group = { version = "0.1.0", path = "../../../crates/hydra-group" }
 hydra-msg = { version = "0.1.0", path = "../../../crates/hydra-msg" }
 hydra-session = { version = "0.1.0", path = "../../../crates/hydra-session" }
+hydra-stego = { version = "0.1.0", path = "../../../crates/hydra-stego" }
 libfuzzer-sys = "=0.4.9"
 
 [workspace]
@@ -38,6 +39,13 @@ bench = false
 [[bin]]
 name = "message_codec"
 path = "fuzz_targets/message_codec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "stego_cover_decoding"
+path = "fuzz_targets/stego_cover_decoding.rs"
 test = false
 doc = false
 bench = false

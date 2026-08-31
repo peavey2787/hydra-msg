@@ -29,10 +29,21 @@ honest erasure.
 
 ## 2. Authenticated key establishment
 
+The public `Hydra` facade and the normative protocol use the same canonical
+INIT -> RESP -> FINISH exchange; there is no facade-specific handshake variant.
 INIT and RESP signatures bind identities, both ephemeral public contributions,
 nonces, expected peer, suite, and transcript. The hybrid extract frames and
-combines X25519 and ML-KEM shared secrets under the transcript. Confirmation
-MACs and FINISH establish explicit agreement on transcript and session ID.
+combines X25519 and ML-KEM shared secrets under the transcript. RESP confirmation
+and authenticated FINISH establish explicit agreement on transcript and session
+ID. The responder remains provisional until FINISH authenticates. Exact replay
+of an accepted INIT is handled idempotently by a bounded cache and returns the
+identical immutable RESP rather than creating a second candidate session.
+Initiator timeout retry likewise reuses the exact pending INIT. Competing
+cross-INIT attempts are reduced to one authoritative direction by canonical
+identity-fingerprint ordering, and successful installation retires every other
+provisional attempt for that contact. Therefore delayed authenticated RESP or
+FINISH traffic from a losing attempt cannot roll an established contact back to
+a different session state.
 
 Subject to the combiner and KDF assumptions, session secrecy holds when at
 least one hybrid shared-secret component remains unknown. Authentication fails
@@ -68,9 +79,7 @@ attacker can block recovery.
 The public SDK's `HydraSessionSecurityPolicy` can bound the number of outbound
 logical application messages before it refuses another send and requires a
 fresh authenticated hybrid session. This is an enforcement cadence, not a
-claim of transparent continuous post-compromise security. The app must carry
-the replacement offer and answer, and recovery remains conditional on the
-assumptions above.
+claim of transparent continuous post-compromise security. The app must carry the replacement INIT, RESP, and FINISH, and recovery remains conditional on the assumptions above.
 
 ## 5. Group authentication
 

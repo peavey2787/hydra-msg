@@ -36,28 +36,15 @@ pub fn derive_initial_secrets(
     handshake_secret: &SecretBytes<32>,
     transcript_hash: &[u8; 64],
 ) -> SessionResult<InitialSessionSecrets> {
-    let session_id = *expand32(
-        handshake_secret,
-        b"HYDRA-MSG/v1/session-id",
-        transcript_hash,
-    )?
-    .expose_secret();
+    let sid = expand32(handshake_secret, b"HYDRA-MSG/v1/session-id", transcript_hash)?;
+    let session_id = *sid.expose_secret();
+    let chain_i2r = expand32(handshake_secret, b"HYDRA-MSG/v1/init-chain/i2r", transcript_hash)?;
+    let chain_r2i = expand32(handshake_secret, b"HYDRA-MSG/v1/init-chain/r2i", transcript_hash)?;
+    let refresh_root = expand32(handshake_secret, b"HYDRA-MSG/v1/refresh-root", transcript_hash)?;
     Ok(InitialSessionSecrets {
         session_id,
-        chain_i2r: expand32(
-            handshake_secret,
-            b"HYDRA-MSG/v1/init-chain/i2r",
-            transcript_hash,
-        )?,
-        chain_r2i: expand32(
-            handshake_secret,
-            b"HYDRA-MSG/v1/init-chain/r2i",
-            transcript_hash,
-        )?,
-        refresh_root: expand32(
-            handshake_secret,
-            b"HYDRA-MSG/v1/refresh-root",
-            transcript_hash,
-        )?,
+        chain_i2r,
+        chain_r2i,
+        refresh_root,
     })
 }

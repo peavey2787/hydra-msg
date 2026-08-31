@@ -33,9 +33,22 @@ function Assert-TextAbsent {
     }
 }
 
+function Assert-PatternPresent {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+    $source = Get-Content -LiteralPath $Path -Raw
+    if ($source -notmatch $Pattern) {
+        throw "Resource-limit invariant missing from ${Path}: $Description"
+    }
+}
+
 $limits = "crates/hydra-msg/src/limits.rs"
 $fragments = "crates/hydra-msg/src/packet_fragments/reassembly.rs"
-$handshake = "crates/hydra-msg/src/handshake/mod.rs"
+$handshake = "crates/hydra-msg/src/handshake/finish.rs"
+$handshakeCodec = "crates/hydra-msg/src/codec/handshake.rs"
 $handshakeRouting = "crates/hydra-msg/src/handshake/routing.rs"
 $messages = "crates/hydra-msg/src/codec/messages.rs"
 $messageTypes = "crates/hydra-msg/src/messages/types.rs"
@@ -45,12 +58,19 @@ $sessionSnapshot = "crates/hydra-session/src/session/snapshot.rs"
 $groupSender = "crates/hydra-group/src/state/sender_chain.rs"
 $groupSenderRestore = "crates/hydra-group/src/state/sender_chain/snapshot_restore.rs"
 $groupReplay = "crates/hydra-group/src/state/replay.rs"
+$stegoApi = "crates/hydra-stego/src/api.rs"
+$stegoDeterministic = "crates/hydra-stego/src/deterministic/codec.rs"
+$stegoFast = "crates/hydra-stego/src/generative/fast.rs"
+$stegoHybrid = "crates/hydra-stego/src/generative/hybrid/codec.rs"
+$stegoGenerative = "crates/hydra-stego/src/generative/mod.rs"
+$stegoProcessIo = "crates/hydra-stego/src/process/io.rs"
 $audit = "docs/validation/evidence/resource-exhaustion-dos-limits.md"
 
 foreach ($path in @(
     $limits,
     $fragments,
     $handshake,
+    $handshakeCodec,
     $handshakeRouting,
     $messages,
     $messageTypes,
@@ -60,6 +80,13 @@ foreach ($path in @(
     $groupSender,
     $groupSenderRestore,
     $groupReplay,
+    $stegoApi,
+    $stegoDeterministic,
+    $stegoFast,
+    $stegoHybrid,
+    $stegoGenerative,
+    $stegoProcessIo,
+    "crates/hydra-stego/tests/production_api.rs",
     "crates/hydra-msg/src/tests/resource_limits.rs",
     "crates/hydra-group/src/tests/resource_limits.rs",
     $audit
@@ -87,6 +114,7 @@ foreach ($constant in @(
     "MAX_IMPORTED_CONTACTS",
     "MAX_HANDSHAKE_OFFER_BYTES",
     "MAX_HANDSHAKE_ANSWER_BYTES",
+    "MAX_HANDSHAKE_FINISH_BYTES",
     "MAX_PENDING_HANDSHAKES",
     "MAX_PENDING_HANDSHAKE_AGE_SECS",
     "MAX_SESSION_ROUTE_TAGS_PER_SESSION",
@@ -107,11 +135,33 @@ Assert-TextPresent $storageCodec "MAX_BACKUP_BYTES"
 Assert-TextPresent $storageCodec "MAX_ENCRYPTED_STATE_BYTES"
 Assert-TextPresent $storageCodec "STORAGE_CHUNK_PLAINTEXT_BYTES"
 Assert-TextPresent $storageCodec 'reject_trailing_nonempty_lines(&mut lines, "storage trailing data")'
+Assert-TextPresent $handshakeCodec "MAX_HANDSHAKE_FINISH_BYTES"
+Assert-PatternPresent $handshakeCodec 'reject_encoded_size\s*\(\s*finish\.len\(\)\s*,\s*MAX_HANDSHAKE_FINISH_BYTES\b' "FINISH verifier enforces MAX_HANDSHAKE_FINISH_BYTES independent of rustfmt line wrapping"
+Assert-PatternPresent $handshake 'reject_encoded_size\s*\(\s*finish\.len\(\)\s*,\s*MAX_HANDSHAKE_FINISH_BYTES\b' "public FINISH entry point rejects oversized input before route lookup/crypto"
 Assert-TextPresent $handshakeRouting "candidate_receive_route_tags"
 Assert-TextPresent $handshakeRouting "receive_routes"
 Assert-TextPresent $sessionSnapshot "SkippedKeyStore::from_snapshot"
 Assert-TextPresent $groupSenderRestore "snapshot.skipped.len() > max_skipped"
 Assert-TextPresent $groupReplay "snapshot.accepted_messages.len() > max_accepted"
+Assert-TextPresent $stegoDeterministic "MAX_DETERMINISTIC_COVER_BYTES"
+Assert-TextPresent $stegoDeterministic "cover_text.len() > self.maximum_cover_bytes"
+Assert-TextPresent $stegoDeterministic "self.decode_at(&words, 0)?"
+Assert-TextPresent $stegoDeterministic "validate_rendered_record"
+Assert-TextPresent $stegoFast "maximum_frame_bytes + 1"
+Assert-TextPresent $stegoFast "ensure_selector_capacity"
+Assert-TextPresent $stegoHybrid "take(maximum_words + 1)"
+Assert-TextPresent $stegoHybrid "take(MAX_INTRO_WORDS + 1)"
+Assert-TextPresent $stegoHybrid "min(MAX_INTRO_WORDS + 1)"
+Assert-TextPresent $stegoHybrid "ensure_hybrid_capacity"
+Assert-TextPresent $stegoGenerative "self.ensure_cover_bytes(cover_text)?;"
+Assert-TextPresent $stegoGenerative "target_bits / 2).min"
+Assert-TextPresent $stegoProcessIo "recv_timeout(remaining)"
+Assert-TextPresent $stegoProcessIo "prepare_request(request)?"
+Assert-TextPresent $stegoProcessIo "writer stopped unexpectedly"
+Assert-TextPresent $stegoProcessIo "MAX_RESPONSE_BYTES"
+Assert-TextPresent "crates/hydra-stego/src/process/mod.rs" "ensure_hex_request_fits"
+Assert-TextPresent "crates/hydra-stego/src/process/mod.rs" "ensure_token_request_fits"
+Assert-TextPresent "crates/hydra-stego/tests/production_api.rs" "decode_limits_fail_before_unbounded_work"
 Assert-TextPresent "crates/hydra-msg/src/tests/resource_limits.rs" "incomplete_fragments_do_not_force_full_state_persistence"
 Assert-TextPresent "crates/hydra-msg/src/tests/resource_limits.rs" "route_index_dispatches_to_one_session_and_refreshes_after_receive"
 Assert-TextPresent "crates/hydra-msg/src/tests/resource_limits.rs" "encrypted_state_and_backup_reject_trailing_records_before_crypto_work"

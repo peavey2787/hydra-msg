@@ -40,7 +40,13 @@ fn main() -> HydraResult<()> {
         answer.as_bytes(),
     )?;
 
-    alice.finish_handshake(fs::read(carrier.join("bob-to-alice.handshake-answer"))?)?;
+    let finish =
+        alice.finish_handshake(fs::read(carrier.join("bob-to-alice.handshake-answer"))?)?;
+    fs::write(
+        carrier.join("alice-to-bob.handshake-finish"),
+        finish.as_bytes(),
+    )?;
+    bob.accept_handshake_finish(fs::read(carrier.join("alice-to-bob.handshake-finish"))?)?;
 
     let packets = alice.send(
         bob_contact.id(),

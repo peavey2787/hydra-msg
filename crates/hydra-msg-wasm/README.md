@@ -2,6 +2,14 @@
 
 `hydra-msg-wasm` provides browser/mobile bindings over the `hydra-msg` Rust SDK.
 
+Conversational generation is intentionally not compiled into WASM. The LAN
+demo runs `hydra-stego` and its selected local AI model in the native host, then
+uses `sendCompactText` / `receiveCompact` in the browser for the authenticated
+HYDRA envelope on either side of that transformation. This prevents a canned
+fallback codec and gives both browser peers one synchronized model process.
+See [`hydra-stego`](../hydra-stego/README.md#security-status) for the security
+boundary.
+
 ## Navigation
 
 - [Main README](../../README.md)
@@ -52,8 +60,13 @@ await hydra.flush();
 appSendToPeer(offer);
 
 const answer = await appWaitForPeerAnswer();
-hydra.finishHandshake(answer);
+const finish = hydra.finishHandshake(answer);
 await hydra.flush();
+appSendToPeer(finish);
+
+// On the responder, after receiving FINISH:
+peer.acceptHandshakeFinish(finishFromCarrier);
+await peer.flush();
 
 // For carriers with small per-message limits, configure one packet ceiling.
 // 56 KiB maps to HYDRA Standard-size packets internally.
@@ -64,6 +77,10 @@ await hydra.flush();
 for (const packet of packets) {
   appSendToPeer(packet);
 }
+
+// High-expansion carriers can opt into one length-revealing compact envelope.
+const compact = hydra.sendCompactText(contactId, 'short cover-mode message');
+const recovered = hydra.receiveCompact(compactFromCarrier);
 ```
 
 ## Optional fresh-session cadence
@@ -81,7 +98,12 @@ if (status.refresh_required) {
   appSendToPeer(refreshOffer);
 
   const refreshAnswer = await appWaitForPeerRefreshAnswer();
-  hydra.finishSessionRefresh(refreshAnswer);
+  const refreshFinish = hydra.finishSessionRefresh(refreshAnswer);
+  appSendToPeer(refreshFinish);
+
+  // On the responder after receiving REFRESH FINISH:
+  peer.acceptSessionRefreshFinish(refreshFinishFromCarrier);
+  await peer.flush();
 }
 ```
 
@@ -140,7 +162,7 @@ Use `examples/mobile_perf_web` to validate browser/mobile persistence behavior. 
 
 ## Public surface rule
 
-The binding mirrors the small public SDK shape. It does not expose protocol internals, profiles, builders, suite selection, session import/export, checkpoint APIs, predicate APIs, lobby-state APIs, or chunk controls. The only transport sizing control is `setPacketSize(bytes)`, with `packetSize()` as the getter. `send()` returns one or more opaque packets, and `receive()` returns `null` until a full message has been reassembled. Password rotation is exposed through `changeStatePassword(...)` and `changeIdPassword(...)`; preview helpers are exposed through `previewContactCard(...)` and `previewLobbyInvite(...)`.
+The binding mirrors the small public SDK shape. It does not expose protocol internals, profiles, builders, suite selection, session import/export, checkpoint APIs, predicate APIs, lobby-state APIs, or chunk controls. The normal transport sizing control is `setPacketSize(bytes)`, with `packetSize()` as the getter. `send()` returns one or more fixed-size opaque packets, and `receive()` returns `null` until a full message has been reassembled. `sendCompactText()` and `receiveCompact()` are the explicit length-revealing exception for high-expansion carriers. Password rotation is exposed through `changeStatePassword(...)` and `changeIdPassword(...)`; preview helpers are exposed through `previewContactCard(...)` and `previewLobbyInvite(...)`.
 
 ## WASM stack size
 

@@ -1,10 +1,28 @@
-# HYDRA-MSG Rust source-size allow-list.
+# HYDRA-MSG production Rust source-size allow-list.
 #
 # Format:
 # relative/path/to/file.rs|max_allowed_lines|reason
 #
-# The default SRP threshold is 400 lines. A listed file may exceed that
-# threshold only up to its documented max. Keep every reason specific and
-# remove entries when the file is split below the threshold.
+# The default production/source threshold is 300 non-blank LOC on every OS. Test-only modules are
+# governed by the separate test-quality gate. An exception is allowed only for
+# a cohesive facade, canonical codec/state owner, static vocabulary/grammar, or
+# reference-app integration owner whose split would duplicate protocol truth.
+# Remove an entry as soon as a refactor brings the file to 300 lines or below.
 
-crates/hydra-msg-wasm/src/lib.rs|980|WASM binding facade intentionally centralizes JS bindings and browser lifecycle helpers; accepted large-file exception.
+crates/hydra-msg-wasm/src/lib.rs|980|WASM public binding facade intentionally centralizes the JavaScript ABI and browser lifecycle boundary.
+crates/hydra-stego/src/deterministic/grammar.rs|350|Deterministic grammar is a single static grammar/schema owner; splitting would duplicate grammar truth.
+crates/hydra-stego/src/deterministic/vocabulary/semantics.rs|360|Static deterministic vocabulary/semantic tables are intentionally co-located data.
+crates/hydra-stego/src/process/io.rs|340|Model-process I/O facade owns the bounded request/response channels, timeout handling, and worker lifecycle.
+crates/hydra-msg/src/messages/mod.rs|390|Public message model/facade centralizes the closed message variants and their API boundary.
+crates/hydra-msg/src/browser/persistence_js.rs|360|Browser persistence JavaScript interop facade centralizes the IndexedDB ABI boundary.
+crates/hydra-msg/src/api/contacts.rs|400|Public contact API facade centralizes contact identity, import/export, trust, and lifecycle entry points.
+crates/hydra-msg/src/persistence/snapshot.rs|440|Canonical state-snapshot serializer/parser owns one persistence grammar and atomic validation/apply boundary.
+crates/hydra-msg/src/codec/handshake.rs|350|Canonical handshake codec facade owns INIT/RESP/FINISH validation while byte helpers are split into wire.rs.
+crates/hydra-msg/src/codec/storage.rs|410|Canonical encrypted-storage codec owns the bounded envelope/chunk grammar and authentication boundary.
+crates/hydra-msg/src/codec/messages.rs|340|Canonical message wire codec owns the closed message grammar and hostile parser boundary.
+crates/hydra-group/src/state/sender_chain.rs|390|Group sender-chain state owner keeps chain evolution, skipped-key bounds, and snapshot invariants co-located.
+crates/hydra-group/src/state/mod.rs|350|Group state facade centralizes invariant-preserving construction, snapshot restore, and state access.
+crates/hydra-crypto/src/backend.rs|360|Cryptographic backend facade intentionally centralizes the compile-time primitive suite and delegation boundary.
+examples/hydra-gui/src/main.rs|350|Reference GUI host facade owns process startup, server lifecycle, and app-window integration.
+examples/stego_lan_chat/src/main.rs|420|Reference LAN chat host facade owns server startup, routes, and LAN lifecycle integration.
+examples/stego_lan_chat/src/model_service.rs|410|Reference LAN model-service facade owns bounded model-process lifecycle and request serialization.

@@ -1,14 +1,10 @@
-use hydra_core::{
-    protocol::replay::{ReplayWindow, ReplayWindowSnapshot},
-    types::ContentKind,
-    MAX_SKIP,
-};
+use hydra_core::{protocol::replay::ReplayWindow, types::ContentKind, MAX_SKIP};
 use hydra_crypto::SecretBytes;
 
 use crate::{
     key_derivation::InitialSessionSecrets,
-    ratchet::{derive_step, DirectionChain, DirectionChainSnapshot},
-    skipped_keys::{SkippedKeyStore, SkippedMessageKeySnapshot},
+    ratchet::{derive_step, DirectionChain},
+    skipped_keys::SkippedKeyStore,
 };
 
 mod envelope_bounds;
@@ -16,7 +12,11 @@ mod lifecycle;
 mod receive;
 mod refresh_state;
 mod send;
+#[cfg(any(test, feature = "test-support"))]
 mod snapshot;
+
+/// Maximum application payload accepted by the opt-in compact carrier mode.
+pub const MAX_COMPACT_CONTENT_SIZE: usize = 64 * 1024;
 
 #[cfg(any(test, feature = "test-support"))]
 mod test_support;
@@ -60,6 +60,12 @@ pub struct ReceivedMessage {
     pub content: Vec<u8>,
 }
 
+#[cfg(any(test, feature = "test-support"))]
+use crate::{ratchet::DirectionChainSnapshot, skipped_keys::SkippedMessageKeySnapshot};
+#[cfg(any(test, feature = "test-support"))]
+use hydra_core::protocol::replay::ReplayWindowSnapshot;
+
+#[cfg(any(test, feature = "test-support"))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SessionStateSnapshot {
     pub role: SessionRole,
