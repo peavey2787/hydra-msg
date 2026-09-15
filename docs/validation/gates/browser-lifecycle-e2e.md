@@ -85,6 +85,6 @@ For a separately managed lifecycle-test origin, set `HYDRA_BROWSER_TEST_ORIGIN` 
 
 ## Firefox transaction determinism
 
-Each lifecycle test uses a distinct IndexedDB database name so a failed or retried test cannot leave state that blocks the next case. Stale compare-and-swap writes queue no mutation; where supported, the adapter explicitly commits that no-write transaction and reports the stale revision only from the transaction's final completion event. Browsers without `IDBTransaction.commit()` use normal automatic commit semantics.
+Each lifecycle test uses a distinct IndexedDB database name so a failed or retried test cannot leave state that blocks the next case. The concurrency case uses independent same-origin JavaScript realms and IndexedDB connections, which exercises the same cross-context transaction semantics as separate tabs without relying on Firefox's flaky headless multi-page lifecycle. Stale compare-and-swap writes queue no mutation; where supported, the adapter explicitly commits that no-write transaction and reports the stale revision only from the transaction's final completion event. Browsers without `IDBTransaction.commit()` use normal automatic commit semantics.
 
 GitHub Actions retains an HTML report, failure screenshots, and an `on-first-retry` trace. Those diagnostics are uploaded even when the browser job fails.

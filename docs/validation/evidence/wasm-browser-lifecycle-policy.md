@@ -22,7 +22,7 @@ best-effort persistence.
 | Private browsing or storage disabled | `openPersistent()` fails with a storage error; no plaintext, `localStorage`, or durable-looking memory fallback. | `browserLifecycleStatus`, quota/lifecycle probe, static gate, Playwright browser-context denial test. |
 | Storage eviction or user-cleared site data | Missing IndexedDB record opens as a fresh profile only when the app intentionally opens that name; recovery is encrypted backup import. | WASM docs and lifecycle policy gate. |
 | `QuotaExceededError` | `flush()` returns an error, keeps the wrapper dirty, and never writes plaintext fallback state. | crash-consistency probe, user-facing quota error path, Playwright quota test. |
-| Multiple tabs writing same profile | Each record has a non-secret monotonic revision; `flush()` uses IndexedDB readwrite compare-and-swap and rejects stale writers. | `runMultiTabConcurrencyProbe` and Playwright two-page CAS test. |
+| Multiple tabs writing same profile | Each record has a non-secret monotonic revision; `flush()` uses IndexedDB readwrite compare-and-swap and rejects stale writers. | `runMultiTabConcurrencyProbe` and Playwright independent-realm CAS test. |
 | Tab crash during flush | IndexedDB transaction abort leaves previous snapshot authoritative. | `runCrashConsistencyProbe` and Playwright transaction-abort test. |
 | Versioned DB format | DB version is explicit; this pre-v1 format does not preserve legacy records or migrate old metadata fields. | browser lifecycle static gate. |
 | Browser denying persistent storage | `requestPersistentStorage()` reports denial; app warns that state is eviction-prone and keeps backup UX visible. | quota/lifecycle probe and Playwright denial/grant test. |

@@ -65,6 +65,8 @@ foreach ($Text in @(
     "never acquires an IndexedDB write lock",
     "Recheck inside the readwrite transaction",
     "uniqueDatabaseName",
+    "createSecondaryLifecycleRealm",
+    "same cross-context transaction",
     "capturedSaveError",
     "saveReadwriteTransactions",
     "let dbPromise = null",
@@ -119,9 +121,9 @@ if ((Get-Content -Raw $Spec).Contains("await closeRequest;")) {
 
 foreach ($Text in @(
     "async function closeLifecyclePage",
+    "async function closeLifecycleRealm",
     "window.__hydraLifecycle?.close()",
     "page.close({ runBeforeUnload: false })",
-    "await closeLifecyclePage(pageB)",
     "await closeLifecyclePage(pageA)"
 )) { Assert-Text $Spec $Text }
 
@@ -138,7 +140,7 @@ foreach ($Text in @(
 foreach ($Text in @(
     "IndexedDB unavailable/private-mode style denial",
     "QuotaExceededError",
-    "compare-and-swap rejects stale two-tab writes",
+    "compare-and-swap rejects stale cross-context writes",
     "delete-while-open",
     "aborted tab-crash-style transaction",
     "reload with dirty in-memory state",

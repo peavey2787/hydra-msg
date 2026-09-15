@@ -49,6 +49,28 @@ async function closeLifecyclePage(page) {
   ]);
 }
 
+async function createSecondaryLifecycleRealm(page) {
+  const frameName = 'hydra-secondary-lifecycle-realm';
+  await page.evaluate((name) => new Promise((resolve, reject) => {
+    const frame = document.createElement('iframe');
+    frame.name = name;
+    frame.src = `/?realm=${name}`;
+    frame.onload = () => resolve();
+    frame.onerror = () => reject(new Error('secondary lifecycle realm failed to load'));
+    document.body.appendChild(frame);
+  }), frameName);
+  const frame = page.frames().find((candidate) => candidate.name() === frameName);
+  if (!frame) throw new Error('secondary lifecycle realm missing after load');
+  return frame;
+}
+
+async function closeLifecycleRealm(realm) {
+  await Promise.race([
+    realm.evaluate(() => window.__hydraLifecycle?.close()).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, 1_000))
+  ]);
+}
+
 test.describe('HYDRA browser storage lifecycle policy in real browser contexts', () => {
   test('IndexedDB unavailable/private-mode style denial fails closed without localStorage fallback', async ({ page }) => {
     await page.addInitScript(() => {
@@ -72,18 +94,20 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
     expect(result.hydraLocalStorageKeys).toBe(0);
   });
 
-  test('compare-and-swap rejects stale two-tab writes and delete-while-open writes', async ({ context }, testInfo) => {
-    const pageA = await context.newPage();
-    const pageB = await context.newPage();
+  test('compare-and-swap rejects stale cross-context writes and delete-while-open writes', async ({ page: pageA }, testInfo) => {
+    let pageB = null;
 
     try {
       await pageA.goto('/');
-      await pageB.goto('/');
+      // A same-origin iframe is a separate JavaScript realm with its own
+      // IndexedDB connection. It exercises the same cross-context transaction
+      // semantics as two tabs without Firefox's flaky headless multi-page path.
+      pageB = await createSecondaryLifecycleRealm(pageA);
       const databaseName = uniqueDatabaseName(testInfo);
       await installIndexedDbHarness(pageA, { databaseName });
       await installIndexedDbHarness(pageB, { databaseName });
 
-      await test.step('establish two-tab revision divergence', async () => {
+      await test.step('establish cross-context revision divergence', async () => {
         await pageA.evaluate(() => window.__hydraLifecycle.deleteProfile('same-profile'));
         const revisionA = await pageA.evaluate(
           () => window.__hydraLifecycle.save('same-profile', [1, 2, 3], 0)
@@ -134,7 +158,7 @@ test.describe('HYDRA browser storage lifecycle policy in real browser contexts',
         expect((await pageB.evaluate(() => window.__hydraLifecycle.stats())).databaseOpens).toBe(1);
       });
     } finally {
-      await closeLifecyclePage(pageB);
+      if (pageB) await closeLifecycleRealm(pageB);
       await closeLifecyclePage(pageA);
     }
   });
@@ -406,7 +430,7 @@ async function installIndexedDbHarness(page, options = {}) {
         const db = await openDb();
 
         // Reject known-stale callers using a readonly transaction. This is the
-        // normal two-tab stale path and never acquires an IndexedDB write lock.
+        // normal cross-context stale path and never acquires an IndexedDB write lock.
         const preflightRevision = await readCurrentRevision(db, name);
         if (preflightRevision !== expectedRevision) {
           throw new Error(

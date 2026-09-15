@@ -58,6 +58,8 @@ for required_stale_marker in \
   "never acquires an IndexedDB write lock" \
   "Recheck inside the readwrite transaction" \
   "uniqueDatabaseName" \
+  "createSecondaryLifecycleRealm" \
+  "same cross-context transaction" \
   "capturedSaveError" \
   "saveReadwriteTransactions" \
   "let dbPromise = null" \
@@ -128,9 +130,9 @@ fi
 
 for teardown_marker in \
   "async function closeLifecyclePage" \
+  "async function closeLifecycleRealm" \
   "window.__hydraLifecycle?.close()" \
   "page.close({ runBeforeUnload: false })" \
-  "await closeLifecyclePage(pageB)" \
   "await closeLifecyclePage(pageA)"
 do
   if ! grep -Fq "$teardown_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
@@ -149,7 +151,7 @@ done
 for required in \
   "IndexedDB unavailable/private-mode style denial" \
   "QuotaExceededError" \
-  "compare-and-swap rejects stale two-tab writes" \
+  "compare-and-swap rejects stale cross-context writes" \
   "delete-while-open" \
   "aborted tab-crash-style transaction" \
   "reload with dirty in-memory state" \
