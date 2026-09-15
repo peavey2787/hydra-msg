@@ -28,6 +28,9 @@ Run all three bounded jobs locally with `sh qa/ci/check-ci.sh` (or
 `.\qa\ci\check-ci.ps1` on Windows). GitHub invokes that same checked-in runner
 with `--only core`, `--only browser`, and `--only fuzz`; this makes its command
 list and environment the source of truth for both local and remote execution.
+The bounded fuzz section selects 12 inputs evenly across the full eight-round
+deterministic corpus and exits normally after completing them; the 60-minute job
+timeout remains an emergency cutoff for runner or process stalls.
 
 The GitHub jobs may regenerate their temporary runner copy of `Cargo.lock` before
 fetching dependencies so remote CI is not blocked by a stale checked-in lock while

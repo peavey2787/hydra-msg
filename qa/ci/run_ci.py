@@ -13,6 +13,8 @@ from typing import Iterator, Mapping, Sequence
 
 
 SECTIONS = ("core", "browser", "fuzz")
+CI_FUZZ_CASES = "8"
+CI_FUZZ_INPUT_LIMIT = "12"
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -102,7 +104,11 @@ def run_browser() -> None:
 
 
 def run_fuzz() -> None:
-    env = {"HYDRA_CI_EPHEMERAL_LOCK_REFRESH": "1"}
+    env = {
+        "HYDRA_CI_EPHEMERAL_LOCK_REFRESH": "1",
+        "HYDRA_FUZZ_CASES": CI_FUZZ_CASES,
+        "HYDRA_FUZZ_INPUT_LIMIT": CI_FUZZ_INPUT_LIMIT,
+    }
     with ephemeral_lockfile():
         run("prepare deterministic fuzz dependency graph", ("cargo", "fetch"), env)
         run(

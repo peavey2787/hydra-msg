@@ -60,6 +60,16 @@ def check_bounded_ci_dry(failures: list[str]) -> None:
     for wrapper in wrappers:
         if wrapper.is_file() and "run_ci.py" not in wrapper.read_text(encoding="utf-8"):
             failures.append(f"bounded CI wrapper does not delegate to shared runner: {wrapper}")
+    if central.is_file():
+        body = central.read_text(encoding="utf-8")
+        required_fuzz_budget = (
+            'CI_FUZZ_CASES = "8"',
+            'CI_FUZZ_INPUT_LIMIT = "12"',
+            '"HYDRA_FUZZ_CASES": CI_FUZZ_CASES',
+            '"HYDRA_FUZZ_INPUT_LIMIT": CI_FUZZ_INPUT_LIMIT',
+        )
+        if any(marker not in body for marker in required_fuzz_budget):
+            failures.append("bounded CI must set its deterministic fuzz corpus budget")
     if workflow.is_file():
         body = workflow.read_text(encoding="utf-8")
         for section in ("core", "browser", "fuzz"):

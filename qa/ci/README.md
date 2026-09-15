@@ -64,6 +64,12 @@ environment for those jobs, so the local and remote bounded suites cannot
 silently diverge. It preserves the local `Cargo.lock` while reproducing the
 disposable lock refresh used on fresh GitHub runners.
 
+The bounded fuzz section builds the full eight-round deterministic corpus and
+selects 12 inputs evenly across it. The campaign exits successfully after those
+inputs pass, leaving the GitHub job's 60-minute timeout as an emergency cutoff
+rather than the normal stop mechanism. Direct and release fuzz runs retain their
+larger configured budgets.
+
 `check-all` is the full release validation runner. Shared orchestration lives only in `run_all.py`; `check-all.sh` and `check-all.ps1` are intentionally thin native adapters. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the bounded coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
 
 Unix:
