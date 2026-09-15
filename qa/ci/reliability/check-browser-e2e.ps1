@@ -68,7 +68,9 @@ foreach ($Text in @(
     "capturedSaveError",
     "saveReadwriteTransactions",
     "let dbPromise = null",
+    "let dbConnection = null",
     "databaseOpens",
+    "Teardown must never wait on the cached open promise",
     "Do not abort or queue a semantic no-op"
 )) { Assert-Text $Spec $Text }
 foreach ($Text in @(

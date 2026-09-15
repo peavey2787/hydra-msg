@@ -257,6 +257,7 @@ async function installIndexedDbHarness(page, options = {}) {
     let saveReadwriteTransactions = 0;
     let databaseOpens = 0;
     let dbPromise = null;
+    let dbConnection = null;
 
     function requestToPromise(request) {
       return new Promise((resolve, reject) => {
@@ -341,12 +342,17 @@ async function installIndexedDbHarness(page, options = {}) {
           };
           request.onsuccess = () => {
             const db = request.result;
+            dbConnection = db;
             databaseOpens += 1;
             db.onversionchange = () => {
               db.close();
+              dbConnection = null;
               dbPromise = null;
             };
-            db.onclose = () => { dbPromise = null; };
+            db.onclose = () => {
+              dbConnection = null;
+              dbPromise = null;
+            };
             resolve(db);
           };
           request.onerror = () => reject(request.error || new Error('IndexedDB open failed'));
@@ -361,17 +367,16 @@ async function installIndexedDbHarness(page, options = {}) {
       }
     }
 
-    async function closeDb() {
-      const pending = dbPromise;
+    function closeDb() {
+      // Teardown must never wait on the cached open promise: that promise is
+      // exactly what can stall in Firefox. Detach it first, synchronously close
+      // the known connection, and let page.close() terminate any pending open.
+      const db = dbConnection;
+      dbConnection = null;
       dbPromise = null;
-      if (!pending) return;
-      try {
-        const db = await pending;
+      if (db) {
         db.close();
-      } catch {
-        // Opening may already have failed. Clearing dbPromise is sufficient.
       }
-      await new Promise((resolve) => setTimeout(resolve, 0));
     }
 
     window.__hydraLifecycle = {

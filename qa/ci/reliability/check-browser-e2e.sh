@@ -61,7 +61,9 @@ for required_stale_marker in \
   "capturedSaveError" \
   "saveReadwriteTransactions" \
   "let dbPromise = null" \
+  "let dbConnection = null" \
   "databaseOpens" \
+  "Teardown must never wait on the cached open promise" \
   "Do not abort or queue a semantic no-op"
 do
   if ! grep -Fq "$required_stale_marker" qa/browser/playwright/tests/browser-lifecycle.spec.mjs; then
