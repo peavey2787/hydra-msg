@@ -46,6 +46,27 @@ def check_run_all_dry(failures: list[str]) -> None:
                 if duplicated in text:
                     failures.append(f"shared orchestration leaked back into native wrapper {wrapper}: {duplicated}")
 
+
+def check_bounded_ci_dry(failures: list[str]) -> None:
+    central = Path("qa/ci/run_ci.py")
+    wrappers = (Path("qa/ci/check-ci.sh"), Path("qa/ci/check-ci.ps1"))
+    workflow = Path(".github/workflows/ci.yml")
+    for path in (central, *wrappers, workflow):
+        if not path.is_file():
+            failures.append(f"bounded CI component missing: {path}")
+    for path, ceiling in ((central, 160), (wrappers[0], 30), (wrappers[1], 40)):
+        if path.is_file() and len(path.read_text(encoding="utf-8").splitlines()) > ceiling:
+            failures.append(f"bounded CI component exceeds {ceiling} lines: {path}")
+    for wrapper in wrappers:
+        if wrapper.is_file() and "run_ci.py" not in wrapper.read_text(encoding="utf-8"):
+            failures.append(f"bounded CI wrapper does not delegate to shared runner: {wrapper}")
+    if workflow.is_file():
+        body = workflow.read_text(encoding="utf-8")
+        for section in ("core", "browser", "fuzz"):
+            invocation = f"./qa/ci/check-ci.sh --only {section}"
+            if body.count(invocation) != 1:
+                failures.append(f"GitHub CI must invoke shared {section} section exactly once")
+
 TEST_ATTR = re.compile(r"#\[(?:tokio::)?test(?:\([^\]]*\))?\]")
 FN = re.compile(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 IGNORE = re.compile(r"#\[ignore(?:\([^\]]*\))?\]")
@@ -221,6 +242,7 @@ def main() -> int:
     generic_keys: set[str] = set()
     total = 0
     check_run_all_dry(failures)
+    check_bounded_ci_dry(failures)
     generic_allowlist = load_generic_allowlist(failures)
 
     for path in rust_files():

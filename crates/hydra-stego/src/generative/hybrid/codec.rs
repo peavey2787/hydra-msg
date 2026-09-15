@@ -112,10 +112,12 @@ pub(super) fn encode_prose(framed: &[u8]) -> Result<String, StegoError> {
     }
 
     let mut prose = String::new();
-    for record_bits in bits.chunks_exact(BITS_PER_SENTENCE) {
+    for record_bits in bits.as_chunks::<BITS_PER_SENTENCE>().0 {
         let choices = record_bits
-            .chunks_exact(BITS_PER_CHOICE)
-            .map(choice_from_bits)
+            .as_chunks::<BITS_PER_CHOICE>()
+            .0
+            .iter()
+            .map(|bits| choice_from_bits(bits))
             .collect::<Vec<_>>();
         let sentence = templates()[usize::from(choices[0])].render(&choices[1..]);
         if sentence.len() > MAX_RENDERED_SENTENCE_BYTES {
@@ -162,7 +164,9 @@ fn decode_prose_at(
         }
         framed.extend(
             record_bits
-                .chunks_exact(8)
+                .as_chunks::<8>()
+                .0
+                .iter()
                 .map(|bits| bits.iter().fold(0_u8, |byte, bit| byte << 1 | bit)),
         );
 

@@ -158,6 +158,12 @@ fn exported_messages_import_and_preserve_message_contents() {
 
     let message_ids = target.list_messages(contact.id());
     assert_eq!(message_ids.len(), 2);
-    assert_eq!(target.get_message(message_ids[0]).unwrap().text().unwrap(), "import one");
-    assert_eq!(target.get_message(message_ids[1]).unwrap().text().unwrap(), "import two");
+    assert_eq!(
+        target.get_message(message_ids[0]).unwrap().text().unwrap(),
+        "import one"
+    );
+    assert_eq!(
+        target.get_message(message_ids[1]).unwrap().text().unwrap(),
+        "import two"
+    );
 }

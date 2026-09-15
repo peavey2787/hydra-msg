@@ -19,6 +19,9 @@ REQUIRED_FILES = (
     ".github/workflows/ci.yml",
     ".github/workflows/release-validation.yml",
     ".github/dependabot.yml",
+    "qa/ci/run_ci.py",
+    "qa/ci/check-ci.sh",
+    "qa/ci/check-ci.ps1",
     "docs/validation/release/release-checklist.md",
     "docs/validation/release/release-artifacts.md",
     "docs/validation/release/release-signing.md",
@@ -108,6 +111,8 @@ def check_shared_runner_policy() -> None:
 
     require_text("qa/ci/check-all.sh", "qa/ci/run_all.py")
     require_text("qa/ci/check-all.ps1", '"qa\\ci\\run_all.py"')
+    require_text("qa/ci/check-ci.sh", "qa/ci/run_ci.py")
+    require_text("qa/ci/check-ci.ps1", '"qa\\ci\\run_ci.py"')
 
 
 def check_manifest_metadata() -> None:
@@ -184,15 +189,26 @@ def main() -> int:
         "docs/validation/release/msrv-policy.md": ('rust-version = "1.88"',),
         ".github/workflows/ci.yml": (
             "push:", "pull_request:", "workflow_dispatch:", "Core bounded CI",
-            "./qa/ci/core/check-tests.sh --skip-vectors --skip-release-static",
-            "./qa/ci/core/check-examples.sh", "Browser lifecycle", 'HYDRA_RUN_BROWSER_E2E: "1"',
-            "./qa/ci/reliability/check-browser-e2e.sh", "Deterministic fuzz regression",
-            "./qa/ci/fuzz/check-fuzz.sh", 'HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"', "cargo fetch",
+            "./qa/ci/check-ci.sh --only core", "Browser lifecycle",
+            "./qa/ci/check-ci.sh --only browser", "Deterministic fuzz regression",
+            "./qa/ci/check-ci.sh --only fuzz",
             "target/ci-logs/core.log", "target/ci-logs/browser-lifecycle.log", "target/ci-logs/fuzz-regression.log",
             'tee -a "$log_file"', "GITHUB_STEP_SUMMARY",
             "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0",
             "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1",
             "actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0",
+        ),
+        "qa/ci/run_ci.py": (
+            'SECTIONS = ("core", "browser", "fuzz")',
+            '"HYDRA_CI_EPHEMERAL_LOCK_REFRESH": "1"',
+            '"HYDRA_BROWSER_WORKERS": "1"',
+            '"HYDRA_PLAYWRIGHT_INSTALL_DEPS": "1"',
+            '"HYDRA_RUN_BROWSER_E2E": "1"',
+            'native_script("qa/ci/core/check-tests", test_args)',
+            'native_script("qa/ci/core/check-examples")',
+            'native_script("qa/ci/reliability/check-browser-e2e")',
+            'native_script("qa/ci/fuzz/check-fuzz")',
+            '("cargo", "fetch")',
         ),
         ".github/workflows/release-validation.yml": (
             "workflow_dispatch:", "./qa/ci/check-all.sh", "target/ci-logs/release-check-all.log",

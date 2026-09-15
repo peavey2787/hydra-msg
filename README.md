@@ -168,6 +168,16 @@ Runnable examples are in [examples](examples/README.md).
 
 ## Release validation
 
+Before pushing, run the exact bounded suite used by normal GitHub CI:
+
+```bash
+./qa/ci/check-ci.sh
+```
+
+GitHub's parallel core, browser, and fuzz jobs call this same checked-in runner.
+On Windows, use `.\qa\ci\check-ci.ps1`; it selects the native equivalents of
+the same gates.
+
 `./qa/ci/check-all.sh` is the complete local validation gate. Linux and Windows both delegate to the same `qa/ci/run_all.py` orchestration so section ordering, skips, LCOV/CRAP, mutation, and fuzz policy have one source of truth; native wrappers contain only OS-specific launching details. It runs the normal workspace/static/example checks first, then the heavy evidence gates, and leaves a bounded coverage-guided fuzz campaign last.
 
 ```bash

@@ -231,8 +231,18 @@ mod tests {
                 },
                 CommitKind::Create,
             ),
-            (ChangePayload::Join { new_entry: &new_entry }, CommitKind::Join),
-            (ChangePayload::Leave { member_id: member(1) }, CommitKind::Leave),
+            (
+                ChangePayload::Join {
+                    new_entry: &new_entry,
+                },
+                CommitKind::Join,
+            ),
+            (
+                ChangePayload::Leave {
+                    member_id: member(1),
+                },
+                CommitKind::Leave,
+            ),
             (
                 ChangePayload::RemoveOrRevoke {
                     member_id: member(1),

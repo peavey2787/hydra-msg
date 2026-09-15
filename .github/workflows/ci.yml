@@ -23,8 +23,6 @@ jobs:
     name: Core bounded CI
     runs-on: ubuntu-24.04
     timeout-minutes: 120
-    env:
-      HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -50,9 +48,6 @@ jobs:
           cargo install cargo-deny --locked
           cargo install wasm-pack --locked
 
-      - name: Prepare bounded CI dependency graph
-        run: cargo fetch
-
       - name: Run bounded core validation
         shell: bash
         run: |
@@ -62,10 +57,7 @@ jobs:
             "HYDRA-MSG bounded core CI" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          {
-            ./qa/ci/core/check-tests.sh --skip-vectors --skip-release-static
-            ./qa/ci/core/check-examples.sh
-          } 2>&1 | tee -a "$log_file"
+          ./qa/ci/check-ci.sh --only core 2>&1 | tee -a "$log_file"
 
       - name: Upload core evidence
         if: always()
@@ -80,10 +72,6 @@ jobs:
     name: Browser lifecycle
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    env:
-      HYDRA_BROWSER_WORKERS: "1"
-      HYDRA_PLAYWRIGHT_INSTALL_DEPS: "1"
-      HYDRA_RUN_BROWSER_E2E: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -106,7 +94,7 @@ jobs:
             "HYDRA-MSG browser lifecycle CI" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          ./qa/ci/reliability/check-browser-e2e.sh 2>&1 | tee -a "$log_file"
+          ./qa/ci/check-ci.sh --only browser 2>&1 | tee -a "$log_file"
 
       - name: Upload browser lifecycle evidence
         if: always()
@@ -124,8 +112,6 @@ jobs:
     name: Deterministic fuzz regression
     runs-on: ubuntu-24.04
     timeout-minutes: 60
-    env:
-      HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -146,10 +132,7 @@ jobs:
             "HYDRA-MSG deterministic fuzz regression" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          {
-            cargo fetch
-            ./qa/ci/fuzz/check-fuzz.sh
-          } 2>&1 | tee -a "$log_file"
+          ./qa/ci/check-ci.sh --only fuzz 2>&1 | tee -a "$log_file"
 
       - name: Upload deterministic fuzz evidence
         if: always()
@@ -182,5 +165,5 @@ jobs:
           | Browser lifecycle | ${{ needs.browser-lifecycle.result }} |
           | Deterministic fuzz regression | ${{ needs.deterministic-fuzz.result }} |
 
-          Local exhaustive validation remains `./qa/ci/check-all.sh`; normal GitHub CI runs bounded commit gates and uploads evidence logs.
+          Local bounded validation uses the same runner via `./qa/ci/check-ci.sh`; exhaustive release validation remains `./qa/ci/check-all.sh`.
           EOF2

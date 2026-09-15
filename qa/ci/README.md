@@ -16,6 +16,9 @@ qa/ci/
 ├── run_all.py      shared cross-platform release-validation orchestration
 ├── check-all.sh    thin Unix adapter
 ├── check-all.ps1   thin Windows adapter
+├── run_ci.py       shared bounded GitHub CI orchestration
+├── check-ci.sh     Unix bounded-CI adapter
+├── check-ci.ps1    Windows bounded-CI adapter
 ├── README.md
 ├── core/         Rust workspace, examples, WASM package build, and Linux setup helpers
 ├── policy/       docs, links, lock files, vectors, and source-size ownership gates
@@ -43,6 +46,23 @@ PowerShell:
 ```
 
 ## Top-level gate
+
+Run the same bounded `core`, `browser`, and `fuzz` sections used by normal
+GitHub push and pull-request CI with one local command:
+
+```bash
+./qa/ci/check-ci.sh
+```
+
+```powershell
+.\qa\ci\check-ci.ps1
+```
+
+GitHub Actions invokes this same runner with `--only core`, `--only browser`,
+and `--only fuzz` in its parallel jobs. The runner owns the commands and
+environment for those jobs, so the local and remote bounded suites cannot
+silently diverge. It preserves the local `Cargo.lock` while reproducing the
+disposable lock refresh used on fresh GitHub runners.
 
 `check-all` is the full release validation runner. Shared orchestration lives only in `run_all.py`; `check-all.sh` and `check-all.ps1` are intentionally thin native adapters. With no flags, it runs every validation section in order and stops on the first failure. It calls tests/static validation first, then example/browser package validation, then the expensive release-evidence gates near the bottom: Miri, sanitizers, real-browser Playwright, coverage, mutation testing, and finally the bounded coverage-guided fuzz campaign. Supply-chain evidence is included inside `core/check-tests.*` through `security/check-supply-chain.*`.
 

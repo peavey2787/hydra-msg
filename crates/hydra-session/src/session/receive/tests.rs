@@ -106,16 +106,10 @@ fn valid_class_and_content_accepts_only_the_closed_session_matrix() {
 
 fn compact_pair() -> (SessionState, SessionState) {
     let transcript = [0x33; 64];
-    let initiator_secrets = crate::derive_initial_secrets(
-        &SecretBytes::from_array([0x44; 32]),
-        &transcript,
-    )
-    .unwrap();
-    let responder_secrets = crate::derive_initial_secrets(
-        &SecretBytes::from_array([0x44; 32]),
-        &transcript,
-    )
-    .unwrap();
+    let initiator_secrets =
+        crate::derive_initial_secrets(&SecretBytes::from_array([0x44; 32]), &transcript).unwrap();
+    let responder_secrets =
+        crate::derive_initial_secrets(&SecretBytes::from_array([0x44; 32]), &transcript).unwrap();
     (
         SessionState::established(
             crate::SessionRole::Initiator,
@@ -165,7 +159,11 @@ fn compact_receive_enforces_exact_transport_bounds_and_lite_header() {
     let (mut sender, mut receiver) = compact_pair();
     let empty = sender.send_compact_data(&[]).unwrap();
     assert_eq!(empty.envelope.len(), minimum);
-    assert!(receiver.receive_compact(&empty.envelope).unwrap().content.is_empty());
+    assert!(receiver
+        .receive_compact(&empty.envelope)
+        .unwrap()
+        .content
+        .is_empty());
 
     let (mut sender, mut receiver) = compact_pair();
     let empty = sender.send_compact_data(&[]).unwrap();
@@ -180,7 +178,11 @@ fn compact_receive_enforces_exact_transport_bounds_and_lite_header() {
         .unwrap();
     assert_eq!(maximum.envelope.len(), minimum + MAX_COMPACT_CONTENT_SIZE);
     assert_eq!(
-        receiver.receive_compact(&maximum.envelope).unwrap().content.len(),
+        receiver
+            .receive_compact(&maximum.envelope)
+            .unwrap()
+            .content
+            .len(),
         MAX_COMPACT_CONTENT_SIZE
     );
 

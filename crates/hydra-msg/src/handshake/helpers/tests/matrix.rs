@@ -32,7 +32,11 @@ fn competing_helper_selectors_require_every_contact_purpose_identity_and_candida
             "competing handshake already pending for another local identity"
         ))
     );
-    alice.pending_offers.get_mut(&pending_key).unwrap().contact_id = other_contact;
+    alice
+        .pending_offers
+        .get_mut(&pending_key)
+        .unwrap()
+        .contact_id = other_contact;
     assert_eq!(
         reject_other_pending_attempt(
             &alice,
@@ -42,7 +46,11 @@ fn competing_helper_selectors_require_every_contact_purpose_identity_and_candida
         ),
         Ok(())
     );
-    alice.pending_offers.get_mut(&pending_key).unwrap().contact_id = bob_contact;
+    alice
+        .pending_offers
+        .get_mut(&pending_key)
+        .unwrap()
+        .contact_id = bob_contact;
     alice.pending_offers.get_mut(&pending_key).unwrap().purpose = HandshakePurpose::SessionRefresh;
     assert_eq!(
         reject_other_pending_attempt(
