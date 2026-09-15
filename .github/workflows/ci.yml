@@ -57,7 +57,7 @@ jobs:
             "HYDRA-MSG bounded core CI" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          ./qa/ci/check-ci.sh --only core 2>&1 | tee -a "$log_file"
+          sh qa/ci/check-ci.sh --only core 2>&1 | tee -a "$log_file"
 
       - name: Upload core evidence
         if: always()
@@ -94,7 +94,7 @@ jobs:
             "HYDRA-MSG browser lifecycle CI" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          ./qa/ci/check-ci.sh --only browser 2>&1 | tee -a "$log_file"
+          sh qa/ci/check-ci.sh --only browser 2>&1 | tee -a "$log_file"
 
       - name: Upload browser lifecycle evidence
         if: always()
@@ -132,7 +132,7 @@ jobs:
             "HYDRA-MSG deterministic fuzz regression" \
             "Commit: $GITHUB_SHA" > "$log_file"
           set -o pipefail
-          ./qa/ci/check-ci.sh --only fuzz 2>&1 | tee -a "$log_file"
+          sh qa/ci/check-ci.sh --only fuzz 2>&1 | tee -a "$log_file"
 
       - name: Upload deterministic fuzz evidence
         if: always()
@@ -165,5 +165,5 @@ jobs:
           | Browser lifecycle | ${{ needs.browser-lifecycle.result }} |
           | Deterministic fuzz regression | ${{ needs.deterministic-fuzz.result }} |
 
-          Local bounded validation uses the same runner via `./qa/ci/check-ci.sh`; exhaustive release validation remains `./qa/ci/check-all.sh`.
+          Local bounded validation uses the same runner via `sh qa/ci/check-ci.sh`; exhaustive release validation remains `./qa/ci/check-all.sh`.
           EOF2

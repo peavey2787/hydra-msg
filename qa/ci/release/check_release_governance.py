@@ -189,9 +189,9 @@ def main() -> int:
         "docs/validation/release/msrv-policy.md": ('rust-version = "1.88"',),
         ".github/workflows/ci.yml": (
             "push:", "pull_request:", "workflow_dispatch:", "Core bounded CI",
-            "./qa/ci/check-ci.sh --only core", "Browser lifecycle",
-            "./qa/ci/check-ci.sh --only browser", "Deterministic fuzz regression",
-            "./qa/ci/check-ci.sh --only fuzz",
+            "sh qa/ci/check-ci.sh --only core", "Browser lifecycle",
+            "sh qa/ci/check-ci.sh --only browser", "Deterministic fuzz regression",
+            "sh qa/ci/check-ci.sh --only fuzz",
             "target/ci-logs/core.log", "target/ci-logs/browser-lifecycle.log", "target/ci-logs/fuzz-regression.log",
             'tee -a "$log_file"', "GITHUB_STEP_SUMMARY",
             "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0",

@@ -2,6 +2,7 @@
 # Rust build outputs
 # -----------------------------------------------------------------------------
 /target/
+**/target/
 /target-*/
 /debug/
 /release/

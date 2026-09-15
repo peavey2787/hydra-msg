@@ -171,7 +171,7 @@ Runnable examples are in [examples](examples/README.md).
 Before pushing, run the exact bounded suite used by normal GitHub CI:
 
 ```bash
-./qa/ci/check-ci.sh
+sh qa/ci/check-ci.sh
 ```
 
 GitHub's parallel core, browser, and fuzz jobs call this same checked-in runner.

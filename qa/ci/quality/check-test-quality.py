@@ -63,7 +63,7 @@ def check_bounded_ci_dry(failures: list[str]) -> None:
     if workflow.is_file():
         body = workflow.read_text(encoding="utf-8")
         for section in ("core", "browser", "fuzz"):
-            invocation = f"./qa/ci/check-ci.sh --only {section}"
+            invocation = f"sh qa/ci/check-ci.sh --only {section}"
             if body.count(invocation) != 1:
                 failures.append(f"GitHub CI must invoke shared {section} section exactly once")
 

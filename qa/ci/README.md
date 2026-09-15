@@ -51,7 +51,7 @@ Run the same bounded `core`, `browser`, and `fuzz` sections used by normal
 GitHub push and pull-request CI with one local command:
 
 ```bash
-./qa/ci/check-ci.sh
+sh qa/ci/check-ci.sh
 ```
 
 ```powershell

@@ -24,7 +24,7 @@ local release-complete `check-all` runner. It runs separate jobs for:
 - the real Chromium, Firefox, and mobile-Chromium browser lifecycle suite; and
 - the deterministic fuzz regression gate.
 
-Run all three bounded jobs locally with `./qa/ci/check-ci.sh` (or
+Run all three bounded jobs locally with `sh qa/ci/check-ci.sh` (or
 `.\qa\ci\check-ci.ps1` on Windows). GitHub invokes that same checked-in runner
 with `--only core`, `--only browser`, and `--only fuzz`; this makes its command
 list and environment the source of truth for both local and remote execution.
