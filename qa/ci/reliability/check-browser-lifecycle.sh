@@ -122,5 +122,5 @@ reject_adapter_text "updatedAtMs"
 reject_text "$app" "updatedAtMs"
 reject_text "$app" "last writer wins"
 
-./qa/ci/reliability/check-browser-e2e.sh
+sh qa/ci/reliability/check-browser-e2e.sh
 printf 'WASM/browser lifecycle checks passed.\n'

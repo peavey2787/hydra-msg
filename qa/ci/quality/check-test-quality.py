@@ -77,6 +77,16 @@ def check_bounded_ci_dry(failures: list[str]) -> None:
             if body.count(invocation) != 1:
                 failures.append(f"GitHub CI must invoke shared {section} section exactly once")
 
+
+def check_shell_invocation_portability(failures: list[str]) -> None:
+    direct_shell_call = re.compile(r'^\s*(?:run_step\s+"[^"]+"\s+)?(?:\./)?qa/\S+\.sh(?:\s|$)')
+    for path in Path("qa/ci").rglob("*.sh"):
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if direct_shell_call.search(line):
+                failures.append(
+                    f"shell gate must be invoked through sh: {path}:{line_number}: {line.strip()}"
+                )
+
 TEST_ATTR = re.compile(r"#\[(?:tokio::)?test(?:\([^\]]*\))?\]")
 FN = re.compile(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 IGNORE = re.compile(r"#\[ignore(?:\([^\]]*\))?\]")
@@ -253,6 +263,7 @@ def main() -> int:
     total = 0
     check_run_all_dry(failures)
     check_bounded_ci_dry(failures)
+    check_shell_invocation_portability(failures)
     generic_allowlist = load_generic_allowlist(failures)
 
     for path in rust_files():

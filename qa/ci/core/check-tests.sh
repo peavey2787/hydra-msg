@@ -49,46 +49,46 @@ run_step() {
 }
 
 if [ "$from_privacy" -eq 0 ]; then
-  run_step "workspace Rust checks" qa/ci/core/check-rust.sh
+  run_step "workspace Rust checks" sh qa/ci/core/check-rust.sh
   export HYDRA_WORKSPACE_TESTS_ALREADY_RAN=1
-  run_step "supply-chain advisory/license checks" qa/ci/security/check-supply-chain.sh
-  run_step "Rust source-size ownership checks" qa/ci/policy/check-rust-file-sizes.sh
+  run_step "supply-chain advisory/license checks" sh qa/ci/security/check-supply-chain.sh
+  run_step "Rust source-size ownership checks" sh qa/ci/policy/check-rust-file-sizes.sh
   run_step "test quality structural checks" python3 qa/ci/quality/check-test-quality.py
-  run_step "cyclomatic complexity CC <= 12" qa/ci/quality/check-complexity.sh
+  run_step "cyclomatic complexity CC <= 12" sh qa/ci/quality/check-complexity.sh
 else
   echo "Resuming tests/static validation at privacy invariant checks."
   export HYDRA_WORKSPACE_TESTS_ALREADY_RAN=1
 fi
-run_step "privacy invariant checks" qa/ci/security/check-privacy-invariants.sh
-run_step "resource-exhaustion/DoS limit checks" qa/ci/security/check-resource-limits.sh
-run_step "crash-consistency matrix checks" qa/ci/reliability/check-crash-consistency.sh
+run_step "privacy invariant checks" sh qa/ci/security/check-privacy-invariants.sh
+run_step "resource-exhaustion/DoS limit checks" sh qa/ci/security/check-resource-limits.sh
+run_step "crash-consistency matrix checks" sh qa/ci/reliability/check-crash-consistency.sh
 if [ "$skip_release_static" -eq 0 ]; then
-  run_step "Miri/sanitizer/fault-injection checks" qa/ci/reliability/check-memory-safety.sh
-  run_step "WASM/browser lifecycle checks" qa/ci/reliability/check-browser-lifecycle.sh
+  run_step "Miri/sanitizer/fault-injection checks" sh qa/ci/reliability/check-memory-safety.sh
+  run_step "WASM/browser lifecycle checks" sh qa/ci/reliability/check-browser-lifecycle.sh
 else
   echo "Miri/sanitizer and browser lifecycle gates deferred to check-all release sections."
 fi
-run_step "metadata-leakage checks" qa/ci/security/check-metadata-leakage.sh
+run_step "metadata-leakage checks" sh qa/ci/security/check-metadata-leakage.sh
 run_step "stego API shape checks" python3 qa/ci/security/check-stego-api-shape.py
-run_step "persistence API shape checks" qa/ci/security/check-persistence-api-shape.sh
-run_step "persistence invariant checks" qa/ci/security/check-persistence-invariants.sh
-run_step "cross-runtime interop harness checks" qa/ci/reliability/check-interop.sh
+run_step "persistence API shape checks" sh qa/ci/security/check-persistence-api-shape.sh
+run_step "persistence invariant checks" sh qa/ci/security/check-persistence-invariants.sh
+run_step "cross-runtime interop harness checks" sh qa/ci/reliability/check-interop.sh
 run_step "independent handshake vector oracle" python3 qa/independent/verify_handshake_vectors.py
 if [ "$skip_release_static" -eq 0 ]; then
-  run_step "critical-path coverage target checks" qa/ci/quality/check-coverage.sh
-  run_step "mutation target checks" qa/ci/quality/check-mutation.sh
+  run_step "critical-path coverage target checks" sh qa/ci/quality/check-coverage.sh
+  run_step "mutation target checks" sh qa/ci/quality/check-mutation.sh
 else
   echo "Coverage and mutation gates deferred to check-all release sections."
 fi
-run_step "cross-version compatibility checks" qa/ci/reliability/check-cross-version-compat.sh
-run_step "mobile perf web persistence checks" qa/ci/reliability/check-mobile-perf-web.sh
-run_step "docs/static checks" qa/ci/policy/check-docs.sh
-run_step "release-governance checks" qa/ci/release/check-release-governance.sh
+run_step "cross-version compatibility checks" sh qa/ci/reliability/check-cross-version-compat.sh
+run_step "mobile perf web persistence checks" sh qa/ci/reliability/check-mobile-perf-web.sh
+run_step "docs/static checks" sh qa/ci/policy/check-docs.sh
+run_step "release-governance checks" sh qa/ci/release/check-release-governance.sh
 restore_committed_lock_for_policy
-run_step "lock-file checks" qa/ci/policy/check-locks.sh
+run_step "lock-file checks" sh qa/ci/policy/check-locks.sh
 
 if [ "$skip_vectors" -eq 0 ]; then
-  run_step "QA vector checks" qa/ci/policy/check-vectors.sh --check-format
+  run_step "QA vector checks" sh qa/ci/policy/check-vectors.sh --check-format
 else
   echo "QA vector checks skipped by --skip-vectors."
 fi
