@@ -73,8 +73,15 @@ if ($env:HYDRA_RUN_COVERAGE -ne "1") {
     exit 0
 }
 
-$CoverageToolchain = if ($env:HYDRA_COVERAGE_TOOLCHAIN) { $env:HYDRA_COVERAGE_TOOLCHAIN } else { "nightly" }
+# Dated nightly: LLVM line-coverage semantics drift between nightlies, so a
+# floating toolchain would change the 100% critical-function results by date.
+$CoverageToolchain = if ($env:HYDRA_COVERAGE_TOOLCHAIN) { $env:HYDRA_COVERAGE_TOOLCHAIN } else { "nightly-2026-07-31" }
 if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) { throw "HYDRA coverage requires rustup" }
+& rustup run $CoverageToolchain rustc --version *> $null
+if ($LASTEXITCODE -ne 0) {
+    & rustup toolchain install $CoverageToolchain --profile minimal --component llvm-tools-preview
+    if ($LASTEXITCODE -ne 0) { throw "failed to install coverage toolchain: $CoverageToolchain" }
+}
 if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) { throw "HYDRA coverage requires cargo" }
 $CoverageRustcVersion = (& rustup run $CoverageToolchain rustc --version | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw "coverage toolchain unavailable: $CoverageToolchain" }

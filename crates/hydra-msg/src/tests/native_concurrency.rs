@@ -27,6 +27,30 @@ fn native_same_profile_second_open_fails_closed_until_first_handle_drops() {
 }
 
 #[test]
+fn native_profile_lock_file_left_by_a_killed_process_does_not_lock_the_profile_out() {
+    let path = "target/hydra-msg-test-native-profile-stale-lock";
+    let mut first = fresh(path);
+    first.generate_id("id-pw").unwrap();
+    drop(first);
+    // A killed process never runs Drop: its lock file stays behind, unlocked.
+    fs::write(
+        Path::new(path).join("state.hydra.lock"),
+        b"pid=4294967295
+",
+    )
+    .unwrap();
+
+    let reopened = Hydra::open(path, "state-pw").unwrap();
+    assert_eq!(reopened.list_ids().len(), 1);
+    assert!(matches!(
+        Hydra::open(path, "state-pw"),
+        Err(HydraMsgError::InvalidInput(
+            "native profile is already open"
+        ))
+    ));
+}
+
+#[test]
 fn native_profile_lock_prevents_stale_last_writer_and_preserves_rollback_guard() {
     let path = "target/hydra-msg-test-native-profile-lock-rollback";
     let mut first = fresh(path);

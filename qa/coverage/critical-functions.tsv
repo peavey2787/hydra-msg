@@ -4,8 +4,10 @@ crypto-aead-open|crates/hydra-crypto/src/aead.rs|open|AEAD authentication and de
 crypto-hmac-verify|crates/hydra-crypto/src/mac.rs|verify_hmac_sha3_256|MAC verification
 crypto-x25519-dh|crates/hydra-crypto/src/x25519.rs|diffie_hellman|X25519 shared-secret derivation and all-zero rejection
 crypto-mlkem-encap|crates/hydra-crypto/src/ml_kem.rs|encapsulate|ML-KEM shared-secret encapsulation
+crypto-mlkem-encap-core|crates/hydra-crypto/src/ml_kem.rs|encapsulate_with_rng|ML-KEM encapsulation core, including entropy-failure refusal
 crypto-mlkem-decap|crates/hydra-crypto/src/ml_kem.rs|decapsulate|ML-KEM decapsulation and implicit-rejection path
 crypto-mldsa-sign|crates/hydra-crypto/src/ml_dsa.rs|sign_digest|ML-DSA signing
+crypto-mldsa-sign-core|crates/hydra-crypto/src/ml_dsa.rs|sign_digest_with_rng|ML-DSA signing core, including entropy-failure refusal
 crypto-mldsa-verify|crates/hydra-crypto/src/ml_dsa.rs|verify_digest|ML-DSA signature verification
 crypto-hkdf-extract|crates/hydra-crypto/src/kdf.rs|hkdf_extract|HKDF extract key schedule
 crypto-hkdf-expand|crates/hydra-crypto/src/kdf.rs|hkdf_expand|HKDF expand key schedule

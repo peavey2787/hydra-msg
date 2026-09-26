@@ -13,7 +13,7 @@ Green tests are necessary but not sufficient. HYDRA release validation also meas
 
 ## Coverage report policy
 
-The measured coverage section in the shared `qa/ci/run_all.py` orchestration runs the native `qa/ci/quality/check-coverage.*` implementation with `HYDRA_RUN_COVERAGE=1` on both Linux and Windows. Coverage uses nightly Rust because branch instrumentation is nightly-only. The gate creates:
+The measured coverage section in the shared `qa/ci/run_all.py` orchestration runs the native `qa/ci/quality/check-coverage.*` implementation with `HYDRA_RUN_COVERAGE=1` on both Linux and Windows. Coverage uses a dated nightly (`nightly-2026-07-31`, installed on demand and overridable with `HYDRA_COVERAGE_TOOLCHAIN`) because branch instrumentation is nightly-only and LLVM line-coverage semantics drift between nightlies; bump the date deliberately and rerun the gate. The gate creates:
 
 ```text
 target/coverage/hydra.lcov

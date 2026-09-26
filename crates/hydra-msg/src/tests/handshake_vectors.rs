@@ -191,6 +191,26 @@ fn finish_verification_rejects_size_header_and_authenticated_record_mismatch() {
             "FINISH transcript/session mismatch"
         ))
     );
+
+    let mut bad_magic = finish.clone();
+    bad_magic[0] ^= 0xFF;
+    assert_eq!(
+        verify_handshake_finish(&bad_magic, &material),
+        Err(HydraMsgError::InvalidEncoding("FINISH outer header"))
+    );
+
+    // Authenticated under the finish key, but not a valid protected record.
+    let mut malformed_plaintext = plaintext.clone();
+    malformed_plaintext[0] = 0xFF;
+    let malformed_body =
+        RustCryptoBackend::aead_seal(&material.finish_key, &[0; 12], header, &malformed_plaintext)
+            .unwrap();
+    let mut malformed = header.to_vec();
+    malformed.extend_from_slice(&malformed_body);
+    assert_eq!(
+        verify_handshake_finish(&malformed, &material),
+        Err(HydraMsgError::InvalidEncoding("FINISH protected record"))
+    );
 }
 
 #[test]

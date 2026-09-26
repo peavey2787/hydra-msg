@@ -246,11 +246,7 @@ pub(crate) fn verify_answer_and_derive(
         &material.transcript_hash,
     );
     let confirmation = confirmation_input(&material.transcript_hash, &material.session_id);
-    RustCryptoBackend::verify_hmac_sha3_256(
-        &confirm_key,
-        &confirmation,
-        &answer.confirmation_tag,
-    )?;
+    RustCryptoBackend::verify_hmac_sha3_256(&confirm_key, &confirmation, &answer.confirmation_tag)?;
     Ok(material)
 }
 

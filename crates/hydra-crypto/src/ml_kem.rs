@@ -5,7 +5,7 @@ use ml_kem::{
     ml_kem_768::{DecapsulationKey, EncapsulationKey},
     MlKem768, Seed, B32,
 };
-use rand_core::TryRng;
+use rand_core::{TryCryptoRng, TryRng};
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::{CryptoError, CryptoResult, SecretBytes};
@@ -67,11 +67,19 @@ impl MlKemEncapsulationKey {
     }
 
     pub fn encapsulate(&self) -> CryptoResult<([u8; ML_KEM_768_CT_SIZE], SecretBytes<32>)> {
+        self.encapsulate_with_rng(&mut SysRng)
+    }
+
+    /// Encapsulation core with an injectable entropy source, so RNG failure is
+    /// testable: it must return `EntropyUnavailable` and produce no output.
+    fn encapsulate_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+    ) -> CryptoResult<([u8; ML_KEM_768_CT_SIZE], SecretBytes<32>)> {
         // Fill before calling the deterministic primitive so RNG failure
         // returns without producing ciphertext or shared-secret output.
         let mut entropy = B32::default();
-        SysRng
-            .try_fill_bytes(entropy.as_mut_slice())
+        rng.try_fill_bytes(entropy.as_mut_slice())
             .map_err(|_| CryptoError::EntropyUnavailable)?;
         let (ciphertext, mut shared_secret) = self.0.encapsulate_deterministic(&entropy);
         entropy.as_mut_slice().zeroize();
@@ -101,5 +109,18 @@ impl MlKemDecapsulationKey {
         shared_output.copy_from_slice(shared.as_ref());
         shared.as_mut_slice().zeroize();
         Ok(SecretBytes::new(shared_output))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_rng::FailingRng;
+
+    #[test]
+    fn encapsulation_with_unavailable_entropy_fails_without_output() {
+        let pair = MlKemKeyPair::generate().unwrap();
+        let result = pair.encapsulation_key.encapsulate_with_rng(&mut FailingRng);
+        assert!(matches!(result, Err(CryptoError::EntropyUnavailable)));
     }
 }

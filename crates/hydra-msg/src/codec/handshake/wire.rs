@@ -176,12 +176,18 @@ pub(super) fn derive_material_from_parts(
     hybrid_ikm.extend_from_slice(&secret_len);
     hybrid_ikm.extend_from_slice(kem_secret.expose_secret());
     let hybrid_prk = RustCryptoBackend::hkdf_extract(&transcript_hash, &hybrid_ikm);
-    let handshake_secret =
-        derive_expand32(&hybrid_prk, b"HYDRA-MSG/v1/root-key", &transcript_hash);
-    let sid = derive_expand32(&handshake_secret, b"HYDRA-MSG/v1/session-id", &transcript_hash);
+    let handshake_secret = derive_expand32(&hybrid_prk, b"HYDRA-MSG/v1/root-key", &transcript_hash);
+    let sid = derive_expand32(
+        &handshake_secret,
+        b"HYDRA-MSG/v1/session-id",
+        &transcript_hash,
+    );
     let session_id = *sid.expose_secret();
-    let finish_key =
-        derive_expand32(&handshake_secret, b"HYDRA-MSG/v1/finish-key", &transcript_hash);
+    let finish_key = derive_expand32(
+        &handshake_secret,
+        b"HYDRA-MSG/v1/finish-key",
+        &transcript_hash,
+    );
     HandshakeMaterial {
         handshake_secret,
         transcript_hash,

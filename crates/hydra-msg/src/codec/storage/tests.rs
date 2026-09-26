@@ -113,6 +113,14 @@ fn valid_chunks_under_wrong_aad_are_rejected() {
 }
 
 #[test]
+fn oversized_snapshot_is_rejected_before_encryption() {
+    let key = SecretBytes::from_array([11; 32]);
+    let kdf = new_storage_kdf().unwrap();
+    let oversized = vec![0_u8; MAX_STATE_SNAPSHOT_BYTES + 1];
+    assert!(encode_encrypted_state(&oversized, &key, &kdf, [5; 12]).is_err());
+}
+
+#[test]
 fn chunk_count_boundary_rejects_zero_and_above_snapshot_capacity() {
     let key = SecretBytes::from_array([10; 32]);
     let kdf = new_storage_kdf().unwrap();

@@ -92,8 +92,8 @@ fn duplicate_init_returns_identical_cached_resp_and_never_rekeys() {
 
 #[test]
 fn tampered_resp_and_finish_fail_without_responder_install() {
-    let mut alice = fresh("target/hydra-msg-test-handshake-tamper-alice");
-    let mut bob = fresh("target/hydra-msg-test-handshake-tamper-bob");
+    let mut alice = fresh("target/hydra-msg-test-handshake-lifecycle-tamper-alice");
+    let mut bob = fresh("target/hydra-msg-test-handshake-lifecycle-tamper-bob");
     let (alice_contact, bob_contact) = contacts(&mut alice, &mut bob);
 
     let offer = alice.init_handshake(bob_contact).unwrap();

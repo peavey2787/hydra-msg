@@ -42,8 +42,13 @@ if [ "${HYDRA_RUN_COVERAGE:-0}" != 1 ]; then
   echo "coverage/CRAP manifest and helper checks passed. Set HYDRA_RUN_COVERAGE=1 to generate LCOV and enforce thresholds."
   exit 0
 fi
-coverage_toolchain=${HYDRA_COVERAGE_TOOLCHAIN:-nightly}
+# Dated nightly: LLVM line-coverage semantics drift between nightlies, so a
+# floating toolchain would change the 100% critical-function results by date.
+coverage_toolchain=${HYDRA_COVERAGE_TOOLCHAIN:-nightly-2026-07-31}
 command -v rustup >/dev/null 2>&1 || { echo "HYDRA coverage requires rustup" >&2; exit 1; }
+if ! rustup run "$coverage_toolchain" rustc --version >/dev/null 2>&1; then
+  rustup toolchain install "$coverage_toolchain" --profile minimal --component llvm-tools-preview
+fi
 command -v cargo >/dev/null 2>&1 || { echo "HYDRA coverage requires cargo" >&2; exit 1; }
 coverage_rustc=$(rustup run "$coverage_toolchain" rustc --version)
 case "$coverage_rustc" in *nightly*) ;; *) echo "branch coverage requires nightly Rust: $coverage_rustc" >&2; exit 1 ;; esac

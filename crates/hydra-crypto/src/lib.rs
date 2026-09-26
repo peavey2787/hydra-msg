@@ -14,6 +14,8 @@ mod mac;
 mod ml_dsa;
 mod ml_kem;
 mod secret;
+#[cfg(test)]
+mod test_rng;
 mod x25519;
 
 pub use backend::{CryptoBackend, RustCryptoBackend};

@@ -214,7 +214,7 @@ impl BrokerState {
             .map(|(id, peer)| (peer.order, id.clone()))
             .collect::<Vec<_>>();
         waiting.sort_by_key(|(order, _)| *order);
-        for pair in waiting.chunks_exact(2) {
+        for pair in waiting.as_chunks::<2>().0 {
             let offer_id = &pair[0].1;
             let answer_id = &pair[1].1;
             if let Some(offer) = self.peers.get_mut(offer_id) {

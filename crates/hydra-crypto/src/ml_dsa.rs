@@ -3,7 +3,7 @@ use hydra_core::{ML_DSA_65_SIG_SIZE, ML_DSA_65_VK_SIZE, TRANSCRIPT_HASH_SIZE};
 use ml_dsa::{
     EncodedVerifyingKey, Keypair, MlDsa65, Signature, SigningKey, Verifier, VerifyingKey,
 };
-use rand_core::TryRng;
+use rand_core::{TryCryptoRng, TryRng};
 use zeroize::{Zeroize, Zeroizing};
 
 use crate::{error::exact_array, CryptoError, CryptoResult};
@@ -50,11 +50,21 @@ impl MlDsaKeyPair {
 
 impl MlDsaSigningKey {
     pub fn sign_digest(&self, digest: &[u8]) -> CryptoResult<[u8; ML_DSA_65_SIG_SIZE]> {
+        self.sign_digest_with_rng(digest, &mut SysRng)
+    }
+
+    /// Signing core with an injectable entropy source, so RNG failure is
+    /// testable: it must return `EntropyUnavailable` and produce no signature.
+    fn sign_digest_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        digest: &[u8],
+        rng: &mut R,
+    ) -> CryptoResult<[u8; ML_DSA_65_SIG_SIZE]> {
         let digest = exact_array::<TRANSCRIPT_HASH_SIZE>("ML-DSA-65 digest", digest)?;
         let signature = self
             .0
             .expanded_key()
-            .sign_randomized(&digest, &[], &mut SysRng)
+            .sign_randomized(&digest, &[], rng)
             .map_err(|_| CryptoError::EntropyUnavailable)?;
         let encoded = signature.encode();
         let mut output = [0_u8; ML_DSA_65_SIG_SIZE];
@@ -99,5 +109,20 @@ impl MlDsaVerificationKey {
         self.0
             .verify(&digest, &signature)
             .map_err(|_| CryptoError::AuthenticationFailed)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_rng::FailingRng;
+
+    #[test]
+    fn signing_with_unavailable_entropy_fails_without_a_signature() {
+        let pair = MlDsaKeyPair::from_seed([7; 32]).unwrap();
+        let result = pair
+            .signing_key
+            .sign_digest_with_rng(&[1; TRANSCRIPT_HASH_SIZE], &mut FailingRng);
+        assert!(matches!(result, Err(CryptoError::EntropyUnavailable)));
     }
 }

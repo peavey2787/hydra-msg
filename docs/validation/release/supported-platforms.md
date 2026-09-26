@@ -30,4 +30,4 @@ Browser persistent state requires IndexedDB. HYDRA must fail closed when Indexed
 
 ## Native storage rule
 
-Native local state uses encrypted `state.hydra` storage and same-profile locking. Two live native `Hydra::open()` handles for the same data directory are unsupported and must fail closed through the native profile lock.
+Native local state uses encrypted `state.hydra` storage and same-profile locking. Two live native `Hydra::open()` handles for the same data directory are unsupported and must fail closed through the native profile lock. The lock is an OS-held file lock (`LockFileEx` on Windows, `flock` elsewhere), so a crashed or killed process releases it automatically; a leftover `state.hydra.lock` file without a live holder never locks a profile out.

@@ -10,33 +10,20 @@ use std::{
 
 const STATE_LOCK_FILE_NAME: &str = "state.hydra.lock";
 
+/// Same-profile exclusion held through an OS file lock. A crashed or killed
+/// process releases it automatically, so a leftover lock file never locks a
+/// profile out; only a live handle does.
 #[derive(Debug)]
 pub(crate) struct NativeProfileLock {
-    path: PathBuf,
+    _lock: hydra_platform::ExclusiveFileLock,
 }
 
 impl NativeProfileLock {
     fn acquire(path: PathBuf) -> HydraResult<Self> {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)
-            .map_err(|error| {
-                if error.kind() == std::io::ErrorKind::AlreadyExists {
-                    HydraMsgError::InvalidInput("native profile is already open")
-                } else {
-                    HydraMsgError::Io(error.to_string())
-                }
-            })?;
-        file.write_all(format!("pid={}\n", std::process::id()).as_bytes())?;
-        file.sync_all()?;
-        Ok(Self { path })
-    }
-}
-
-impl Drop for NativeProfileLock {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.path);
+        let lock = hydra_platform::try_lock_exclusive(&path)?.ok_or(
+            HydraMsgError::InvalidInput("native profile is already open"),
+        )?;
+        Ok(Self { _lock: lock })
     }
 }
 
