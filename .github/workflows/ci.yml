@@ -126,6 +126,9 @@ jobs:
     timeout-minutes: 120
     env:
       HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
+      # Bounded CI samples 12 inputs evenly across the full eight-round corpus;
+      # direct and release runs omit the limit and execute the whole corpus.
+      HYDRA_FUZZ_INPUT_LIMIT: "12"
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

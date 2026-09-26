@@ -49,6 +49,16 @@ The direct gate always runs the deterministic `hydra-fuzz-gate`. Coverage-guided
 ./qa/ci/fuzz/check-fuzz.sh
 ```
 
+For a quick executable/exit-code check without replacing the real CI campaign:
+
+```bash
+HYDRA_FUZZ_CASES=2 HYDRA_FUZZ_INPUT_LIMIT=1 cargo run --locked -p hydra-fuzz-gate --
+```
+
+`HYDRA_FUZZ_INPUT_LIMIT` selects inputs evenly across the generated corpus.
+Normal bounded CI uses 12 samples from the full eight-round corpus; omitting the
+variable executes the complete configured corpus for direct and release runs.
+
 Install the required tooling with `scripts/setup-dev-env.*`, or manually:
 
 ```bash
