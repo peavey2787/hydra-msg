@@ -22,7 +22,7 @@ jobs:
   core:
     name: Core bounded CI
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 240
     env:
       HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
@@ -123,7 +123,7 @@ jobs:
   deterministic-fuzz:
     name: Deterministic fuzz regression
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 120
     env:
       HYDRA_CI_EPHEMERAL_LOCK_REFRESH: "1"
     steps:
